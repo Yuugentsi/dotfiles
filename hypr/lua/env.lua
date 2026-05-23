@@ -28,7 +28,7 @@ end
 
 -- ─── theme ───
 local themes = {
-    ["org.gnome.desktop.interface gtk-theme"]  = "Orchis-Dark-Compact",
+    ["org.gnome.desktop.interface gtk-theme"]  = "adw-gtk3-dark",
     ["org.gnome.desktop.interface icon-theme"] = "breeze-dark",
 }
 

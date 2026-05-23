@@ -681,6 +681,8 @@ function search -d "Find files by name"
     test (count $other) -eq 0; or echo " other ("(count $other)")" && for f in $other; echo "  $f"; end
 end
 
+# ─────────── merge ───────────
+
 function merge -d "Move files up inside each subfolder"
     set -l target (string trim -r -c '/' -- $argv[1])
     if test -z "$target"

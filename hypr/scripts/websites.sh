@@ -255,6 +255,7 @@ run_sites_menu() {
                 open_site_choice "$fav_choice"
             fi
             ;;
+
         *"Config ("*")")
             local config_choice
             config_choice=$(printf '󰁯  Backup → dotfiles.zip\n❀  Open All\n%s' "$config_entries" | rofi_menu "❀  Config:" 14)
@@ -263,6 +264,10 @@ run_sites_menu() {
                 cd "$HOME/.config" && zip -rq /home/w/dotfiles.zip aria2 gallery-dl kitty waybar rofi hypr mpv swayimg yt-dlp swaync zathura fish \
                     && hyprctl notify 5 3000 "rgb(a6e3a1)" "󰁯  Backup saved → ~/dotfiles.zip" \
                     || hyprctl notify 3 3000 "rgb(f38ba8)" "󰅗  Backup failed"
+                exit 0
+            fi
+            if [[ "$config_choice" == *"Emoji Picker" ]]; then
+            rofi -modi emoji -show emoji -emoji-format '{emoji}' -emoji-mode copy
                 exit 0
             fi
             if [[ "$config_choice" == *"Open All" ]]; then

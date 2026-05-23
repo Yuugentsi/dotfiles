@@ -9,7 +9,7 @@ end
 # functions
 function c; clear; end
 function mkcd; mkdir -p $argv[1]; and cd $argv[1]; end
-function gh; git clone $argv[1]; and cd (basename (string replace -r '\.git$' '' $argv[1])); end
+#function gh; git clone $argv[1]; and cd (basename (string replace -r '\.git$' '' $argv[1])); end
 function rd; set -l p (pwd); cd ..; rm -rf $p; end
 function empty; set -l n (find (pwd) -type d -empty 2>/dev/null | wc -l); find (pwd) -type d -empty -delete 2>/dev/null; echo "$n folders deleted"; end
 function zipast; zip -r (basename $PWD).zip . > /dev/null; clear; du -h (basename $PWD).zip; end

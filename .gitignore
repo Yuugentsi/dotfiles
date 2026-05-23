@@ -42,4 +42,3 @@ share/python-wheels/
 *.egg
 MANIFEST
 .ipynb_checkpoints
-niri/

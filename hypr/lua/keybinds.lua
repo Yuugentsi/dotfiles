@@ -123,6 +123,7 @@ bind_exec("SUPER + G", "$HOME/.config/hypr/scripts/music.sh")
 bind_exec("ALT + G", "$HOME/.config/hypr/scripts/video.sh")
 
 -- ----- utils -----
+bind_exec("SUPER + Escape", "$HOME/.config/hypr/scripts/websites.sh")
 bind_exec("SUPER + V", "$HOME/.config/hypr/scripts/clipboard.sh")
 bind_exec("ALT + V", "$HOME/.config/hypr/scripts/clipboard.sh images")
 

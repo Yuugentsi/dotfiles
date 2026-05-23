@@ -1,0 +1,120 @@
+configuration {
+    modi: "drun";
+    show-icons: true;
+    terminal: "kitty";
+    drun-display-format: "{name}";
+    drun-match-fields: "name,generic,comment,exec,categories,keywords";
+    drun-use-desktop-cache: true;
+    drun-reload-desktop-cache: true;
+    matching: "normal";
+    tokenize: true;
+    auto-select: true;
+    sort: true;
+    sorting-method: "fzf";
+    case-sensitive: false;
+    normalize-match: true;
+    cycle: true;
+    click-to-exit: true;
+    hover-select: true;
+}
+
+* {
+    font: "JetBrainsMono Nerd Font Medium 10";
+
+    bg: rgba(12, 4, 8, 0.92);
+    bg-alt: rgba(22, 8, 14, 0.92);
+    bg-hover: rgba(200, 90, 120, 0.20);
+    fg: #ffe0ec;
+    muted: #b898a8;
+    border: #c46080;
+    accent: #f8b4c8;
+    accent-alt: #ffffff;
+}
+
+window {
+    width: 50%;
+    location: center;
+    anchor: center;
+    background-color: @bg;
+    transparency: "real";
+    border: 2px;
+    border-color: rgba(200, 90, 120, 0.25);
+    border-radius: 24px;
+}
+
+mainbox {
+    background-color: transparent;
+    padding: 16px 14px;
+    spacing: 10px;
+}
+
+inputbar {
+    background-color: rgba(200, 90, 120, 0.08);
+    padding: 8px 14px;
+    border-radius: 14px;
+    border: 1px;
+    border-color: rgba(200, 90, 120, 0.20);
+    children: [ entry ];
+}
+
+entry {
+    background-color: transparent;
+    text-color: @fg;
+    placeholder: "Search apps";
+    placeholder-color: @muted;
+    cursor-color: @accent;
+    cursor-width: 1px;
+}
+
+listview {
+    background-color: transparent;
+    columns: 3;
+    lines: 4;
+    spacing: 8px;
+    scrollbar: false;
+    fixed-height: true;
+    dynamic: false;
+}
+
+element,
+element normal.normal,
+element alternate.normal {
+    background-color: @bg-alt;
+    text-color: @fg;
+    padding: 8px 10px;
+    border-radius: 14px;
+    orientation: horizontal;
+    children: [ element-icon, element-text ];
+    spacing: 8px;
+}
+
+element selected.normal {
+    background-color: @bg-hover;
+    text-color: @accent;
+    border: 1px;
+    border-color: rgba(248, 180, 200, 0.40);
+}
+
+element-icon {
+    background-color: transparent;
+    size: 0.6em;
+}
+
+element-text,
+element normal.normal element-text,
+element alternate.normal element-text {
+    background-color: transparent;
+    text-color: @fg;
+    vertical-align: 0.5;
+    highlight: bold #f8b4c8;
+    expand: true;
+}
+
+element selected.normal element-text {
+    background-color: transparent;
+    text-color: @accent;
+}
+
+mode-switcher {
+    enabled: false;
+}

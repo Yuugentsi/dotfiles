@@ -1,0 +1,38 @@
+# ─── settings ───
+set fullscreen true
+set adjust-open width
+
+# ─── fullscreen ───
+map f toggle_fullscreen
+map [fullscreen] f toggle_fullscreen
+map [presentation] f toggle_fullscreen
+
+# ─── navigation ───
+map <Left> navigate previous
+map <Right> navigate next
+map [fullscreen] <Left> navigate previous
+map [fullscreen] <Right> navigate next
+
+# ─── zoom ───
+map s adjust_window width
+map [fullscreen] s adjust_window width
+map a adjust_window best-fit
+map [fullscreen] a adjust_window best-fit
+
+# ─── colors ───
+set default-bg "#0c0408"
+set default-fg "#ffe0ec"
+set statusbar-bg "#1a0a10"
+set statusbar-fg "#ffe0ec"
+set inputbar-bg "#1a0a10"
+set inputbar-fg "#ffe0ec"
+set notification-bg "#1a0a10"
+set notification-fg "#ffe0ec"
+set notification-error-bg "#e87898"
+set notification-error-fg "#0c0408"
+set notification-warning-bg "#fdba74"
+set notification-warning-fg "#0c0408"
+set highlight-color "#f8b4c8"
+set highlight-active-color "#e898ae"
+set recolor-lightcolor "#0c0408"
+set recolor-darkcolor "#ffe0ec"

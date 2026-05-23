@@ -1,0 +1,182 @@
+* {
+    border: none;
+    border-radius: 8px;
+    min-height: 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    padding: 0;
+    background: transparent;
+}
+
+window#waybar {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+tooltip {
+    background: rgba(24, 6, 14, 0.95);
+    color: #f0b8c8;
+    border-radius: 4px;
+}
+
+#workspaces,
+#tray,
+#network,
+#battery,
+#mpris,
+#backlight,
+#custom-hyprsunset,
+#pulseaudio,
+#clock,
+#custom-power,
+#custom-random-music,
+#custom-stop-music,
+#group-power,
+#custom-logout,
+#custom-reboot {
+    background: rgba(160, 60, 100, 0.15);
+    box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.30);
+    margin: 3px;
+    padding: 3px 7px;
+    border-radius: 8px;
+    color: #f0b8c8;
+
+    border-style: none;
+    border-bottom-style: solid;
+    border-top-style: solid;
+    border-bottom-color: rgba(220, 160, 180, 0.20);
+    border-top-color: rgba(230, 170, 190, 0.42);
+    border-width: 1px;
+}
+
+#workspaces button {
+    transition-duration: 100ms;
+    all: initial;
+    min-width: 0;
+    color: rgba(230, 160, 180, 0.55);
+    margin-right: 4px;
+    margin-left: 4px;
+    text-shadow: 0px 0px 4px rgba(200, 110, 140, 0.35);
+}
+
+#workspaces button.active {
+    color: #ffffff;
+    text-shadow: 0px 0px 8px #e898ae;
+}
+
+#workspaces button:hover {
+    color: #f0b8c8;
+    text-shadow: 0px 0px 8px rgba(232, 152, 174, 0.6);
+}
+
+#taskbar button {
+    transition-duration: 100ms;
+    all: initial;
+    min-width: 0;
+    color: rgba(230, 160, 180, 0.5);
+    margin-right: 4px;
+    margin-left: 4px;
+    padding: 1px 0;
+}
+
+#taskbar button:hover {
+    color: rgba(230, 160, 180, 0.7);
+}
+
+#taskbar button.active {
+    color: #ffffff;
+    background: rgba(160, 60, 100, 0.28);
+    box-shadow: 0px 0px 6px rgba(160, 60, 100, 0.32);
+    border-radius: 6px;
+    margin: 0 2px;
+    padding: 1px 3px;
+}
+
+#workspaces .taskbar-window {
+    transition-duration: 100ms;
+    all: initial;
+    min-width: 0;
+    color: rgba(230, 160, 180, 0.4);
+    margin-right: 1px;
+    margin-left: 1px;
+    padding: 0 2px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+#workspaces .taskbar-window.active {
+    color: #ffffff;
+    background: rgba(160, 60, 100, 0.24);
+}
+
+#workspaces .taskbar-window:hover {
+    color: rgba(230, 160, 180, 0.7);
+    background: rgba(160, 60, 100, 0.12);
+}
+
+#workspaces button.urgent {
+    color: #f06292;
+    text-shadow: 0px 0px 8px #f06292;
+}
+
+#taskbar {
+    background: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
+    margin: 3px 0;
+    padding: 0;
+}
+
+#mpris {
+    font-size: 8px;
+    padding: 1px 6px;
+}
+
+#mpris.spotify {
+    color: #6ee7b7;
+    text-shadow: 0px 0px 4px rgba(110, 231, 183, 0.4);
+}
+
+#mpris.mpv {
+    color: #c4b5fd;
+    text-shadow: 0px 0px 4px rgba(196, 181, 253, 0.4);
+}
+
+#mpris.firefox {
+    color: #fdba74;
+    text-shadow: 0px 0px 4px rgba(253, 186, 116, 0.4);
+}
+
+#pulseaudio {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+#clock {
+    font-size: 10px;
+    padding: 2px 10px;
+    font-feature-settings: "tnum";
+}
+
+#custom-stop-music {
+    font-size: 8px;
+    padding: 1px 5px;
+}
+
+#custom-stop-music.spotify {
+    color: #6ee7b7;
+    text-shadow: 0px 0px 4px rgba(110, 231, 183, 0.4);
+}
+
+#custom-stop-music.mpv {
+    color: #c4b5fd;
+    text-shadow: 0px 0px 4px rgba(196, 181, 253, 0.4);
+}
+
+#custom-stop-music.firefox {
+    color: #fdba74;
+    text-shadow: 0px 0px 4px rgba(253, 186, 116, 0.4);
+}

@@ -1,0 +1,38 @@
+{
+  "extractor": {
+    "base-directory": "$HOME/media/pictures/gallery-dl",
+    "cookies-from-browser": "firefox",
+    "download-archive": "$HOME/.cache/gallery-dl/archive.sqlite3",
+    "retries": 6,
+
+    "danbooru": {
+      "filename": "{id}.{extension}"
+    },
+
+    "pinterest": {
+      "filename": "{id}.{extension}"
+    },
+
+    "reddit": {
+      "filename": "{title}_{id}.{extension}"
+    },
+
+    "sakugabooru": {
+      "filename": "{id}.{extension}"
+    },
+
+    "twitter": {
+      "filename": "{author[name]}_status_{tweet_id}_{num:>02}.{extension}"
+    },
+
+    "wallhaven": {
+      "base-directory": "$HOME/media/pictures/wallpapers",
+      "filename": "{id}.{extension}"
+    }
+  },
+
+  "downloader": {
+    "rate": "15M",
+    "retries": 6
+  }
+}

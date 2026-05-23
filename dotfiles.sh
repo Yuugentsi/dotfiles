@@ -93,6 +93,9 @@ for dir in "$DOTFILES_DIR"/*/; do
     cp -r "$dir" "${TARGET_DIR}/"
 done
 
+# ─────────── scripts ───────────
+chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
+
 # ─────────── theme ───────────
 echo "󰉋 theme → adw-gtk3-dark"
 gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true

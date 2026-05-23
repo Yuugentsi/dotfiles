@@ -680,3 +680,28 @@ function search -d "Find files by name"
     test (count $lua) -eq 0; or echo " lua ("(count $lua)")" && for f in $lua; echo "  $f"; end
     test (count $other) -eq 0; or echo " other ("(count $other)")" && for f in $other; echo "  $f"; end
 end
+
+function merge -d "Move files up inside each subfolder"
+    set -l target (string trim -r -c '/' -- $argv[1])
+    if test -z "$target"
+        set target (pwd)
+    end
+    if not test -d "$target"
+        echo "not a directory: $target"
+        return 1
+    end
+
+    for dir in "$target"/*/
+        set dir (string trim -r -c '/' -- "$dir")
+        test -d "$dir" || continue
+
+        find "$dir" -mindepth 1 -type f | while read -l f
+            set -l base (basename "$f")
+            mv -n "$f" "$dir/$base"
+        end
+
+        find "$dir" -mindepth 1 -type d -empty -delete
+    end
+
+    echo "done: $target"
+end

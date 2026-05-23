@@ -3,7 +3,7 @@ set -euo pipefail
 
 sudo -v
 
-REPO_URL="https://github.com/Yuugentsi/dotfiles.git"
+REPO_URL="https://github.com/Yuugentsi/dotfile.git"
 
 # ─────────── git ───────────
 echo "󰊢 git"

@@ -96,6 +96,23 @@ done
 # ─────────── scripts ───────────
 chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
 
+# ─────────── nodisplay ───────────
+apps_nodisplay=(
+    avahi-discover.desktop bssh.desktop bvnc.desktop
+    xfce4-about.desktop qv4l2.desktop qvidcap.desktop
+    xgps.desktop xgpsspeed.desktop org.freedesktop.Xwayland.desktop
+    kitty-open.desktop thunar-bulk-rename.desktop thunar-settings.desktop
+    org.gnupg.pinentry-qt5.desktop org.gnupg.pinentry-qt.desktop
+    electron36.desktop electron37.desktop
+    rofi.desktop rofi-theme-selector.desktop
+)
+for app in "${apps_nodisplay[@]}"; do
+    file="/usr/share/applications/$app"
+    if [ -f "$file" ] && ! grep -q '^NoDisplay=true$' "$file" 2>/dev/null; then
+        echo "NoDisplay=true" | sudo tee -a "$file" >/dev/null
+    fi
+done
+
 # ─────────── theme ───────────
 echo "󰉋 theme → adw-gtk3-dark"
 gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true

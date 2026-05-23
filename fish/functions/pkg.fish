@@ -58,6 +58,8 @@ function pkg --description 'Unified package manager'
 
         if not test -f "$cache_file"
             set should_update 1
+        else if not test -s "$cache_file"
+            set should_update 1
         else
             set -l file_time (stat -c %Y "$cache_file" 2>/dev/null; or date -r "$cache_file" +%s)
             set -l age (math (date +%s)" - $file_time")

@@ -41,6 +41,8 @@ sudo pacman -S --needed --noconfirm \
     jq              \
     kitty           \
     mpv             \
+    mpv-mpris       \
+    playerctl       \
     nano            \
     rofi            \
     swayimg         \

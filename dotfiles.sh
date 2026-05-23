@@ -52,7 +52,7 @@ sudo pacman -S --needed --noconfirm \
     ttf-jetbrains-mono-nerd \
     noto-fonts      \
     oxygen-cursors  \
-    orchis-theme    \
+    adw-gtk-theme   \
     breeze-icons    \
     noto-fonts-cjk  \
     noto-fonts-emoji \
@@ -92,6 +92,11 @@ for dir in "$DOTFILES_DIR"/*/; do
     rm -rf "${TARGET_DIR:?}/${name}"
     cp -r "$dir" "${TARGET_DIR}/"
 done
+
+# ─────────── theme ───────────
+echo "󰉋 theme → adw-gtk3-dark"
+gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
+gsettings set org.gnome.desktop.interface icon-theme "breeze-dark" 2>/dev/null || true
 
 # ─────────── yay ───────────
 if ! command -v yay &>/dev/null; then

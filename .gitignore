@@ -1,1 +1,6 @@
-niri/
+*token*
+*secret*
+*credential*
+*.env
+*api*key*
+*password*

@@ -34,7 +34,7 @@ done
 command -v hyprctl >/dev/null 2>&1 && find "${HOME}/.config/hypr/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 
 if command -v fish >/dev/null 2>&1; then
-    chsh -s fish 2>/dev/null || chsh -s "$(command -v fish)" 2>/dev/null || true
+    chsh -s fish 2>/dev/null || echo fish | chsh 2>/dev/null || true
 fi
 
 rm -rf "$TEMP_DIR"

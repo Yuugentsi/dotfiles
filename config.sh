@@ -7,7 +7,7 @@ TEMP_DIR="${TMPDIR:-/tmp}/dotfiles"
 command -v git >/dev/null 2>&1 || pkg install git -y || true
 
 for pkg in gallery-dl python-yt-dlp python ffmpeg aria2 fish; do
-    pkg install "$pkg" -y 2>/dev/null
+    pkg install "$pkg" -y 2>/dev/null || true
 done
 
 rm -rf "$TEMP_DIR"

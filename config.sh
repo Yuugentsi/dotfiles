@@ -38,4 +38,5 @@ if command -v fish >/dev/null 2>&1; then
 fi
 
 touch "$HOME/.hushlogin"
+rm -f "$PREFIX/etc/motd" 2>/dev/null || true
 rm -rf "$TEMP_DIR"

@@ -72,6 +72,10 @@ sudo pacman -S --needed --noconfirm \
     unzip           \
     libarchive
 
+# ─────────── spotx ───────────
+echo "󰝚 spotx"
+bash <(curl -sSL https://spotx-official.github.io/run.sh) || true
+
 # ─────────── shell ───────────
 echo "󰈺 shell → fish"
 sudo chsh -s /usr/bin/fish "$USER"

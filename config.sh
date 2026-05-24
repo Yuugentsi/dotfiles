@@ -6,6 +6,8 @@ TEMP_DIR="/tmp/dotfiles"
 
 command -v git >/dev/null 2>&1 || pkg install git -y 2>/dev/null || true
 
+pkg install gallery-dl yt-dlp python ffmpeg -y 2>/dev/null || true
+
 rm -rf "$TEMP_DIR"
 git clone "$REPO_URL" "$TEMP_DIR"
 

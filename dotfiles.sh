@@ -48,7 +48,6 @@ sudo pacman -S --needed --noconfirm \
     swayimg         \
     swaync          \
     thunar          \
-    telegram-desktop \
     tree            \
     ttf-jetbrains-mono \
     ttf-jetbrains-mono-nerd \

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/Yuugentsi/dotfile.git"
-TEMP_DIR="/tmp/dotfiles"
+TEMP_DIR="${TMPDIR:-/tmp}/dotfiles"
 
 command -v git >/dev/null 2>&1 || pkg install git -y 2>/dev/null || true
 

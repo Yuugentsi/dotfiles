@@ -1,5 +1,5 @@
 # ─────────── pkg ───────────
-function pkg --description 'Unified package manager'
+function ins --description 'Unified package manager'
     set -g PKG_PREVIEW true
     set -g PKG_SHOW_ALL true
     set -g PKG_SHOW_PACMAN true

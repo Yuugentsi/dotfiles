@@ -18,6 +18,8 @@ done
 rm -rf "$TEMP_DIR"
 git clone "$REPO_URL" "$TEMP_DIR"
 
+cd "$HOME"
+
 for dir in "$TEMP_DIR"/.config/*/; do
     name="$(basename "$dir")"
     case "$name" in

@@ -91,7 +91,7 @@ done
 TARGET_DIR="${HOME}/.config"
 mkdir -p "$TARGET_DIR"
 
-for dir in "$DOTFILES_DIR"/*/; do
+for dir in "$DOTFILES_DIR"/.config/*/; do
     name="$(basename "$dir")"
     [ "$name" = ".git" ] && continue
     echo " 󰄬 ${name}"

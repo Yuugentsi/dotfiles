@@ -29,7 +29,7 @@ for dir in "$TEMP_DIR"/.config/*/; do
         hypr|kitty|mpv|rofi|swayimg|swaync|waybar|zathura|zed)
             continue ;;
     esac
-    cp -r "$dir" "${HOME}/.config/"
+    cp -r "${dir}" "${HOME}/.config/${name}"
 done
 
 command -v hyprctl >/dev/null 2>&1 && find "${HOME}/.config/hypr/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
@@ -41,3 +41,4 @@ fi
 touch "$HOME/.hushlogin"
 rm -f "$PREFIX/etc/motd" 2>/dev/null || true
 rm -rf "$TEMP_DIR"
+cd /storage/emulated/0 2>/dev/null || cd "$HOME"

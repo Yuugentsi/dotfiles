@@ -4,9 +4,11 @@ set -euo pipefail
 REPO_URL="https://github.com/Yuugentsi/dotfile.git"
 TEMP_DIR="${TMPDIR:-/tmp}/dotfiles"
 
-command -v git >/dev/null 2>&1 || pkg install git -y 2>/dev/null || true
+command -v git >/dev/null 2>&1 || pkg install git -y || true
 
-pkg install gallery-dl yt-dlp python ffmpeg aria2 fish -y 2>/dev/null || true
+for pkg in gallery-dl python-yt-dlp python ffmpeg aria2 fish; do
+    pkg install "$pkg" -y 2>/dev/null
+done
 
 rm -rf "$TEMP_DIR"
 git clone "$REPO_URL" "$TEMP_DIR"

@@ -4,6 +4,8 @@ set -euo pipefail
 REPO_URL="https://github.com/Yuugentsi/dotfile.git"
 TEMP_DIR="/tmp/dotfiles"
 
+command -v git >/dev/null 2>&1 || pkg install git -y 2>/dev/null || true
+
 rm -rf "$TEMP_DIR"
 git clone "$REPO_URL" "$TEMP_DIR"
 
@@ -13,5 +15,5 @@ for dir in "$TEMP_DIR"/.config/*/; do
     cp -r "$dir" "${HOME}/.config/"
 done
 
-chmod +x "${HOME}/.config/hypr/scripts/"*.sh 2>/dev/null || true
+command -v hyprctl >/dev/null 2>&1 && find "${HOME}/.config/hypr/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 rm -rf "$TEMP_DIR"

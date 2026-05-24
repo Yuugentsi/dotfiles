@@ -37,4 +37,5 @@ if command -v fish >/dev/null 2>&1; then
     chsh -s fish 2>/dev/null || echo fish | chsh 2>/dev/null || true
 fi
 
+touch "$HOME/.hushlogin"
 rm -rf "$TEMP_DIR"

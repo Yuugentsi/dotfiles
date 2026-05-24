@@ -69,7 +69,8 @@ sudo pacman -S --needed --noconfirm \
     zed             \
     zip             \
     unzip           \
-    libarchive
+    libarchive       \
+    xdg-desktop-portal-hyprland
 
 # ─────────── spotx ───────────
 echo "󰝚 spotx"

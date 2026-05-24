@@ -1,0 +1,28 @@
+# ─── editing ───
+set autoindent
+set tabsize 4
+set tabstospaces
+set trimblanks
+set afterends
+set atblanks
+set nonewlines
+set zap
+
+# ─── navigation ───
+set constantshow
+set positionlog
+set historylog
+set casesensitive
+set multibuffer
+
+# ─── interface ───
+set linenumbers
+set minibar
+set nohelp
+set indicator
+
+# ─── colors ───
+set numbercolor brightmagenta
+set titlecolor brightcyan,black
+
+include "/usr/share/nano/*.nanorc"

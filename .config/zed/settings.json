@@ -1,0 +1,38 @@
+{
+  "agent": {
+    "flexible": true,
+    "sidebar_side": "right",
+    "dock": "right",
+    "favorite_models": [],
+    "model_parameters": []
+  },
+  "diagnostics": {
+    "button": false
+  },
+  "global_lsp_settings": {
+    "button": false
+  },
+  "git_panel": {
+    "button": false
+  },
+  "outline_panel": {
+    "button": false
+  },
+  "collaboration_panel": {
+    "button": false
+  },
+  "debugger": {
+    "button": false
+  },
+  "icon_theme": "Zed (Default)",
+  "project_panel": {
+    "dock": "left"
+  },
+  "ui_font_size": 16,
+  "buffer_font_size": 15,
+  "theme": {
+    "mode": "dark",
+    "light": "One Light",
+    "dark": "Catppuccin Macchiato"
+  }
+}

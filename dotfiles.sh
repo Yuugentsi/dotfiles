@@ -64,6 +64,7 @@ sudo pacman -S --needed --noconfirm \
     zathura         \
     zathura-cb      \
     ffmpegthumbnailer \
+    fzf             \
     tumbler         \
     qt6ct           \
     zed             \

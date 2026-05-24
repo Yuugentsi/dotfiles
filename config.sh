@@ -14,7 +14,9 @@ git clone "$REPO_URL" "$TEMP_DIR"
 for dir in "$TEMP_DIR"/.config/*/; do
     name="$(basename "$dir")"
     case "$name" in
-        hypr|kitty|mpv|rofi|swayimg|swaync|waybar|zathura|zed) continue ;;
+        hypr|kitty|mpv|rofi|swayimg|swaync|waybar|zathura|zed)
+            rm -rf "${HOME}/.config/${name:?}"
+            continue ;;
     esac
     rm -rf "${HOME}/.config/${name:?}"
     cp -r "$dir" "${HOME}/.config/"

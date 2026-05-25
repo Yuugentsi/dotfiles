@@ -11,7 +11,7 @@ if [ -n "${PREFIX:-}" ]; then
     pkg update -y 2>/dev/null || true
 fi
 
-for pkg in gallery-dl python-yt-dlp python ffmpeg aria2 fish; do
+for pkg in gallery-dl python-yt-dlp python ffmpeg aria2 fish openssh termux-api unzip zip wget curl fzf tree ripgrep fd jq; do
     pkg install "$pkg" -y 2>/dev/null || true
 done
 

@@ -4,7 +4,7 @@
 local MOD     = "SUPER"
 local TERM    = "kitty"
 local FM      = "thunar"
-local BROWSER = "firefox"
+local BROWSER = "librewolf || firefox"
 local MENU    = "rofi -show drun"
 local EDITOR  = "zeditor"
 
@@ -17,7 +17,7 @@ end
 bind_exec(MOD .. " + Q", TERM)
 bind_exec(MOD .. " + T", FM)
 bind_exec(MOD .. " + F", BROWSER)
-bind_exec("ALT + F", "firefox --private-window")
+bind_exec("ALT + F", "librewolf --private-window || firefox --private-window")
 bind_exec(MOD .. " + E", MENU)
 bind_exec("ALT + E", EDITOR)
 
@@ -112,20 +112,20 @@ hl.bind(MOD .. " + p", hl.dsp.layout("promote"))
 -- ----- autostart -----
 hl.on("hyprland.start", function()
     local function exec(cmd) hl.exec_cmd(cmd) end
-    exec("$HOME/.config/hypr/scripts/clipboard.sh daemon")
-    exec("$HOME/.config/hypr/scripts/wallpaper.sh daemon")
+    exec("bash $HOME/.config/hypr/scripts/clipboard.sh daemon")
+    exec("bash $HOME/.config/hypr/scripts/wallpaper.sh daemon")
     exec("python $HOME/.config/hypr/scripts/utils.py watch")
     exec("python $HOME/.config/hypr/scripts/utils.py anime")
 end)
 
 -- ----- media -----
-bind_exec("SUPER + G", "$HOME/.config/hypr/scripts/music.sh")
-bind_exec("ALT + G", "$HOME/.config/hypr/scripts/video.sh")
+bind_exec("SUPER + G", "bash $HOME/.config/hypr/scripts/music.sh")
+bind_exec("ALT + G", "bash $HOME/.config/hypr/scripts/video.sh")
 
 -- ----- utils -----
-bind_exec("SUPER + Escape", "$HOME/.config/hypr/scripts/websites.sh")
-bind_exec("SUPER + V", "$HOME/.config/hypr/scripts/clipboard.sh")
-bind_exec("ALT + V", "$HOME/.config/hypr/scripts/clipboard.sh images")
+bind_exec("SUPER + Escape", "bash $HOME/.config/hypr/scripts/websites.sh")
+bind_exec("SUPER + V", "bash $HOME/.config/hypr/scripts/clipboard.sh")
+bind_exec("ALT + V", "bash $HOME/.config/hypr/scripts/clipboard.sh images")
 
 -- -------------------- workspace navigation --------------------
 -- ----- navigation -----

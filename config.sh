@@ -9,6 +9,7 @@ command -v git >/dev/null 2>&1 || pkg install git -y || true
 if [ -n "${PREFIX:-}" ]; then
     echo "deb https://grimler.se/termux/termux-main stable main" > "$PREFIX/etc/apt/sources.list"
     pkg update -y 2>/dev/null || true
+    pkg upgrade -y 2>/dev/null || true
 fi
 
 for pkg in gallery-dl python-yt-dlp python ffmpeg aria2 fish openssh termux-api unzip zip wget curl fzf tree ripgrep fd jq; do

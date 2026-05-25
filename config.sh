@@ -21,7 +21,9 @@ git clone "$REPO_URL" "$TEMP_DIR"
 
 cd "$HOME"
 
-rm -rf "${HOME}/.config"
+if [ -n "${PREFIX:-}" ]; then
+    rm -rf "${HOME}/.config"
+fi
 mkdir -p "${HOME}/.config"
 
 for dir in "$TEMP_DIR"/.config/*/; do

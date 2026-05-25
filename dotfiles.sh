@@ -46,7 +46,6 @@ sudo pacman -S --needed --noconfirm \
     nano            \
     rofi            \
     swayimg         \
-    swaync          \
     thunar          \
     tree            \
     ttf-jetbrains-mono \

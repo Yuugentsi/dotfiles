@@ -11,6 +11,7 @@ cd "$HOME"
 
 for dir in "$TEMP_DIR"/.config/*/; do
     name="$(basename "$dir")"
+    rm -rf "${HOME}/.config/${name:?}"
     cp -r "$dir" "${HOME}/.config/${name}"
 done
 

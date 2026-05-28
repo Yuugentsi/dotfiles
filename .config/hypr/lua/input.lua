@@ -9,7 +9,7 @@ hl.gesture({
 
 -- keyboard / mouse / touchpad
 local input_cfg = {
-    kb_layout    = "ru",
+    kb_layout    = "",
     kb_variant   = "",
     kb_model     = "",
     kb_options   = "",

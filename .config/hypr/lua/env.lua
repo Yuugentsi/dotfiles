@@ -1,5 +1,5 @@
 -- ─── env ───
-
+-- adw-gtk-theme breeze-icons oxygen-cursors
 local env_vars = {
     -- cursor
     XCURSOR_THEME                       = "Oxygen_Zion",

@@ -1,10 +1,10 @@
 -- ─── autostart ───
+-- waybar hyprsunset swaync mpv playerctl
 hl.on("hyprland.start", function()
     -- helper
     local function exec(cmd)
         hl.exec_cmd(cmd)
     end
-
     -- -------------------- exec --------------------
     exec("waybar")
     exec("hyprsunset -t 2200")

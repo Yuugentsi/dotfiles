@@ -64,11 +64,22 @@ hl.window_rule({
 -- ----- browser-pip -----
 hl.window_rule({
     name  = "browser-pip",
-    match = { class = "(librewolf|firefox)", title = "(Picture-in-Picture|Picture-in-picture)" },
+    match = { class = "(librewolf|firefox|zen)", title = "(Picture-in-Picture|Picture-in-picture)" },
     float = true,
     pin   = true,
-    size  = "340 191",
-    move  = "(monitor_w-340) 0",
+    opacity = "1.0 1.0",
+    size  = "245 136",
+    move  = "(monitor_w-245) 0",
+})
+
+hl.window_rule({
+    name  = "brave-pip",
+    match = { title = "Picture in picture" },
+    float = true,
+    pin   = true,
+    opacity = "1.0 1.0",
+    size  = "245 136",
+    move  = "(monitor_w-245) 0",
 })
 
 -- ----- feh -----

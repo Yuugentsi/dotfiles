@@ -1,5 +1,4 @@
 -- ─── keybinds ───
-
 -- -------------------- variables --------------------
 local MOD     = "SUPER"
 local TERM    = "kitty"
@@ -35,7 +34,6 @@ hl.bind("ALT + down", hl.dsp.window.close())
 hl.bind("ALT + up", hl.dsp.group.toggle())
 
 -- -------------------- media --------------------
-
 -- ----- audio -----
 local vol_mute =
 "bash -c 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; state=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q MUTED && echo \"󰖁\" || echo \"\"); hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(ff3333)\" \"$state\"'"
@@ -54,7 +52,6 @@ bind_exec("ALT + J", "playerctl play-pause")
 bind_exec("ALT + K", "playerctl next")
 
 -- -------------------- brightness --------------------
-
 -- ----- brightnessctl -----
 local brightness_down =
 "bash -c 'v=$(brightnessctl get); max=$(brightnessctl max); current=$((v * 100 / max)); [ $current -le 30 ] && current=30 || current=$((current-5)); brightnessctl set ${current}%; hyprctl dismissnotify 1; [ $current -le 30 ] && icon=\"󰃞\" || { [ $current -le 70 ] && icon=\"󰃟\" || icon=\"󰃠\"; }; hyprctl notify -1 2000 0 \"$icon ${current}%\"'"

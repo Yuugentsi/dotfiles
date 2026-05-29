@@ -1,5 +1,4 @@
 -- ─── input ───
-
 -- gestures
 hl.gesture({
     fingers   = 4,

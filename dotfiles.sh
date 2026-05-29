@@ -47,6 +47,8 @@ sudo pacman -S --needed --noconfirm \
     rofi            \
     swayimg         \
     thunar          \
+    qt6ct           \
+    kvantum         \
     tree            \
     ttf-jetbrains-mono \
     ttf-jetbrains-mono-nerd \

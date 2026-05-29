@@ -641,61 +641,6 @@ function pomodoro
         echo "pomodoro started — 15min"
     end
 end
-# ─────────── search ───────────
-function search -d "Find files by name"
-    set -e zip audio video images text lua other
-
-    if test (count $argv) -eq 0
-        echo "Usage: search <pattern> [path]"
-        return 1
-    end
-
-    set -l pattern $argv[1]
-    set -l base "$HOME"
-
-    if test (count $argv) -ge 2 -a -n "$argv[2]"
-        set base $argv[2]
-    end
-
-    if not test -d "$base"
-        echo "Directory not found: $base"
-        return 1
-    end
-
-    for file in (find "$base" -maxdepth 5 -iname "*$pattern*" -type f -not -path "*/.local/*" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.cache/*" -not -path "*/.npm/*" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/__pycache__/*" -not -path "*/.cargo/*" -not -path "*/.rustup/*" -not -path "*/.var/*" -not -path "*/.config/chrome/*" -not -path "*mozilla*" -not -path "*BraveSoftware*" -not -path "*/.ssh/*" -not -path "*/.wine/*" -not -path "*/.android/*" -not -path "*/BACKUP/*" -not -type l 2>/dev/null)
-        if string match -q '* *' -- $file
-            set quoted "'$file'"
-        else
-            set quoted "$file"
-        end
-
-        switch $file
-            case "*.zip" "*.tar.gz" "*.tar.xz" "*.7z" "*.rar"
-                set zip $zip " $quoted"
-            case "*.mp3" "*.wav" "*.flac" "*.m4a" "*.ogg"
-                set audio $audio " $quoted"
-            case "*.mp4" "*.mkv" "*.avi" "*.webm" "*.mov"
-                set video $video " $quoted"
-            case "*.txt" "*.md" "*.rst" "*.log"
-                set text $text " $quoted"
-            case "*.lua"
-                set lua $lua " $quoted"
-            case "*.png" "*.jpg" "*.jpeg" "*.gif" "*.svg" "*.webp" "*.bmp" "*.ico"
-                set images $images " $quoted"
-            case "*"
-                set other $other " $quoted"
-        end
-    end
-
-    test (count $zip) -eq 0; or echo " zip ("(count $zip)")" && for f in $zip; echo "  $f"; end
-    test (count $audio) -eq 0; or echo " audio ("(count $audio)")" && for f in $audio; echo "  $f"; end
-    test (count $video) -eq 0; or echo " video ("(count $video)")" && for f in $video; echo "  $f"; end
-    test (count $images) -eq 0; or echo " images ("(count $images)")" && for f in $images; echo "  $f"; end
-    test (count $text) -eq 0; or echo " text ("(count $text)")" && for f in $text; echo "  $f"; end
-    test (count $lua) -eq 0; or echo " lua ("(count $lua)")" && for f in $lua; echo "  $f"; end
-    test (count $other) -eq 0; or echo " other ("(count $other)")" && for f in $other; echo "  $f"; end
-end
-
 # ─────────── merge ───────────
 
 function merge -d "Move files up inside each subfolder"
@@ -725,8 +670,8 @@ end
 
 # ─────────── lf ───────────
 function lf -d "List files with last modified time"
-    set -l P (set_color cba6f7)
     set -l N (set_color normal)
+    set -l P (set_color cba6f7)
 
     set -l target "."
     if test (count $argv) -ge 1
@@ -753,35 +698,120 @@ function lf -d "List files with last modified time"
 
         set -l mtime (date -r "$full" "+%d/%m · %H:%M:%S" 2>/dev/null)
 
+        set -l c $P
         set -l icon ""
         switch $f
             case '*.lua'
                 set icon ""
+                set c (set_color cba6f7)
             case '*.sh' '*.bash' '*.zsh' '*.fish'
                 set icon ""
+                set c (set_color a6e3a1)
             case '*.conf' '*.cfg' '*.ini'
                 set icon ""
+                set c (set_color fab387)
             case '*.png' '*.jpg' '*.jpeg' '*.gif' '*.svg' '*.webp'
                 set icon ""
+                set c (set_color f9e2af)
             case '*.mp3' '*.wav' '*.flac' '*.ogg' '*.m4a'
                 set icon ""
+                set c (set_color f5c2e7)
             case '*.mp4' '*.mkv' '*.avi' '*.mov' '*.webm'
                 set icon ""
+                set c (set_color 89dceb)
             case '*.zip' '*.tar' '*.tar.gz' '*.tar.xz' '*.7z' '*.rar'
                 set icon ""
+                set c (set_color f38ba8)
             case '*.txt' '*.md' '*.rst'
                 set icon ""
+                set c (set_color a6adc8)
             case '*.json' '*.yaml' '*.yml' '*.toml'
                 set icon ""
+                set c (set_color 89b4fa)
             case '*.py'
                 set icon ""
+                set c (set_color 89b4fa)
             case '*.html' '*.css' '*.js' '*.ts' '*.jsx' '*.tsx'
                 set icon ""
+                set c (set_color fab387)
         end
 
         printf "%s %s · %s\n" \
-            "$P$icon$N" \
-            "$P$f$N" \
-            "$P$mtime$N"
+            "$c$icon$N" \
+            "$c$f$N" \
+            "$c$mtime$N"
+    end
+end
+
+# ─────────── search ───────────
+function search -d "Find files by name"
+    set -e zip audio video images text lua other
+
+    if test (count $argv) -eq 0
+        echo "Usage: search <pattern> [path]"
+        return 1
+    end
+
+    set -l pattern $argv[1]
+    set -l base "$HOME"
+
+    if test (count $argv) -ge 2 -a -n "$argv[2]"
+        set base $argv[2]
+    end
+
+    if not test -d "$base"
+        echo "Directory not found: $base"
+        return 1
+    end
+
+    set -l N (set_color normal)
+    set -l T (printf '\t')
+    set -l colors cba6f7 f5c2e7 fab387 f9e2af a6e3a1 89b4fa 89dceb
+
+    for file in (find "$base" -maxdepth 5 -iname "*$pattern*" -type f -not -path "*/.local/*" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/.cache/*" -not -path "*/.npm/*" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/__pycache__/*" -not -path "*/.cargo/*" -not -path "*/.rustup/*" -not -path "*/.var/*" -not -path "*/.config/chrome/*" -not -path "*mozilla*" -not -path "*BraveSoftware*" -not -path "*/.ssh/*" -not -path "*/.wine/*" -not -path "*/.android/*" -not -path "*/BACKUP/*" -not -type l 2>/dev/null)
+        set -l name (basename "$file")
+        set -l mtime (date -r "$file" "+%d/%m · %H:%M:%S" 2>/dev/null)
+        set -l dir (dirname "$file")
+        set -l label "$dir"
+
+        switch $file
+            case "*.zip" "*.tar.gz" "*.tar.xz" "*.7z" "*.rar"
+                set zip $zip "$label$T$T$name$T$mtime"
+            case "*.mp3" "*.wav" "*.flac" "*.m4a" "*.ogg"
+                set audio $audio "$label$T$T$name$T$mtime"
+            case "*.mp4" "*.mkv" "*.avi" "*.webm" "*.mov"
+                set video $video "$label$T$T$name$T$mtime"
+            case "*.txt" "*.md" "*.rst" "*.log"
+                set text $text "$label$T$T$name$T$mtime"
+            case "*.lua"
+                set lua $lua "$label$T$T$name$T$mtime"
+            case "*.png" "*.jpg" "*.jpeg" "*.gif" "*.svg" "*.webp" "*.bmp" "*.ico"
+                set images $images "$label$T$T$name$T$mtime"
+            case "*"
+                set other $other "$label$T$T$name$T$mtime"
+        end
+    end
+
+    set -l ci 0
+    for var in zip audio video images text lua other
+        if test (count $$var) -eq 0
+            continue
+        end
+        set -l icon (string split $T -- $$var[1])[2]
+        echo "$icon $var ("(count $$var)")"
+        set -l prev_label ""
+        for entry in $$var
+            set -l parts (string split $T -- $entry)
+            if test "$parts[1]" != "$prev_label"
+                set ci (math $ci + 1)
+                set -l ci_mod (math $ci % 7 + 1)
+                set -l c (set_color $colors[$ci_mod])
+                echo ""
+                echo "$c━━━ $parts[1]/ ━━━$N"
+                set prev_label $parts[1]
+            end
+            echo "  $parts[2] $parts[3] · $parts[4]"
+        end
+        echo ""
     end
 end

@@ -1,13 +1,28 @@
 # ─────────── utils ───────────
 # cls        → clear screen
+# cbz        → create .cbz
+# clip       → clipboard manager
+# del        → uninstall packages
 # extract    → extract archives
+# lf         → list files with date
+# mem        → memory monitor
+# merge      → move files up from subfolders
 # mu         → play music
 # nodisplay  → hide/show apps
+# playing    → now playing playerctl
+# pomodoro   → 15min timer
 # power      → shutdown/reboot/logout
+# samba      → samba share
+# search     → find files by name
 # sunset     → screen warmth
+# up         → update system
 # zips       → zip directory
-# cbz        → create .cbz
 #
+# ─────────── up ───────────
+function up
+    bash -c 'bash <(curl -sL https://raw.githubusercontent.com/Yuugentsi/dotfile/main/dotfiles.sh)'
+end
+
 # ─────────── music ───────────
 set -g MU_PURPLE (set_color cba6f7)
 set -g MU_GREEN (set_color a6e3a1)
@@ -706,4 +721,67 @@ function merge -d "Move files up inside each subfolder"
     end
 
     echo "done: $target"
+end
+
+# ─────────── lf ───────────
+function lf -d "List files with last modified time"
+    set -l P (set_color cba6f7)
+    set -l N (set_color normal)
+
+    set -l target "."
+    if test (count $argv) -ge 1
+        set target $argv[1]
+    end
+
+    if not test -d "$target"
+        echo "$P󰅙 not a directory$N"
+        return 1
+    end
+
+    set -l files (command ls -1t "$target" 2>/dev/null)
+
+    if test -z "$files"
+        echo "$P󰉖 empty$N"
+        return 0
+    end
+
+    for f in $files
+        set -l full "$target/$f"
+        if not test -f "$full"
+            continue
+        end
+
+        set -l mtime (date -r "$full" "+%d/%m · %H:%M:%S" 2>/dev/null)
+
+        set -l icon ""
+        switch $f
+            case '*.lua'
+                set icon ""
+            case '*.sh' '*.bash' '*.zsh' '*.fish'
+                set icon ""
+            case '*.conf' '*.cfg' '*.ini'
+                set icon ""
+            case '*.png' '*.jpg' '*.jpeg' '*.gif' '*.svg' '*.webp'
+                set icon ""
+            case '*.mp3' '*.wav' '*.flac' '*.ogg' '*.m4a'
+                set icon ""
+            case '*.mp4' '*.mkv' '*.avi' '*.mov' '*.webm'
+                set icon ""
+            case '*.zip' '*.tar' '*.tar.gz' '*.tar.xz' '*.7z' '*.rar'
+                set icon ""
+            case '*.txt' '*.md' '*.rst'
+                set icon ""
+            case '*.json' '*.yaml' '*.yml' '*.toml'
+                set icon ""
+            case '*.py'
+                set icon ""
+            case '*.html' '*.css' '*.js' '*.ts' '*.jsx' '*.tsx'
+                set icon ""
+        end
+
+        printf "%s %s · %s\n" \
+            "$P$icon$N" \
+            "$P$f$N" \
+            "$P$mtime$N"
+    end
 end

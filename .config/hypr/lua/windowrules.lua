@@ -134,10 +134,10 @@ hl.window_rule({
 -- ----- telegram -----
 hl.window_rule({
     name        = "telegram-file-chooser",
-    match       = { class = "Telegram", title = "(Choose an image|Choose Files|Choose download path|Save Audio File|Save voice message|Save Video|Save File|Save Image)" },
+    match       = { class = "org.telegram.desktop", title = "(Choose an image|Choose Files|Choose download path|Save Audio File|Save voice message|Save Video|Save File|Save Image)" },
     float       = true,
     center      = true,
-    size        = "850 600",
+    size        = "780 560",
     opacity     = "1.0 override 1.0 override",
     border_size = 0,
 })

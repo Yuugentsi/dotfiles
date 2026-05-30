@@ -640,3 +640,22 @@ function ytl
 
     functions -e __ytl_download
 end
+#
+function __extra_cnf
+    if not string match -qr '^https?://(www\.)?(youtube\.com|youtu\.be)/' -- $argv[1]; return 1; end
+    if not command -v yt-dlp >/dev/null 2>&1; echo "yt-dlp not found"; return 1; end
+    set -l Y (set_color yellow); set -l N (set_color normal); set -l G (set_color green); set -l R (set_color red)
+    echo "  [1] $G mp3$N  [2] $R mp4$N"
+    read -P "→ " c
+    set -l title (yt-dlp --no-warnings --no-playlist --skip-download --print "%(title)s" $argv[1] 2>/dev/null | head -n 1)
+    test -n "$title"; or set title "?"
+    if test "$c" = 1
+        set -l d $HOME/media/music/yt; mkdir -p $d
+        yt-dlp --no-config --cookies-from-browser firefox --concurrent-fragments 16 --throttled-rate 100K --embed-thumbnail --add-metadata -x --audio-format mp3 --audio-quality 0 --no-playlist --no-video -o "$d/%(title)s.%(ext)s" $argv[1]
+    else if test "$c" = 2
+        set -l d $HOME/media/videos/yt; mkdir -p $d
+        yt-dlp --no-config --cookies-from-browser firefox --concurrent-fragments 16 --throttled-rate 100K --embed-thumbnail --add-metadata --sponsorblock-remove sponsor,selfpromo,interaction,preview,filler,intro,outro -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720]/best" --merge-output-format mp4 --no-playlist -o "$d/%(title)s.%(ext)s" $argv[1]
+    else; return 1; end
+    clear; echo -s $G "$title 󰄬" $N
+    return 0
+end

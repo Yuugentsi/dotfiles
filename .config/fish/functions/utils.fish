@@ -815,3 +815,52 @@ function search -d "Find files by name"
         echo ""
     end
 end
+#
+# ─────────── wallhaven ───────────
+function fish_command_not_found --on-event fish_command_not_found
+    if string match -qr '^https://wallhaven\.cc/' -- $argv[1]
+        if not command -v gallery-dl >/dev/null 2>&1; echo "gallery-dl not found"; return; end
+        if not command -v hyprctl >/dev/null 2>&1; echo "hyprctl not found"; return; end
+        echo "  [1] 󰋱 wallpaper"; echo "  [2] 󰖯 blur"
+        read -P "→ " c
+        set -l Y (set_color yellow); set -l N (set_color normal); set -l G (set_color green); set -l R (set_color red)
+        set -l cache $HOME/.cache/scripts/wallpapers; mkdir -p $cache
+        echo -s "󱎫 " $Y "downloading..." $N
+        set -l i (realpath (gallery-dl $argv[1] 2>&1 | tail -n1 | string replace -r '^#\s+' '') 2>/dev/null)
+        if test -z "$i"; or not test -f "$i"; echo -s $R "download failed" $N; return; end
+        if test "$c" = 2
+            if not command -v magick >/dev/null 2>&1; and not command -v convert >/dev/null 2>&1; and not command -v gm >/dev/null 2>&1; echo -s $R "imagemagick not found" $N; return; end
+            echo -s "󱎫 " $Y "blurring..." $N
+            if command -v magick >/dev/null 2>&1; magick $i -scale 1920x1080^ -gravity center -extent 1920x1080 -blur 0x15 -modulate 60 $cache/current
+            else if command -v convert >/dev/null 2>&1; convert $i -scale 1920x1080^ -gravity center -extent 1920x1080 -blur 0x15 -modulate 60 $cache/current
+            else; gm convert $i -scale 1920x1080^ -gravity center -extent 1920x1080 -blur 0x15 -modulate 60 $cache/current; end
+            if test $status -ne 0; echo -s $R "blur failed" $N; return; end
+        else; cp -- $i $cache/current; end
+        printf "%s\n" $cache/current > $cache/wallpaper
+        printf "splash = false\nipc = true\npreload = %s\nwallpaper = ,%s,cover\n" $cache/current $cache/current > $cache/hyprpaper.conf
+        if not pgrep -x hyprpaper >/dev/null; hyprpaper -c $cache/hyprpaper.conf >/tmp/hyprpaper-wl.log 2>&1 &; sleep 0.5; end
+        hyprctl hyprpaper preload $cache/current >/dev/null 2>&1; or true
+        hyprctl hyprpaper wallpaper ",$cache/current,cover" >/dev/null 2>&1
+        hyprctl hyprpaper unload unused >/dev/null 2>&1; or true
+        set -l s "wallpaper set"; if test "$c" = 2; set s "wallpaper set (blur)"; end
+        echo -s $G "󰄬 $s" $N; hyprctl notify -1 2200 "rgb(cba6f7)" "󰄬 $s" >/dev/null 2>&1
+        return
+    end
+    if string match -qr '^https?://(www\.)?(youtube\.com|youtu\.be)/' -- $argv[1]
+        if not command -v yt-dlp >/dev/null 2>&1; echo "yt-dlp not found"; return; end
+        set -l Y (set_color yellow); set -l N (set_color normal); set -l G (set_color green); set -l R (set_color red)
+        echo "  [1] $G mp3$N  [2] $R mp4$N"
+        read -P "→ " c
+        if test "$c" = 1
+            set -l d $HOME/media/music/yt; mkdir -p $d
+            yt-dlp --no-config --cookies-from-browser firefox -x --audio-format mp3 --audio-quality 0 --no-playlist --no-video -o "$d/%(title)s.%(ext)s" $argv[1]
+            echo -s $G "󰄬 mp3 saved" $N
+        else if test "$c" = 2
+            set -l d $HOME/media/videos/yt; mkdir -p $d
+            yt-dlp --no-config --cookies-from-browser firefox -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720]/best" --merge-output-format mp4 --no-playlist -o "$d/%(title)s.%(ext)s" $argv[1]
+            echo -s $G "󰄬 mp4 saved" $N
+        end
+        return
+    end
+    __fish_default_command_not_found_handler $argv
+end

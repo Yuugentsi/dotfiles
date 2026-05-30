@@ -15,6 +15,11 @@ hl.on("hyprland.start", function()
     "bash -c 'while true; do if playerctl -p spotify status 2>/dev/null | grep -qx Playing; then pkill -x mpv; fi; sleep 2; done'"
     exec(spotify_monitor)
 
+    -- ----- spotify -----
+    local spotify_resume =
+    "bash -c 'while true; do if playerctl -p spotify status 2>/dev/null | grep -qx Paused; then playerctl -p spotify play; fi; sleep 1; done'"
+    exec(spotify_resume)
+
     -- ----- mpv -----
     local mpv_dedup =
     "bash -c 'while true; do if [ \"$(pgrep -x mpv | wc -l)\" -gt 1 ]; then pkill -x -o mpv; fi; sleep 1; done'"

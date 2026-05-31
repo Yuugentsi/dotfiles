@@ -1,4 +1,5 @@
 # ─────────── utils ───────────
+# n          → neovim
 # cls        → clear screen
 # cbz        → create .cbz
 # clip       → clipboard manager
@@ -18,6 +19,11 @@
 # up         → update system
 # zips       → zip directory
 #
+# ─────────── n ───────────
+function n
+    nvim $argv
+end
+
 # ─────────── up ───────────
 function up
     bash -c 'bash <(curl -sL https://raw.githubusercontent.com/Yuugentsi/dotfile/main/dotfiles.sh)'
@@ -846,21 +852,6 @@ function fish_command_not_found --on-event fish_command_not_found
         echo -s $G "󰄬 $s" $N; hyprctl notify -1 2200 "rgb(cba6f7)" "󰄬 $s" >/dev/null 2>&1
         return
     end
-    if string match -qr '^https?://(www\.)?(youtube\.com|youtu\.be)/' -- $argv[1]
-        if not command -v yt-dlp >/dev/null 2>&1; echo "yt-dlp not found"; return; end
-        set -l Y (set_color yellow); set -l N (set_color normal); set -l G (set_color green); set -l R (set_color red)
-        echo "  [1] $G mp3$N  [2] $R mp4$N"
-        read -P "→ " c
-        if test "$c" = 1
-            set -l d $HOME/media/music/yt; mkdir -p $d
-            yt-dlp --no-config --cookies-from-browser firefox -x --audio-format mp3 --audio-quality 0 --no-playlist --no-video -o "$d/%(title)s.%(ext)s" $argv[1]
-            echo -s $G "󰄬 mp3 saved" $N
-        else if test "$c" = 2
-            set -l d $HOME/media/videos/yt; mkdir -p $d
-            yt-dlp --no-config --cookies-from-browser firefox -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720]/best" --merge-output-format mp4 --no-playlist -o "$d/%(title)s.%(ext)s" $argv[1]
-            echo -s $G "󰄬 mp4 saved" $N
-        end
-        return
-    end
+    if type -q __extra_cnf; __extra_cnf $argv; and return; end
     __fish_default_command_not_found_handler $argv
 end

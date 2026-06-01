@@ -659,8 +659,4 @@ function __extra_cnf
     clear; echo -s $G "$title 󰄬" $N
     return 0
 end
-#
-function fish_command_not_found --on-event fish_command_not_found
-    if type -q __extra_cnf; __extra_cnf $argv; and return; end
-    __fish_default_command_not_found_handler $argv
-end
+

@@ -1,14 +1,16 @@
 # ─────────── utils ───────────
-# n          → neovim
-# cls        → clear screen
 # cbz        → create .cbz
+# clients    → hyprctl clients
 # clip       → clipboard manager
+# cls        → clear screen
 # del        → uninstall packages
 # extract    → extract archives
+# zips       → zip directory
 # lf         → list files with date
 # mem        → memory monitor
 # merge      → move files up from subfolders
 # mu         → play music
+# n          → neovim
 # nodisplay  → hide/show apps
 # playing    → now playing playerctl
 # pomodoro   → 15min timer
@@ -17,16 +19,10 @@
 # search     → find files by name
 # sunset     → screen warmth
 # up         → update system
-# zips       → zip directory
 #
 # ─────────── n ───────────
-function n
+function n -d "neovim"
     nvim $argv
-end
-
-# ─────────── up ───────────
-function up
-    bash -c 'bash <(curl -sL https://raw.githubusercontent.com/Yuugentsi/dotfile/main/dotfiles.sh)'
 end
 
 # ─────────── music ───────────
@@ -36,7 +32,7 @@ set -g MU_BLUE (set_color 89b4fa)
 set -g MU_DIM (set_color brblack)
 set -g MU_RESET (set_color normal)
 
-function mu
+function mu -d "play music"
     pkill -9 mpv 2>/dev/null
     sleep 0.1
     clear
@@ -89,7 +85,7 @@ function mu
 end
 
 # ─────────── power ───────────
-function power -d "Shutdown, reboot or logout"
+function power -d "power menu"
     set -l R (set_color red)
     set -l Y (set_color yellow)
     set -l P (set_color cba6f7)
@@ -116,7 +112,7 @@ function power -d "Shutdown, reboot or logout"
 end
 
 # ─────────── sunset ───────────
-function sunset
+function sunset -d "hyprsunset"
     if not pgrep -x hyprsunset >/dev/null
         hyprsunset >/dev/null 2>&1 &
         disown $last_pid
@@ -151,7 +147,7 @@ end
 # ─────────── nodisplay ───────────
 # nodisplay on
 # nodisplay off
-function nodisplay -d "Hide or show desktop entries"
+function nodisplay -d "hide desktop"
     set -l apps \
         avahi-discover.desktop bssh.desktop bvnc.desktop \
         xfce4-about.desktop qv4l2.desktop qvidcap.desktop \
@@ -196,7 +192,7 @@ end
 # extract
 # zips
 # cbz
-function extract
+function extract -d "extract archives"
     if not command -v unzip >/dev/null 2>&1
         sudo pacman -S --noconfirm unzip >/dev/null 2>&1
     end
@@ -227,7 +223,7 @@ function extract
     end
 end
 
-function zips
+function zips -d "zip directory"
     if not command -v zip >/dev/null 2>&1
         sudo pacman -S --noconfirm zip >/dev/null 2>&1
     end
@@ -252,7 +248,7 @@ function zips
     end
 end
 
-function cbz
+function cbz -d "create cbz"
     if not command -v zip >/dev/null 2>&1
         sudo pacman -S --noconfirm zip >/dev/null 2>&1
     end
@@ -278,7 +274,7 @@ function cbz
 end
 
 # ─────────── playing ───────────
-function playing
+function playing -d "now playing"
     if not command -q playerctl
         echo "playerctl not installed"
         return 1
@@ -377,7 +373,7 @@ function playing
 end
 
 # ─────────── samba ───────────
-function samba -d "samba"
+function samba -d "samba share"
     sudo -v >/dev/null 2>&1
 
     while true
@@ -456,7 +452,7 @@ function samba -d "samba"
     end
 end
 # ─────────── clip ───────────
-function clip
+function clip -d "clipboard manager"
     switch "$argv[1]"
         case clear
             cliphist wipe
@@ -553,7 +549,7 @@ function clip
     end
 end
 # ─────────── mem ───────────
-function mem
+function mem -d "memory"
     set -l P (set_color cba6f7)
     set -l G (set_color a6e3a1)
     set -l R (set_color f38ba8)
@@ -595,7 +591,7 @@ function mem
     end
 end
 # ─────────── del ───────────
-function del
+function del -d "remove packages"
     set -l sel (pacman -Qq | fzf \
         --exact \
         --prompt="󰛗 del > " \
@@ -613,43 +609,105 @@ function del
     end
 end
 # ─────────── pomodoro ───────────
-function pomodoro
+function pomodoro -d "pomodoro"
+    set -l total 1500
+    if test $total -ge 60
+        set -l m (math -s0 "$total / 60")
+        set -l label "$m"m
+    else
+        set -l label "$total"s
+    end
+
+    if set -q argv[1]; and test "$argv[1]" = "rm"
+        rm -f /tmp/pomodoro
+        echo "pomodoro cancelled"
+        return
+    end
+
     set -l file /tmp/pomodoro
+    set -q POMODORO_LOG; or set POMODORO_LOG "$HOME/media/documents"
+    set -l logdir $POMODORO_LOG
 
     if test -e $file
         set -l end (cat $file)
         set -l now (date '+%s')
         set -l left (math -s0 "$end - $now")
-        set -l m (math -s0 "$left / 60")
-        set -l s (math -s0 "$left % 60")
-        set -l total 900
-        set -l done (math -s0 "$total - $left")
-        set -l pct (math -s0 "$done * 100 / $total")
-        set -l width 30
-        set -l filled (math -s0 "$pct * $width / 100")
-        set -l bar ""
-        for i in (seq 1 $width)
-            if test $i -le $filled
-                set bar "$bar█"
-            else
-                set bar "$bar░"
-            end
+
+        if test $left -gt $total
+            rm $file
+            set -l end (math -s0 (date '+%s') + $total)
+            echo $end > $file
+            set -l start (date '+%H:%M:%S')
+            set -l endf (date -d "@$end" '+%H:%M:%S')
+            echo "󰔚 $start - $endf - 󰔚 $label"
+            return
         end
+
+        set -l start_ts (math "$end - $total")
+        set -l start_f (date -d "@$start_ts" '+%H:%M:%S')
+        set -l end_f (date -d "@$end" '+%H:%M:%S')
+
         if test $left -gt 0
-            echo "$bar $pct% — $m:$s remaining"
+            clear
+            set -l done (math -s0 "$total - $left")
+            set -l pct (math -s0 "$done * 100 / $total")
+            set -l width 30
+            set -l filled (math -s0 "$pct * $width / 100")
+            set -l bar ""
+            for i in (seq $width)
+                if test $i -le $filled
+                    set bar "$bar█"
+                else
+                    set bar "$bar░"
+                end
+            end
+
+            echo "󰔚 $start_f - $end_f - 󰔚 $left"s
+            hyprctl notify 5 4000 "rgb(cba6f7)" "fontsize:18 󰔚  $start_f - $end_f - $left"s >/dev/null 2>&1
+            echo "$bar $pct%"
         else
-            echo "pomodoro done"
+            echo "󰔚  pomodoro"
+            hyprctl notify 5 4000 "rgb(cba6f7)" "fontsize:18 󰔚  pomodoro" >/dev/null 2>&1
+
+            mkdir -p $logdir
+            set -l bar ""
+            for i in (seq 30)
+                set bar "$bar█"
+            end
+            echo "󰔚 $start_f - $end_f" >> $logdir/pomodoro.txt
+            echo "$bar 100%" >> $logdir/pomodoro.txt
+            echo "-------------------------------" >> $logdir/pomodoro.txt
             rm $file
         end
     else
-        set -l end (math -s0 (date '+%s') + 900)
+        set -l end (math -s0 (date '+%s') + $total)
         echo $end > $file
-        echo "pomodoro started — 15min"
+        set -l start (date '+%H:%M:%S')
+        set -l endf (date -d "@$end" '+%H:%M:%S')
+        hyprctl notify 5 4000 "rgb(cba6f7)" "fontsize:18 󰔚  $start - $endf" >/dev/null 2>&1
+        nohup fish -c "
+            sleep $total
+            if test -f $file
+                set -l end (cat $file)
+                set -l start_ts (math \"\$end - $total\")
+                set -l start_f (date -d @\$start_ts '+%H:%M:%S')
+                set -l end_f (date -d @\$end '+%H:%M:%S')
+                set -l bar ''
+                for i in (seq 30); set bar \"\$bar█\"; end
+                mkdir -p $logdir
+                echo \"󰔚 \$start_f - \$end_f\" >> $logdir/pomodoro.txt
+                echo \"\$bar 100%\" >> $logdir/pomodoro.txt
+                echo ------------------------------- >> $logdir/pomodoro.txt
+                hyprctl notify 5 4000 'rgb(cba6f7)' 'fontsize:18 󰔚  pomodoro'
+                rm -f $file
+            end
+        " >/dev/null 2>&1 &
+        disown
+        echo "󰔚 $start - $endf - 󰔚 $label"
     end
 end
 # ─────────── merge ───────────
-
-function merge -d "Move files up inside each subfolder"
+function merge -d "merge folders"
     set -l target (string trim -r -c '/' -- $argv[1])
     if test -z "$target"
         set target (pwd)
@@ -675,7 +733,7 @@ function merge -d "Move files up inside each subfolder"
 end
 
 # ─────────── lf ───────────
-function lf -d "List files with last modified time"
+function lf -d "list files"
     set -l N (set_color normal)
     set -l P (set_color cba6f7)
 
@@ -702,10 +760,12 @@ function lf -d "List files with last modified time"
             continue
         end
 
-        set -l mtime (date -r "$full" "+%d/%m · %H:%M:%S" 2>/dev/null)
+        set -l mdate (date -r "$full" "+%d/%m" 2>/dev/null)
+        set -l mtime (date -r "$full" "+%H:%M:%S" 2>/dev/null)
+        set -l lines (wc -l < "$full" 2>/dev/null | string trim)
 
         set -l c $P
-        set -l icon ""
+        set -l icon ""
         switch $f
             case '*.lua'
                 set icon ""
@@ -742,15 +802,17 @@ function lf -d "List files with last modified time"
                 set c (set_color fab387)
         end
 
-        printf "%s %s · %s\n" \
+        printf "%s %s:%s · %s  · %s\n" \
             "$c$icon$N" \
             "$c$f$N" \
+            "$c$lines$N" \
+            "$c$mdate$N" \
             "$c$mtime$N"
     end
 end
 
 # ─────────── search ───────────
-function search -d "Find files by name"
+function search -d "find files"
     set -e zip audio video images text lua other
 
     if test (count $argv) -eq 0
@@ -854,4 +916,120 @@ function fish_command_not_found --on-event fish_command_not_found
     end
     if type -q __extra_cnf; __extra_cnf $argv; and return; end
     __fish_default_command_not_found_handler $argv
+end
+
+# ─────────── clients ───────────
+function clients -d "hyprctl clients"
+    clear && hyprctl clients | python3 -c '
+import sys, re
+from collections import defaultdict
+
+def c(n):
+    return f"\033[38;5;{n}m"
+
+def vlen(s):
+    return len(re.sub(r"\033\[[0-9;]*m", "", s))
+NN = "\033[0m"
+
+PALETTE = [117, 120, 222, 140, 110, 215, 150, 175, 117, 120, 222]
+
+APP_COLORS = {
+    "spotify":      82,
+    "librewolf":    39,
+    "kitty":        206,
+    "dev.zed.Zed": 221,
+    "org.telegram.desktop": 75,
+}
+
+PAIRS = [
+    ("mapped","hidden"),("visible","acceptsInput"),("at","size"),
+    ("workspace","floating"),("monitor","class"),
+    ("xwayland","pinned"),("fullscreen","fullscreenClient"),
+    ("overFullscreen","grouped"),("focusHistoryID","inhibitingIdle"),
+    ("contentType","stableID"),
+]
+
+SINGLE = ["swallowing"]
+SKIP = {"tags","xdgTag","xdgDescription"}
+
+windows = []
+
+for b in sys.stdin.read().strip().split("\n\n"):
+    lines = b.strip().split("\n")
+    if not lines: continue
+    title = re.search(r"-> (.+):$", lines[0])
+    title = title.group(1) if title else ""
+
+    f = {}
+    for l in lines[1:]:
+        m = re.match(r"\s*([a-zA-Z]+):\s*(.*)", l)
+        if m: f[m.group(1)] = m.group(2)
+
+    ws = f.get("workspace", "0")
+    ws_num = int(re.search(r"\d+", ws).group()) if re.search(r"\d+", ws) else 0
+    windows.append((ws_num, title, f))
+
+windows.sort(key=lambda x: x[0])
+
+by_ws = defaultdict(list)
+for ws_num, title, f in windows:
+    by_ws[ws_num].append((title, f))
+
+for ws_num in sorted(by_ws.keys()):
+    ws_label = f" Workspace {ws_num} "
+    side = (40 - len(ws_label)) // 2
+    rest = 40 - len(ws_label) - side
+    print(f"{c(240)}" + "\u2501" * side + f"\033[1m{ws_label}{c(240)}" + "\u2501" * rest + f"{NN}")
+
+    for title, f in by_ws[ws_num]:
+
+        cls = f.get("class", "")
+        ac = APP_COLORS.get(cls, 44)
+        sz = f.get("size", "").split(",")
+        w, h = sz[0], sz[1] if len(sz) > 1 else ""
+        print(f"{c(ac)}\u250a {cls}  {c(240)}\u00b7{NN}  {w}\u00d7{h}{NN}")
+        print(f"{c(ac)}\u250a {title}{NN}")
+        ic = f.get("initialClass","")
+        pidi = f.get("pid","")
+        print(f"initialClass: {ic}")
+        print(f"pid: {pidi}")
+
+        items = []
+        for a, b in PAIRS:
+            for k in (a, b):
+                v = f.get(k, "")
+                if k in SKIP and not v: continue
+                items.append((k, v))
+        for k in SINGLE:
+            v = f.get(k, "")
+            if k in SKIP and not v: continue
+            items.append((k, v))
+
+        def sort_key(item):
+            k, v = item
+            if v == "0":               return (2, k)
+            if v.replace("-","").isdigit(): return (1, k)
+            return (0, k)
+
+        items.sort(key=sort_key)
+
+        for i in range(0, len(items), 2):
+            col = PALETTE[(i // 2) % len(PALETTE)]
+            a, va = items[i]
+            if i + 1 < len(items):
+                b, vb = items[i + 1]
+                left = f"{c(col)}{a}: \033[1m{va}\033[0m{NN}"
+                right = f"{c(col)}{b}: \033[1m{vb}\033[0m{NN}"
+                if vlen(left) > 42 or vlen(right) > 42:
+                    print(left)
+                    print(right)
+                else:
+                    print(f"{left:<42} {c(col)}\u2502{NN} {right}")
+            else:
+                print(f"{c(col)}{a}: \033[1m{va}\033[0m{NN}")
+
+        print()
+
+    print()
+'
 end

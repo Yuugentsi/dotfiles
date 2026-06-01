@@ -1033,3 +1033,174 @@ for ws_num in sorted(by_ws.keys()):
     print()
 '
 end
+# ─────────── word───────────
+function word -d "word search"
+    set -e code markup text other
+
+    set -l pattern
+    if test (count $argv) -ge 1
+        set pattern (string join ' ' $argv)
+    else
+        echo "Usage: word <pattern>"
+        echo "Or:    word (then type pattern freely)"
+        read -P "pattern: " -l pattern
+        if test -z "$pattern"
+            return 1
+        end
+    end
+    set -l base "$HOME"
+
+    if not test -d "$base"
+        echo "Directory not found: $base"
+        return 1
+    end
+
+    set -l N (set_color normal)
+    set -l T (printf '\t')
+    set -l colors cba6f7 f5c2e7 fab387 f9e2af a6e3a1 89b4fa 89dceb
+
+    set -l skip .git/ .cache/ node_modules/ .venv/ venv/ __pycache__/ .cargo/ .rustup/ .var/ mozilla/ BraveSoftware/ .local/ .npm/ .ssh/ .wine/ .android/ BACKUP/
+
+    set -l matches
+    if command -v rg >/dev/null 2>&1
+        set -l globs
+        for dir in $skip
+            set globs $globs -g "!$dir"
+        end
+        set matches (rg -ni --no-heading $globs -- "$pattern" "$base" 2>/dev/null)
+    else
+        set matches (grep -rni "$pattern" "$base" 2>/dev/null | string match -v -r '/\.(git|cache|npm|ssh|wine|android|local|cargo|rustup|var)/|/node_modules/|/\.venv/|/venv/|/__pycache__/|/mozilla/|/BraveSoftware/|/BACKUP/')
+    end
+
+    if test -z "$matches"
+        return
+    end
+
+    for line in $matches
+        set -l parts (string split -m 2 -- ':' "$line")
+        set -l filepath $parts[1]
+        set -l lineno $parts[2]
+        set -l content $parts[3]
+
+        set -l dir (dirname "$filepath")
+        set -l name (basename "$filepath")
+
+        switch $filepath
+            case '*.lua' '*.py' '*.sh' '*.bash' '*.zsh' '*.fish' '*.js' '*.ts' '*.jsx' '*.tsx' '*.go' '*.rs' '*.c' '*.h' '*.cpp' '*.hpp' '*.java' '*.kts' '*.swift' '*.rb' '*.php' '*.pl' '*.r' '*.m' '*.mm'
+                set code $code "$dir$T$T$name:$lineno$T$content"
+            case '*.html' '*.css' '*.scss' '*.less' '*.xml' '*.json' '*.yaml' '*.yml' '*.toml' '*.md' '*.rst' '*.tex'
+                set markup $markup "$dir$T$T$name:$lineno$T$content"
+            case '*.conf' '*.cfg' '*.ini' '*.txt' '*.log' '*.env' '*.gitignore' '*.editorconfig'
+                set text $text "$dir$T$T$name:$lineno$T$content"
+            case '*'
+                set other $other "$dir$T$T$name:$lineno$T$content"
+        end
+    end
+
+    set -l ci 0
+    for var in code markup text other
+        if test (count $$var) -eq 0
+            continue
+        end
+        set -l first_parts (string split $T -- $$var[1])
+        echo "$first_parts[2] $var ("(count $$var)")"
+        set -l prev_dir ""
+        for entry in $$var
+            set -l p (string split $T -- $entry)
+            if test "$p[1]" != "$prev_dir"
+                set ci (math $ci + 1)
+                set -l ci_mod (math $ci % 7 + 1)
+                set -l c (set_color $colors[$ci_mod])
+                echo ""
+                echo "$c━━━ $p[1]/ ━━━$N"
+                set prev_dir $p[1]
+            end
+            echo "  $p[2] $p[3] · $p[4]"
+        end
+        echo ""
+    end
+end
+# ─────────── lrc ───────────
+function lrc --description 'embed lrc lyrics'
+    if not python3 -c "import mutagen" 2>/dev/null
+        echo "python-mutagen not installed"
+        return 1
+    end
+
+    set -l mp3s (find "$PWD" -maxdepth 1 -type f -name "*.mp3" | sort)
+    if test (count $mp3s) -eq 0
+        echo "no .mp3 files in $PWD"
+        return 1
+    end
+
+    echo "  lrc — embed lyrics into mp3 files"
+    echo "  paste lrc → Ctrl+D save  |  D skip"
+    echo ""
+
+    echo "files:"
+    for mp3 in $mp3s
+        set -l name (basename "$mp3")
+        python3 -c '
+import sys
+from mutagen.id3 import ID3
+f = sys.argv[1]
+try:
+    t = ID3(f)
+    if t.getall("USLT"): sys.exit(0)
+    for k in t.keys():
+        if "USLT" in k.upper() or "LYRICS" in k.upper():
+            sys.exit(0)
+except: pass
+sys.exit(1)
+' "$mp3" 2>/dev/null
+        if test $status -eq 0
+            echo "  ✓ $name"
+        else
+            echo "    $name"
+        end
+    end
+    echo ""
+
+    for mp3 in $mp3s
+        set -l name (basename "$mp3")
+        echo "→ $name"
+        echo "paste lrc (Ctrl+D save, D skip):"
+
+        set -l tmp (mktemp)
+        while read -l line
+            if test "$line" = "D"
+                break
+            end
+            echo "$line" >> "$tmp"
+        end
+
+        if not test -s "$tmp"
+            rm -f "$tmp"
+            echo "skipped"
+            continue
+        end
+
+        python3 -c '
+import sys
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3, USLT
+
+f = sys.argv[1]
+with open(sys.argv[2]) as fh:
+    lyrics = fh.read()
+
+tags = ID3(f)
+tags.add(USLT(encoding=3, lang="eng", desc="", text=lyrics))
+tags.save()
+' "$mp3" "$tmp" 2>/dev/null
+        rm -f "$tmp"
+
+        if test $status -eq 0
+            echo "✓ done"
+        else
+            echo "✗ failed"
+        end
+    end
+
+    echo "all done"
+end

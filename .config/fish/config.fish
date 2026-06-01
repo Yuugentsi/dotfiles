@@ -53,7 +53,7 @@ function venv
         echo -s $green "󰄬 venv on" $reset
     end
 end
-# ─────────── relp ───────────
+# ─────────── help ───────────
 function h -d "list functions"
     set -l N (set_color normal)
     set -l colors \

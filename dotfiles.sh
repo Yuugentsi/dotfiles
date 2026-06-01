@@ -89,18 +89,6 @@ for d in music video pictures documents; do
     [ -d "$MEDIA/$d" ] || mkdir -p "$MEDIA/$d"
 done
 
-# ─────────── thunar bookmarks ───────────
-echo "󰉏 bookmarks"
-mkdir -p "${HOME}/.config/gtk-3.0"
-cat > "${HOME}/.config/gtk-3.0/bookmarks" <<EOF
-file://${MEDIA}
-file://${MEDIA}/pictures
-file://${MEDIA}/videos
-file://${MEDIA}/documents
-file://${MEDIA}/music
-file://${HOME}/Downloads
-EOF
-
 # ─────────── config ───────────
 TARGET_DIR="${HOME}/.config"
 mkdir -p "$TARGET_DIR"

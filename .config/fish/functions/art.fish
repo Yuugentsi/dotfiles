@@ -381,3 +381,94 @@ function art
     printf "$dim──────────────────────$reset\n"
     printf "$green$bold✓ Done!$reset\n"
 end
+
+
+# ─────────── art mp3───────────
+function artmp3
+    set artist (basename (dirname (pwd)))
+    set album (basename (pwd))
+
+    set ok 0
+    set fail 0
+    set skip 0
+
+    set green (printf '\033[32m')
+    set red (printf '\033[31m')
+    set yellow (printf '\033[33m')
+    set cyan (printf '\033[36m')
+    set reset (printf '\033[0m')
+
+    set ok_list
+    set fail_list
+    set skip_list
+
+    for file in *.mp3 *.flac *.m4a *.wav
+        test -f "$file"; or continue
+
+        set ext (string split -r -m 1 . "$file" | tail -1)
+
+        set title (ffprobe -v quiet -show_entries format_tags=title -of default=noprint_wrappers=1:nokey=1 "file:$file" 2>/dev/null)
+        if test -z "$title"
+            set title (string replace -r '\.[^.]+$' '' "$file")
+        end
+
+        set title (string replace -a '/' '-' "$title")
+        set title (string replace -a ':' '-' "$title")
+        set title (string trim "$title")
+
+        set newname "$title.$ext"
+
+        if test "$file" = "$newname"
+            set skip (math $skip + 1)
+            set skip_list $skip_list "$title"
+            continue
+        end
+
+        ffmpeg -loglevel quiet -y -i "file:$file" \
+            -map 0:a \
+            -c:a copy \
+            -metadata artist="$artist" \
+            -metadata album="$album" \
+            -metadata album_artist="$artist" \
+            ".__tmp.$file"
+
+        if test $status -ne 0
+            ffmpeg -loglevel quiet -y -i "file:$file" \
+                -map 0:a \
+                -c:a libmp3lame -q:a 0 \
+                -metadata artist="$artist" \
+                -metadata album="$album" \
+                -metadata album_artist="$artist" \
+                ".__tmp.$file"
+        end
+
+        if test $status -eq 0
+            mv -f ".__tmp.$file" "$newname"
+            and rm -f "$file"
+            set ok (math $ok + 1)
+            set ok_list $ok_list "$title"
+        else
+            rm -f ".__tmp.$file"
+            set fail (math $fail + 1)
+            set fail_list $fail_list "$title"
+        end
+    end
+
+    echo ""
+    echo "$green✓ OK ($ok)$reset"
+    for t in $ok_list
+        echo "$green$t$reset"
+    end
+
+    echo ""
+    echo "$red✗ FAIL ($fail)$reset"
+    for t in $fail_list
+        echo "$red$t$reset"
+    end
+
+    echo ""
+    echo "$yellow➟ SKIP ($skip)$reset"
+    for t in $skip_list
+        echo "$yellow$t$reset"
+    end
+end

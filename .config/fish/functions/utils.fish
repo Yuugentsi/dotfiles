@@ -566,10 +566,15 @@ function mem -d "memory"
         echo ""
         echo "    Name              Mem     RAM"
         echo "    ─────────────────────────────"
-        ps aux --sort=-%mem | head -6 | tail -5 | awk -v P="$P" -v R="$R" -v N="$N" '{
-            cmd=$11; gsub(/.*\//,"",cmd); gsub(/^-/,"",cmd);
-            mem=$4; rss=$6/1024;
-            if (mem+0 > 5) color=R; else color=P;
+        ps aux | awk 'NR>1 {
+            cmd = $11; gsub(/.*\//,"",cmd); gsub(/^-/,"",cmd);
+            mem[cmd] += $4; rss[cmd] += $6
+        } END {
+            for (c in mem) printf "%.1f %d %s\n", mem[c], rss[c], c
+        }' | sort -k1 -rn | head -5 | awk -v P="$P" -v R="$R" -v N="$N" '{
+            cmd = $3; for(i=4;i<=NF;i++) cmd = cmd " " $i
+            mem = $1; rss = $2/1024
+            color = (mem+0 > 5) ? R : P
             printf "    %s󰘚 %-14s %5.1f%%  %6.0fM%s\n", color, cmd, mem, rss, N
         }'
 
@@ -1033,7 +1038,7 @@ for ws_num in sorted(by_ws.keys()):
     print()
 '
 end
-# ─────────── word───────────
+# ─────────── word ───────────
 function word -d "word search"
     set -e code markup text other
 
@@ -1203,4 +1208,40 @@ tags.save()
     end
 
     echo "all done"
+end
+
+# ─────────── past ───────────
+function past -d "thunar bookmarks"
+    set -l bookmarks_file ~/.config/gtk-3.0/bookmarks
+
+    if test -f "$bookmarks_file"
+        rm -f "$bookmarks_file"
+        echo "bookmarks removed"
+    else
+        set -l home_dir $HOME
+
+        set -l paths \
+            "$home_dir/.config" \
+            "$home_dir/Downloads" \
+            "$home_dir/media" \
+            "$home_dir/media/documents" \
+            "$home_dir/media/music" \
+            "$home_dir/media/pictures" \
+            "$home_dir/media/videos"
+
+        mkdir -p ~/.config/gtk-3.0
+        mkdir -p $paths
+
+        printf '%s\n' \
+            "file://$home_dir/.config/" \
+            "file://$home_dir/Downloads/" \
+            "file://$home_dir/media" \
+            "file://$home_dir/media/documents" \
+            "file://$home_dir/media/music" \
+            "file://$home_dir/media/pictures" \
+            "file://$home_dir/media/videos" \
+            > "$bookmarks_file"
+
+        echo "bookmarks restored"
+    end
 end

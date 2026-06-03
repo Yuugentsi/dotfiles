@@ -3,7 +3,7 @@
 local MOD     = "SUPER"
 local TERM    = "kitty"
 local FM      = "thunar"
-local BROWSER = "librewolf || firefox"
+local BROWSER = "librewolf || firefox || zen-browser"
 local MENU    = "rofi -show drun"
 local EDITOR  = "zeditor"
 
@@ -16,7 +16,7 @@ end
 bind_exec(MOD .. " + Q", TERM)
 bind_exec(MOD .. " + T", FM)
 bind_exec(MOD .. " + F", BROWSER)
-bind_exec("ALT + F", "librewolf --private-window || firefox --private-window")
+bind_exec("ALT + F", "librewolf --private-window || firefox --private-window || zen-browser --private-window")
 bind_exec(MOD .. " + E", MENU)
 bind_exec("ALT + E", EDITOR)
 
@@ -36,11 +36,11 @@ hl.bind("ALT + up", hl.dsp.group.toggle())
 -- -------------------- media --------------------
 -- ----- audio -----
 local vol_mute =
-"bash -c 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; state=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q MUTED && echo \"󰖁\" || echo \"\"); hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(ff3333)\" \"$state\"'"
+"bash -c 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; state=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q MUTED && echo \"󰖁\" || echo \"\"); hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(ff3333)\" \"fontsize:18 $state\"'"
 local vol_down =
-"bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); [ $v -le 30 ] && v=30 || v=$((v-5)); wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(ffaa00)\" \" ${v}%\"'"
+"bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); [ $v -le 15 ] && v=15 || v=$((v-5)); wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(ffaa00)\" \"fontsize:18  ${v}%\"'"
 local vol_up   =
-"bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 90 ] && v=90; wpctl set-volume --limit 0.9 @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(33ff33)\" \"󰕾 ${v}%\"'"
+"bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 80 ] && v=80; wpctl set-volume --limit 0.80 @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(33ff33)\" \"fontsize:18 󰕾 ${v}%\"'"
 
 bind_exec("F6", vol_mute, { repeating = true })
 bind_exec("F7", vol_down, { repeating = true })
@@ -54,18 +54,18 @@ bind_exec("ALT + K", "playerctl next")
 -- -------------------- brightness --------------------
 -- ----- brightnessctl -----
 local brightness_down =
-"bash -c 'v=$(brightnessctl get); max=$(brightnessctl max); current=$((v * 100 / max)); [ $current -le 30 ] && current=30 || current=$((current-5)); brightnessctl set ${current}%; hyprctl dismissnotify 1; [ $current -le 30 ] && icon=\"󰃞\" || { [ $current -le 70 ] && icon=\"󰃟\" || icon=\"󰃠\"; }; hyprctl notify -1 2000 0 \"$icon ${current}%\"'"
+"bash -c 'v=$(brightnessctl get); max=$(brightnessctl max); current=$((v * 100 / max)); [ $current -le 30 ] && current=30 || current=$((current-5)); brightnessctl set ${current}%; hyprctl dismissnotify 1; [ $current -le 30 ] && icon=\"󰃞\" || { [ $current -le 70 ] && icon=\"󰃟\" || icon=\"󰃠\"; }; hyprctl notify -1 2000 0 \"fontsize:18 $icon ${current}%\"'"
 local brightness_up   =
-"bash -c 'v=$(brightnessctl get); max=$(brightnessctl max); current=$((v * 100 / max)); [ $current -ge 90 ] && current=90 || current=$((current+5)); brightnessctl set ${current}%; hyprctl dismissnotify 1; [ $current -le 30 ] && icon=\"󰃞\" || { [ $current -le 70 ] && icon=\"󰃟\" || icon=\"󰃠\"; }; hyprctl notify -1 2000 0 \"$icon ${current}%\"'"
+"bash -c 'v=$(brightnessctl get); max=$(brightnessctl max); current=$((v * 100 / max)); [ $current -ge 90 ] && current=90 || current=$((current+5)); brightnessctl set ${current}%; hyprctl dismissnotify 1; [ $current -le 30 ] && icon=\"󰃞\" || { [ $current -le 70 ] && icon=\"󰃟\" || icon=\"󰃠\"; }; hyprctl notify -1 2000 0 \"fontsize:18 $icon ${current}%\"'"
 
 bind_exec("F2", brightness_down, { repeating = true })
 bind_exec("F3", brightness_up, { repeating = true })
 
 -- ----- hyprsunset -----
 local sunset_down =
-"bash -c 'pgrep -x hyprsunset >/dev/null || hyprsunset & v=$(hyprctl hyprsunset temperature); v=$((v-300)); [ $v -lt 1200 ] && v=1200; hyprctl hyprsunset temperature $v; hyprctl dismissnotify 1; [ $v -le 2000 ] && icon=\"󰃛\" || icon=\"󰃜\"; hyprctl notify -1 2000 0 \"$icon ${v}K\"'"
+"bash -c 'pgrep -x hyprsunset >/dev/null || hyprsunset & v=$(hyprctl hyprsunset temperature); v=$((v-300)); [ $v -lt 1200 ] && v=1200; hyprctl hyprsunset temperature $v; hyprctl dismissnotify 1; [ $v -le 2000 ] && icon=\"󰃛\" || icon=\"󰃜\"; hyprctl notify -1 2000 0 \"fontsize:18 $icon ${v}K\"'"
 local sunset_up   =
-"bash -c 'pgrep -x hyprsunset >/dev/null || hyprsunset & v=$(hyprctl hyprsunset temperature); v=$((v+300)); [ $v -gt 2700 ] && v=2700; hyprctl hyprsunset temperature $v; hyprctl dismissnotify 1; [ $v -le 2000 ] && icon=\"󰃛\" || icon=\"󰃜\"; hyprctl notify -1 2000 0 \"$icon ${v}K\"'"
+"bash -c 'pgrep -x hyprsunset >/dev/null || hyprsunset & v=$(hyprctl hyprsunset temperature); v=$((v+300)); [ $v -gt 2700 ] && v=2700; hyprctl hyprsunset temperature $v; hyprctl dismissnotify 1; [ $v -le 2000 ] && icon=\"󰃛\" || icon=\"󰃜\"; hyprctl notify -1 2000 0 \"fontsize:18 $icon ${v}K\"'"
 
 bind_exec("ALT + F2", sunset_down, { repeating = true })
 bind_exec("ALT + F3", sunset_up, { repeating = true })
@@ -123,6 +123,9 @@ bind_exec("ALT + G", "bash $HOME/.config/hypr/scripts/video.sh")
 bind_exec("SUPER + Escape", "bash $HOME/.config/hypr/scripts/websites.sh")
 bind_exec("SUPER + V", "bash $HOME/.config/hypr/scripts/clipboard.sh")
 bind_exec("ALT + V", "bash $HOME/.config/hypr/scripts/clipboard.sh images")
+
+-- ----- random music (F1) -----
+bind_exec("F1", "bash $HOME/.config/hypr/scripts/play.sh")
 
 -- -------------------- workspace navigation --------------------
 -- ----- navigation -----

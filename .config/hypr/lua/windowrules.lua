@@ -22,15 +22,24 @@ hl.window_rule({ name = "rofi-animation", match = { class = "rofi" }, animation 
 hl.window_rule({ name = "zed-opacity", match = { class = "dev.zed.Zed" }, opacity = "0.90 0.88" })
 hl.window_rule({ name = "firefox-opacity", match = { class = "firefox" }, opacity = "0.82 0.62" })
 hl.window_rule({ name = "spotify-opacity", match = { class = "Spotify" }, opacity = "0.85 0.75" })
-hl.window_rule({ name = "thunar-opacity", match = { class = "thunar" }, opacity = "0.88 0.80" })
+hl.window_rule({ name = "thunar-opacity", match = { class = "thunar" }, opacity = "0.80 0.80" })
 hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.88 0.82" })
 hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.60 0.70" })
---hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.85 0.80" })
+hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.88 0.80" })
 hl.window_rule({ name = "kitty-opacity", match = { class = "kitty" }, opacity = "0.88 0.80" })
 
 -- -------------------- floating apps --------------------
 -- ----- mpv -----
 hl.window_rule({ name = "mpv-float", match = { class = "mpv" }, float = true, size = "370 208" })
+
+-- ----- thunar -----
+hl.window_rule({ name = "thunar-float", match = { class = "thunar" }, float = true, size = "800 600", center = true, border_size = 0 })
+
+-- ----- zed -----
+hl.window_rule({ name = "zed-float", match = { class = "dev.zed.Zed" }, float = true, size = "800 600", center = true, border_size = 0 })
+
+-- ----- telegram -----
+hl.window_rule({ name = "telegram-float", match = { class = "org.telegram.desktop" }, float = true, size = "800 600", center = true, border_size = 0 })
 
 -- ----- viewnior -----
 hl.window_rule({
@@ -63,23 +72,23 @@ hl.window_rule({
 
 -- ----- browser-pip -----
 hl.window_rule({
-    name  = "browser-pip",
-    match = { class = "(librewolf|firefox|zen)", title = "(Picture-in-Picture|Picture-in-picture)" },
-    float = true,
-    pin   = true,
+    name    = "browser-pip",
+    match   = { class = "(librewolf|firefox|zen)", title = "(Picture-in-Picture|Picture-in-picture)" },
+    float   = true,
+    pin     = true,
     opacity = "1.0 1.0",
-    size  = "245 136",
-    move  = "(monitor_w-245) 0",
+    size    = "245 136",
+    move    = "(monitor_w-245) 0",
 })
 
 hl.window_rule({
-    name  = "brave-pip",
-    match = { title = "Picture in picture" },
-    float = true,
-    pin   = true,
+    name    = "brave-pip",
+    match   = { title = "Picture in picture" },
+    float   = true,
+    pin     = true,
     opacity = "1.0 1.0",
-    size  = "245 136",
-    move  = "(monitor_w-245) 0",
+    size    = "245 136",
+    move    = "(monitor_w-245) 0",
 })
 
 -- ----- feh -----

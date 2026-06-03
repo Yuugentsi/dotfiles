@@ -1,153 +1,158 @@
 {
-    "layer": "top",
-    "position": "top",
-    "margin": "4 6 0 6",
+  "layer": "top",
+  "position": "top",
+  "margin": "4 6 0 6",
 
-    "modules-left": ["hyprland/workspaces", "wlr/taskbar"],
-    "modules-center": ["mpris", "custom/stop-music"],
-    "modules-right": ["battery", "backlight", "custom/hyprsunset", "pulseaudio", "network", "clock", "tray", "group/power"],
+  "modules-left": ["hyprland/workspaces", "wlr/taskbar"],
+  "modules-center": ["mpris", "custom/stop-music"],
+  "modules-right": [
+    "battery",
+    "backlight",
+    "custom/hyprsunset",
+    "pulseaudio",
+    "network",
+    "clock",
+    "tray",
+    "group/power",
+  ],
 
-    "tray": {
-        "icon-size": 16,
-        "spacing": 4
+  "tray": {
+    "icon-size": 16,
+    "spacing": 4,
+  },
+
+  "wlr/taskbar": {
+    "format": "{icon}",
+    "icon-size": 14,
+    "tooltip-format": "{title}",
+    "on-click": "activate",
+    "on-click-middle": "close",
+  },
+
+  "hyprland/workspaces": {
+    "format": "{icon}",
+    "format-icons": {
+      "default": "·",
+      "active": "●",
     },
-
-    "wlr/taskbar": {
-        "format": "{icon}",
-        "icon-size": 14,
-        "tooltip-format": "{title}",
-        "on-click": "activate",
-        "on-click-middle": "close"
+    "workspace-taskbar": {
+      "enable": true,
+      "update-active-window": true,
+      "format": "{icon} {title:15}",
+      "icon-size": 14,
     },
+  },
 
-    "hyprland/workspaces": {
-        "format": "{icon}",
-        "format-icons": {
-            "default": "·",
-            "active": "●"
-        },
-        "workspace-taskbar": {
-            "enable": true,
-            "update-active-window": true,
-            "format": "{icon} {title:15}",
-            "icon-size": 14
-        }
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15,
     },
+    "format": "{icon}",
+    "format-icons": ["", "", "", "", ""],
+    "tooltip-format": " {capacity}%",
+    "on-click": "sh -c 'if [ -f /tmp/lowlight_mode ]; then pkill hyprsunset; PREV=$(cat /tmp/lowlight_brightness 2>/dev/null || echo 90); brightnessctl set ${PREV}%; rm /tmp/lowlight_mode /tmp/lowlight_brightness /tmp/hyprsunset_temp; else CUR=$(brightnessctl get); MAX=$(brightnessctl max); PCT=$((CUR*100/MAX)); echo $PCT > /tmp/lowlight_brightness; brightnessctl set 50%; pkill hyprsunset 2>/dev/null; sleep 0.2; echo 1700 > /tmp/hyprsunset_temp; hyprsunset -t 1700 & touch /tmp/lowlight_mode; fi'",
+  },
 
-    "battery": {
-        "states": {
-            "warning": 30,
-            "critical": 15
-        },
-        "format": "{icon}",
-        "format-icons": ["", "", "", "", ""],
-        "tooltip-format": " {capacity}%",
-        "on-click": "sh -c 'if [ -f /tmp/lowlight_mode ]; then pkill hyprsunset; PREV=$(cat /tmp/lowlight_brightness 2>/dev/null || echo 90); brightnessctl set ${PREV}%; rm /tmp/lowlight_mode /tmp/lowlight_brightness /tmp/hyprsunset_temp; else CUR=$(brightnessctl get); MAX=$(brightnessctl max); PCT=$((CUR*100/MAX)); echo $PCT > /tmp/lowlight_brightness; brightnessctl set 50%; pkill hyprsunset 2>/dev/null; sleep 0.2; echo 1700 > /tmp/hyprsunset_temp; hyprsunset -t 1700 & touch /tmp/lowlight_mode; fi'"
+  "pulseaudio": {
+    "format": "{icon}",
+    "format-muted": "",
+    "tooltip-format": "{icon} {volume}%",
+    "scroll-step": 5,
+    "format-icons": {
+      "default": ["", "", ""],
     },
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 90 ] && v=90; wpctl set-volume --limit 0.9 @DEFAULT_AUDIO_SINK@ ${v}%'",
+    "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%'",
+  },
 
-    "pulseaudio": {
-        "format": "{icon}",
-        "format-muted": "",
-        "tooltip-format": "{icon} {volume}%",
-        "scroll-step": 5,
-        "format-icons": {
-            "default": ["", "", ""]
-        },
-        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-        "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 90 ] && v=90; wpctl set-volume --limit 0.9 @DEFAULT_AUDIO_SINK@ ${v}%'",
-        "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%'"
+  "backlight": {
+    "format": "{icon}",
+    "format-icons": ["󰃙", "󰃚", "󰃛", "󰃜", "󰃝", "󰃞", "󰃟", "󰃠"],
+    "tooltip-format": "{icon} {percent}%",
+    "on-scroll-up": "sh -c 'v=$(brightnessctl get); max=$(brightnessctl max); pct=$((v*100/max)); [ $pct -ge 90 ] && pct=90 || pct=$((pct+5)); brightnessctl set ${pct}%'",
+    "on-scroll-down": "sh -c 'v=$(brightnessctl get); max=$(brightnessctl max); pct=$((v*100/max)); [ $pct -gt 30 ] && brightnessctl set 5%- || brightnessctl set 30%'",
+    "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2200 & fi'",
+  },
+
+  "network": {
+    "format-wifi": "{icon}",
+    "format-ethernet": "{icon}",
+    "format-disconnected": "",
+    "format-icons": ["󰤟", "󰤢", "󰤥"],
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)",
+    "tooltip-format-ethernet": "Ethernet",
+    "tooltip-format-disconnected": "Disconnected",
+    "interval": 5,
+    "on-click": "nmcli radio wifi off && sleep 1 && nmcli radio wifi on",
+  },
+
+  "custom/hyprsunset": {
+    "format": "{}",
+    "return-type": "json",
+    "exec": "sh -c 'if pgrep -x hyprsunset > /dev/null; then T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); echo \"{\\\"text\\\":\\\"󰖔\\\",\\\"class\\\":\\\"on\\\",\\\"tooltip\\\":\\\"󰖔 ${T}K\\\"}\"; else echo \"{\\\"text\\\":\\\"\\\",\\\"class\\\":\\\"\\\"}\"; fi'",
+    "tooltip": true,
+    "interval": 0.2,
+    "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2200 & fi'",
+    "on-click-right": "sh -c 'pkill -x hyprsunset 2>/dev/null; sleep 0.3; echo 1700 > /tmp/hyprsunset_temp; hyprsunset -t 1700 &'",
+    "on-scroll-up": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); T=$((T+100)); [ $T -gt 2700 ] && T=2700; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
+    "on-scroll-down": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); T=$((T-100)); [ $T -lt 1600 ] && T=1600; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
+  },
+
+  "custom/stop-music": {
+    "exec": "sh -c 'status=$(playerctl status 2>/dev/null); if [ \"$status\" = \"Playing\" ]; then player=$(playerctl metadata --format \"{{playerName}}\" 2>/dev/null | tr \"[:upper:]\" \"[:lower:]\"); case \"$player\" in spotify*) icon=\"󰓇\"; cls=\"spotify\" ;; mpv*) icon=\"󰐌\"; cls=\"mpv\" ;; firefox*) icon=\"󰈹\"; cls=\"firefox\" ;; *) icon=\"󰎆\"; cls=\"other\" ;; esac; echo \"{\\\"text\\\":\\\"$icon\\\",\\\"class\\\":\\\"$cls\\\"}\"; else echo \"{\\\"text\\\":\\\"\\\",\\\"class\\\":\\\"\\\"}\"; fi'",
+    "return-type": "json",
+    "interval": 1,
+    "tooltip": "Stop music",
+    "on-click": "sh -c 'player=$(playerctl metadata --format \"{{playerName}}\" 2>/dev/null); [ -n \"$player\" ] && pkill -x \"$player\"'",
+  },
+
+  "mpris": {
+    "format": "{title}",
+    "format-paused": "\u23f8 {title}",
+    "tooltip-format": "",
+    "tooltip": true,
+    "interval": 1,
+    "on-click": "sh -c 'playerctl play-pause && sleep 0.15 && len=$(playerctl metadata mpris:length 2>/dev/null) && len=${len:-0} && len=$((len / 1000000)) && time_str=$(printf \"%02d:%02d\" $((len / 60)) $((len % 60))) && artist=$(playerctl metadata --format \"{{artist}}\" 2>/dev/null || echo \"?\") && title=$(playerctl metadata --format \"{{title}}\" 2>/dev/null || echo \"?\") && msg=$(printf \"fontsize:18 %s\\n%s\\n[%s]\" \"$artist\" \"$title\" \"$time_str\") && hyprctl dismissnotify 1 && hyprctl notify -1 2500 \"rgb(ff88cc)\" \"$msg\"'",
+    "on-scroll-up": "sh -c 'now=$(date +%s%N); lock=/tmp/.waybar_mpris_scroll; [ -f $lock ] && old=$(cat $lock) || old=0; delta=$((now-old)); [ $delta -gt 300000000 ] && echo $now > $lock && playerctl previous'",
+    "on-scroll-down": "sh -c 'now=$(date +%s%N); lock=/tmp/.waybar_mpris_scroll; [ -f $lock ] && old=$(cat $lock) || old=0; delta=$((now-old)); [ $delta -gt 300000000 ] && echo $now > $lock && playerctl next'",
+    "smooth-scrolling-threshold": 10,
+  },
+
+  "clock": {
+    "format": "{:%m/%d/%Y \u00b7 %H:%M:%S}",
+    "format-alt": "{:%m/%d/%Y}",
+    "interval": 1,
+    "on-click": "mode",
+    "on-click-right": "bash -c 'killall mpv 2>/dev/null; sleep 0.5; file=$(find ~/media/music/ -type f | shuf -n 1); [ -n \"$file\" ] && mpv --no-video \"$file\" &'",
+  },
+
+  "group/power": {
+    "orientation": "inherit",
+    "drawer": {
+      "transition-duration": 500,
+      "children-class": "not-power",
+      "transition-left-to-right": false,
     },
+    "modules": ["custom/power", "custom/reboot", "custom/logout"],
+  },
 
-    "backlight": {
-        "format": "{icon}",
-        "format-icons": ["󰃙", "󰃚", "󰃛", "󰃜", "󰃝", "󰃞", "󰃟", "󰃠"],
-        "tooltip-format": "{icon} {percent}%",
-        "on-scroll-up": "sh -c 'v=$(brightnessctl get); max=$(brightnessctl max); pct=$((v*100/max)); [ $pct -ge 90 ] && pct=90 || pct=$((pct+5)); brightnessctl set ${pct}%'",
-        "on-scroll-down": "sh -c 'v=$(brightnessctl get); max=$(brightnessctl max); pct=$((v*100/max)); [ $pct -gt 30 ] && brightnessctl set 5%- || brightnessctl set 30%'",
-        "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2200 & fi'"
-    },
+  "custom/logout": {
+    "format": "󰍃",
+    "tooltip": "Logout session",
+    "on-click": "hyprctl dispatch exit",
+  },
 
-    "network": {
-        "format-wifi": "{icon}",
-        "format-ethernet": "{icon}",
-        "format-disconnected": "",
-        "format-icons": ["󰤟", "󰤢", "󰤥"],
-        "tooltip-format-wifi": "{essid} ({signalStrength}%)",
-        "tooltip-format-ethernet": "Ethernet",
-        "tooltip-format-disconnected": "Disconnected",
-        "interval": 5,
-        "on-click": "nmcli radio wifi off && sleep 1 && nmcli radio wifi on"
-    },
+  "custom/reboot": {
+    "format": "󰜉",
+    "tooltip": "Restart system",
+    "on-click": "systemctl reboot",
+  },
 
-    "custom/hyprsunset": {
-        "format": "{}",
-        "return-type": "json",
-        "exec": "sh -c 'if pgrep -x hyprsunset > /dev/null; then T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); echo \"{\\\"text\\\":\\\"󰖔\\\",\\\"class\\\":\\\"on\\\",\\\"tooltip\\\":\\\"󰖔 ${T}K\\\"}\"; else echo \"{\\\"text\\\":\\\"\\\",\\\"class\\\":\\\"\\\"}\"; fi'",
-        "tooltip": true,
-        "interval": 0.2,
-        "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2200 & fi'",
-        "on-click-right": "sh -c 'pkill -x hyprsunset 2>/dev/null; sleep 0.3; echo 1700 > /tmp/hyprsunset_temp; hyprsunset -t 1700 &'",
-        "on-scroll-up": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); T=$((T+100)); [ $T -gt 2700 ] && T=2700; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
-        "on-scroll-down": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); T=$((T-100)); [ $T -lt 1600 ] && T=1600; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'"
-    },
-
-    "custom/stop-music": {
-        "exec": "sh -c 'status=$(playerctl status 2>/dev/null); if [ \"$status\" = \"Playing\" ]; then player=$(playerctl metadata --format \"{{playerName}}\" 2>/dev/null | tr \"[:upper:]\" \"[:lower:]\"); case \"$player\" in spotify*) icon=\"󰓇\"; cls=\"spotify\" ;; mpv*) icon=\"󰐌\"; cls=\"mpv\" ;; firefox*) icon=\"󰈹\"; cls=\"firefox\" ;; *) icon=\"󰎆\"; cls=\"other\" ;; esac; echo \"{\\\"text\\\":\\\"$icon\\\",\\\"class\\\":\\\"$cls\\\"}\"; else echo \"{\\\"text\\\":\\\"\\\",\\\"class\\\":\\\"\\\"}\"; fi'",
-        "return-type": "json",
-        "interval": 1,
-        "tooltip": "Stop music",
-        "on-click": "sh -c 'player=$(playerctl metadata --format \"{{playerName}}\" 2>/dev/null); [ -n \"$player\" ] && pkill -x \"$player\"'"
-    },
-
-"mpris": {
-        "format": "{title}",
-        "format-paused": "\u23f8 {title}",
-        "tooltip-format": "",
-        "tooltip": true,
-        "interval": 1,
-        "on-click": "sh -c 'playerctl play-pause && sleep 0.15 && hyprctl dismissnotify 1 && hyprctl notify -1 2500 \"rgb(1bb3ff)\" \"fontsize:18 $(playerctl metadata --format \"{{artist}} — {{title}}\" 2>/dev/null || echo \"No track\")\"'",
-        "on-scroll-up": "sh -c 'now=$(date +%s%N); lock=/tmp/.waybar_mpris_scroll; [ -f $lock ] && old=$(cat $lock) || old=0; delta=$((now-old)); [ $delta -gt 300000000 ] && echo $now > $lock && playerctl previous'",
-        "on-scroll-down": "sh -c 'now=$(date +%s%N); lock=/tmp/.waybar_mpris_scroll; [ -f $lock ] && old=$(cat $lock) || old=0; delta=$((now-old)); [ $delta -gt 300000000 ] && echo $now > $lock && playerctl next'",
-        "smooth-scrolling-threshold": 10
-    },
-
-    "clock": {
-        "format": "{:%m/%d/%Y \u00b7 %H:%M:%S}",
-        "format-alt": "{:%m/%d/%Y}",
-        "interval": 1,
-        "on-click": "mode",
-        "on-click-right": "bash -c 'killall mpv 2>/dev/null; sleep 0.5; file=$(find ~/media/music/ -type f | shuf -n 1); [ -n \"$file\" ] && mpv --no-video \"$file\" &'"
-    },
-
-    "group/power": {
-        "orientation": "inherit",
-        "drawer": {
-            "transition-duration": 500,
-            "children-class": "not-power",
-            "transition-left-to-right": false
-        },
-        "modules": [
-            "custom/power",
-            "custom/reboot",
-            "custom/logout"
-        ]
-    },
-
-    "custom/logout": {
-        "format": "󰍃",
-        "tooltip": "Logout session",
-        "on-click": "hyprctl dispatch exit"
-    },
-
-    "custom/reboot": {
-        "format": "󰜉",
-        "tooltip": "Restart system",
-        "on-click": "systemctl reboot"
-    },
-
-    "custom/power": {
-        "format": "⏻",
-        "tooltip": "Power off",
-        "on-click": "systemctl poweroff"
-    }
+  "custom/power": {
+    "format": "⏻",
+    "tooltip": "Power off",
+    "on-click": "systemctl poweroff",
+  },
 }

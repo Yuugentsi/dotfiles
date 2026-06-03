@@ -105,6 +105,7 @@
         "tooltip-format": "",
         "tooltip": true,
         "interval": 1,
+        "on-click": "sh -c 'playerctl play-pause && sleep 0.15 && hyprctl dismissnotify 1 && hyprctl notify -1 2500 \"rgb(1bb3ff)\" \"fontsize:18 $(playerctl metadata --format \"{{artist}} — {{title}}\" 2>/dev/null || echo \"No track\")\"'",
         "on-scroll-up": "sh -c 'now=$(date +%s%N); lock=/tmp/.waybar_mpris_scroll; [ -f $lock ] && old=$(cat $lock) || old=0; delta=$((now-old)); [ $delta -gt 300000000 ] && echo $now > $lock && playerctl previous'",
         "on-scroll-down": "sh -c 'now=$(date +%s%N); lock=/tmp/.waybar_mpris_scroll; [ -f $lock ] && old=$(cat $lock) || old=0; delta=$((now-old)); [ $delta -gt 300000000 ] && echo $now > $lock && playerctl next'",
         "smooth-scrolling-threshold": 10

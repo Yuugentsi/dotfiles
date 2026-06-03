@@ -1,4 +1,5 @@
 {
+  "cli_default_open_behavior": "existing_window",
   "use_smartcase_search": true,
   "search": {
     "whole_word": true,
@@ -46,36 +47,36 @@
     "sidebar_side": "right",
     "dock": "right",
     "favorite_models": [],
-    "model_parameters": [],
+    "model_parameters": []
   },
   "diagnostics": {
-    "button": false,
+    "button": false
   },
   "global_lsp_settings": {
-    "button": false,
+    "button": false
   },
   "git_panel": {
     "file_icons": false,
-    "button": false,
+    "button": false
   },
   "outline_panel": {
-    "button": false,
+    "button": false
   },
   "collaboration_panel": {
-    "button": false,
+    "button": false
   },
   "debugger": {
-    "button": false,
+    "button": false
   },
   "icon_theme": "Zed (Default)",
   "project_panel": {
-    "dock": "left",
+    "dock": "left"
   },
-  "ui_font_size": 16,
+  "ui_font_size": 13,
   "buffer_font_size": 15,
   "theme": {
     "mode": "dark",
     "light": "One Light",
-    "dark": "Catppuccin Macchiato",
-  },
+    "dark": "Gruvbox Dark"
+  }
 }

@@ -24,14 +24,15 @@ function fish_prompt
         set status_color ff6b8a
     end
 
-    set -l parts (string split / (string replace -r "^$HOME/" "" "$PWD"))
-    set -l pwd (string join / $parts[-2..-1])
+    set -l pwd (string replace -r "^$HOME/" "" "$PWD")
     string match -q "$HOME" "$PWD"; and set pwd "~"
 
-    echo -n -s \
-        (set_color c8b8de --bold) $pwd " " \
-        (set_color $status_color --bold) "❯ " \
-        (set_color normal)
+    set -l DIM (set_color 7c5cbf)
+    set -l DIR (set_color c8b8de --bold)
+    set -l N (set_color normal)
+
+    echo -s "$DIM╭─$N $DIR$pwd$N"
+    echo -n -s "$DIM╰─$N " (set_color $status_color --bold) "❯ " (set_color normal)
 end
 # ─────────── venv ───────────
 function venv

@@ -17,3 +17,4 @@ done
 
 command -v hyprctl >/dev/null 2>&1 && find "${HOME}/.config/hypr/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 rm -rf "$TEMP_DIR"
+-

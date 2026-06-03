@@ -19,7 +19,7 @@ function dt; clear; set -l now (date '+%s'); set -l midnight (date -d 'tomorrow 
 function fish_prompt
     set -l last_status $status
 
-    set -l status_color 20d0fc
+    set -l status_color f5c2e7
     if test $last_status -ne 0
         set status_color ff6b8a
     end

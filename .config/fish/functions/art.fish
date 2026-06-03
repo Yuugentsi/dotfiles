@@ -472,3 +472,103 @@ function artmp3
         echo "$yellow$t$reset"
     end
 end
+# ─────────── tracks ───────────
+function tracks
+    set reset (printf '%b' '\033[0m')
+    set bold (printf '%b' '\033[1m')
+    set green (printf '%b' '\033[32m')
+    set yellow (printf '%b' '\033[33m')
+    set cyan (printf '%b' '\033[36m')
+    set red (printf '%b' '\033[31m')
+    set dim (printf '%b' '\033[2m')
+
+    set ok 0
+    set fail 0
+
+    set ok_list
+    set fail_list
+
+    for file in *.mp3 *.flac *.m4a *.wav
+        test -f "$file"; or continue
+
+        set artist (ffprobe -v quiet -show_entries format_tags=artist -of default=noprint_wrappers=1:nokey=1 "file:$file" 2>/dev/null)
+        set album (ffprobe -v quiet -show_entries format_tags=album -of default=noprint_wrappers=1:nokey=1 "file:$file" 2>/dev/null)
+
+        if test -z "$artist"
+            set artist "Unknown Artist"
+        else
+            set artist (string replace -r '[/,].*' '' "$artist" | string trim)
+        end
+        if test -z "$album"
+            set album "Unknown Album"
+        end
+
+        set raw_date (ffprobe -v quiet -show_entries format_tags=date -of default=noprint_wrappers=1:nokey=1 "file:$file" 2>/dev/null)
+        if test -z "$raw_date"
+            set raw_date (ffprobe -v quiet -show_entries format_tags=year -of default=noprint_wrappers=1:nokey=1 "file:$file" 2>/dev/null)
+        end
+        set year ""
+        if test -n "$raw_date"
+            set year (string sub -l 4 "$raw_date")
+        end
+
+        set title (ffprobe -v quiet -show_entries format_tags=title -of default=noprint_wrappers=1:nokey=1 "file:$file" 2>/dev/null)
+        if test -z "$title"
+            set title (string replace -r '\.[^.]+$' '' "$file")
+        end
+
+        set title (string replace -a '/' '-' "$title")
+        set title (string replace -a ':' '-' "$title")
+        set title (string trim "$title")
+
+        set ext (string split -r -m 1 . "$file" | tail -1)
+        set newname "$title.$ext"
+
+        ffmpeg -loglevel quiet -y -i "file:$file" \
+            -map 0:a \
+            -c:a copy \
+            -metadata artist="$artist" \
+            -metadata album_artist="$artist" \
+            -metadata album="$album" \
+            -metadata date="$year" \
+            ".__tmp.$file"
+
+        if test $status -ne 0
+            ffmpeg -loglevel quiet -y -i "file:$file" \
+                -map 0:a \
+                -c:a libmp3lame -q:a 0 \
+                -metadata artist="$artist" \
+                -metadata album_artist="$artist" \
+                -metadata album="$album" \
+                -metadata date="$year" \
+                ".__tmp.$file"
+        end
+
+        if test $status -eq 0
+            mv -f ".__tmp.$file" "$newname"
+            if test "$newname" != "$file"
+                rm -f "$file"
+            end
+            set ok (math $ok + 1)
+            set ok_list $ok_list "$title"
+        else
+            rm -f ".__tmp.$file"
+            set fail (math $fail + 1)
+            set fail_list $fail_list "$title"
+        end
+    end
+
+    echo ""
+    echo "$green✓ OK ($ok)$reset"
+    for t in $ok_list
+        echo "$green$t$reset"
+    end
+
+    if test $fail -gt 0
+        echo ""
+        echo "$red✗ FAIL ($fail)$reset"
+        for t in $fail_list
+            echo "$red$t$reset"
+        end
+    end
+end

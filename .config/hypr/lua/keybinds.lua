@@ -19,7 +19,6 @@ bind_exec(MOD .. " + F", BROWSER)
 bind_exec("ALT + F", "librewolf --private-window || firefox --private-window || zen-browser --private-window")
 bind_exec(MOD .. " + E", MENU)
 bind_exec("ALT + E", EDITOR)
-
 -- -------------------- windows --------------------
 hl.bind(MOD .. " + C", hl.dsp.window.close())
 hl.bind(MOD .. " + M", hl.dsp.exit())
@@ -106,6 +105,7 @@ hl.bind(MOD .. " + SHIFT + comma", hl.dsp.layout("swapcol l"))
 hl.bind(MOD .. " + p", hl.dsp.layout("promote"))
 
 -- -------------------- scripts --------------------
+bind_exec("ALT + T", "bash $HOME/.config/hypr/scripts/toggle.sh")
 -- ----- autostart -----
 hl.on("hyprland.start", function()
     local function exec(cmd) hl.exec_cmd(cmd) end

@@ -105,7 +105,8 @@ hl.bind(MOD .. " + SHIFT + comma", hl.dsp.layout("swapcol l"))
 hl.bind(MOD .. " + p", hl.dsp.layout("promote"))
 
 -- -------------------- scripts --------------------
-bind_exec("ALT + T", "bash $HOME/.config/hypr/scripts/toggle.sh")
+bind_exec("ALT + T", "bash $HOME/.config/hypr/scripts/utils.sh toggle")
+bind_exec("F1", "bash $HOME/.config/hypr/scripts/utils.sh play")
 -- ----- autostart -----
 hl.on("hyprland.start", function()
     local function exec(cmd) hl.exec_cmd(cmd) end
@@ -123,9 +124,6 @@ bind_exec("ALT + G", "bash $HOME/.config/hypr/scripts/video.sh")
 bind_exec("SUPER + Escape", "bash $HOME/.config/hypr/scripts/websites.sh")
 bind_exec("SUPER + V", "bash $HOME/.config/hypr/scripts/clipboard.sh")
 bind_exec("ALT + V", "bash $HOME/.config/hypr/scripts/clipboard.sh images")
-
--- ----- random music (F1) -----
-bind_exec("F1", "bash $HOME/.config/hypr/scripts/play.sh")
 
 -- -------------------- workspace navigation --------------------
 -- ----- navigation -----

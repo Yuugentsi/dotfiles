@@ -19,100 +19,94 @@ configuration {
 }
 
 * {
-    font: "JetBrainsMono Nerd Font Medium 10";
-
-    bg: rgba(12, 4, 8, 0.92);
-    bg-alt: rgba(22, 8, 14, 0.92);
-    bg-hover: rgba(200, 90, 120, 0.20);
+    font: "JetBrainsMono Nerd Font Medium 10.5";
+    bg: rgba(12, 4, 8, 0.75);
+    bg-alt: rgba(255, 255, 255, 0.05);
+    bg-hover: rgba(200, 90, 120, 0.25);
     fg: #ffe0ec;
     muted: #b898a8;
-    border: #c46080;
     accent: #f8b4c8;
-    accent-alt: #ffffff;
+    glow: rgba(248, 180, 200, 0.5);
 }
 
 window {
-    width: 50%;
+    width: 54%;
     location: center;
     anchor: center;
     background-color: @bg;
     transparency: "real";
     border: 2px;
-    border-color: rgba(200, 90, 120, 0.25);
-    border-radius: 24px;
+    border-color: @glow;
+    border-radius: 18px;
 }
 
 mainbox {
     background-color: transparent;
-    padding: 16px 14px;
-    spacing: 10px;
+    padding: 18px;
+    spacing: 12px;
+    children: [ "inputbar", "listview" ];
 }
 
 inputbar {
-    background-color: rgba(200, 90, 120, 0.08);
-    padding: 8px 14px;
-    border-radius: 14px;
+    background-color: rgba(255, 255, 255, 0.07);
+    padding: 8px 12px;
+    border-radius: 12px;
     border: 1px;
-    border-color: rgba(200, 90, 120, 0.20);
+    border-color: rgba(248, 180, 200, 0.2);
     children: [ entry ];
 }
 
 entry {
     background-color: transparent;
     text-color: @fg;
-    placeholder: "Search apps";
+    placeholder: "Search apps...";
     placeholder-color: @muted;
     cursor-color: @accent;
-    cursor-width: 1px;
 }
 
 listview {
     background-color: transparent;
     columns: 3;
-    lines: 4;
-    spacing: 8px;
+    lines: 5;
+    spacing: 10px;
     scrollbar: false;
-    fixed-height: true;
-    dynamic: false;
+    fixed-height: false;
+    dynamic: true;
 }
 
-element,
+element {
+    background-color: @bg-alt;
+    text-color: @fg;
+    padding: 10px;
+    border-radius: 12px;
+    spacing: 10px;
+    border: 1px;
+    border-color: rgba(255, 255, 255, 0.03);
+}
+
 element normal.normal,
 element alternate.normal {
     background-color: @bg-alt;
     text-color: @fg;
-    padding: 8px 10px;
-    border-radius: 14px;
-    orientation: horizontal;
-    children: [ element-icon, element-text ];
-    spacing: 8px;
 }
 
 element selected.normal {
     background-color: @bg-hover;
     text-color: @accent;
-    border: 1px;
-    border-color: rgba(248, 180, 200, 0.40);
+    border: 2px;
+    border-color: @accent;
 }
 
 element-icon {
     background-color: transparent;
-    size: 0.6em;
+    size: 28px;
 }
 
-element-text,
-element normal.normal element-text,
-element alternate.normal element-text {
+element-text {
     background-color: transparent;
-    text-color: @fg;
+    text-color: inherit;
     vertical-align: 0.5;
-    highlight: bold #f8b4c8;
-    expand: true;
-}
-
-element selected.normal element-text {
-    background-color: transparent;
-    text-color: @accent;
+    highlight: bold #ffffff;
 }
 
 mode-switcher {

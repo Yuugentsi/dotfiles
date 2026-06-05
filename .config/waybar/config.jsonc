@@ -51,7 +51,7 @@
     "format": "{icon}",
     "format-icons": ["", "", "", "", ""],
     "tooltip-format": " {capacity}%",
-    "on-click": "sh -c 'if [ -f /tmp/lowlight_mode ]; then pkill hyprsunset; PREV=$(cat /tmp/lowlight_brightness 2>/dev/null || echo 90); brightnessctl set ${PREV}%; rm /tmp/lowlight_mode /tmp/lowlight_brightness /tmp/hyprsunset_temp; else CUR=$(brightnessctl get); MAX=$(brightnessctl max); PCT=$((CUR*100/MAX)); echo $PCT > /tmp/lowlight_brightness; brightnessctl set 50%; pkill hyprsunset 2>/dev/null; sleep 0.2; echo 1700 > /tmp/hyprsunset_temp; hyprsunset -t 1700 & touch /tmp/lowlight_mode; fi'",
+    "on-click": "sh -c 'if [ -f /tmp/lowlight_mode ]; then pkill hyprsunset; PREV=$(cat /tmp/lowlight_brightness 2>/dev/null || echo 90); brightnessctl set ${PREV}%; rm /tmp/lowlight_mode /tmp/lowlight_brightness /tmp/hyprsunset_temp; else CUR=$(brightnessctl get); MAX=$(brightnessctl max); PCT=$((CUR*100/MAX)); echo $PCT > /tmp/lowlight_brightness; brightnessctl set 50%; pkill hyprsunset 2>/dev/null; sleep 0.2; echo 2400 > /tmp/hyprsunset_temp; hyprsunset -t 2400 & touch /tmp/lowlight_mode; fi'",
   },
 
   "pulseaudio": {
@@ -73,7 +73,7 @@
     "tooltip-format": "{icon} {percent}%",
     "on-scroll-up": "sh -c 'v=$(brightnessctl get); max=$(brightnessctl max); pct=$((v*100/max)); [ $pct -ge 90 ] && pct=90 || pct=$((pct+5)); brightnessctl set ${pct}%'",
     "on-scroll-down": "sh -c 'v=$(brightnessctl get); max=$(brightnessctl max); pct=$((v*100/max)); [ $pct -gt 30 ] && brightnessctl set 5%- || brightnessctl set 30%'",
-    "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2200 & fi'",
+    "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2400 & fi'",
   },
 
   "network": {
@@ -94,7 +94,7 @@
     "exec": "sh -c 'if pgrep -x hyprsunset > /dev/null; then T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); echo \"{\\\"text\\\":\\\"󰖔\\\",\\\"class\\\":\\\"on\\\",\\\"tooltip\\\":\\\"󰖔 ${T}K\\\"}\"; else echo \"{\\\"text\\\":\\\"\\\",\\\"class\\\":\\\"\\\"}\"; fi'",
     "tooltip": true,
     "interval": 0.2,
-    "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2200 & fi'",
+    "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2400 & fi'",
     "on-click-right": "sh -c 'pkill -x hyprsunset 2>/dev/null; sleep 0.3; echo 1700 > /tmp/hyprsunset_temp; hyprsunset -t 1700 &'",
     "on-scroll-up": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); T=$((T+100)); [ $T -gt 2700 ] && T=2700; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
     "on-scroll-down": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2200); T=$((T-100)); [ $T -lt 1600 ] && T=1600; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",

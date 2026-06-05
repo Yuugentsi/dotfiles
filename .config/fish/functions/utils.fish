@@ -1036,6 +1036,13 @@ for ws_num in sorted(by_ws.keys()):
         print()
 
     print()
+
+for ws, title, f in windows:
+    cls = f.get("class", "")
+    ac = APP_COLORS.get(cls, 44)
+    sz = f.get("size", "").split(",")
+    w, h = sz[0], sz[1] if len(sz) > 1 else ""
+    print(f"{c(ac)}{cls}  {c(240)}\u00b7{NN}  {w}\u00d7{h}  {c(240)}\u2503{NN}  {ws}")
 '
 end
 # ─────────── word ───────────

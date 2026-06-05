@@ -19,28 +19,35 @@ hl.window_rule({ name = "spotify-fullscreen", match = { class = "spotify" }, ful
 hl.window_rule({ name = "rofi-animation", match = { class = "rofi" }, animation = "popin" })
 
 -- -------------------- opacity --------------------
-hl.window_rule({ name = "zed-opacity", match = { class = "dev.zed.Zed" }, opacity = "0.90 0.88" })
-hl.window_rule({ name = "firefox-opacity", match = { class = "firefox" }, opacity = "0.82 0.62" })
-hl.window_rule({ name = "spotify-opacity", match = { class = "Spotify" }, opacity = "0.85 0.75" })
-hl.window_rule({ name = "thunar-opacity", match = { class = "thunar" }, opacity = "0.80 0.80" })
-hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.88 0.82" })
-hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.60 0.70" })
-hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.88 0.80" })
-hl.window_rule({ name = "kitty-opacity", match = { class = "kitty" }, opacity = "0.88 0.80" })
+-- hl.window_rule({ name = "zed-opacity", match = { class = "dev.zed.Zed" }, opacity = "0.90 0.88" })
+-- hl.window_rule({ name = "firefox-opacity", match = { class = "firefox" }, opacity = "0.82 0.62" })
+-- hl.window_rule({ name = "spotify-opacity", match = { class = "Spotify" }, opacity = "0.85 0.75" })
+-- hl.window_rule({ name = "thunar-opacity", match = { class = "thunar" }, opacity = "0.80 0.80" })
+-- hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.88 0.82" })
+-- hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.60 0.70" })
+-- hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.88 0.80" })
+-- hl.window_rule({ name = "kitty-opacity", match = { class = "kitty" }, opacity = "0.88 0.80" })
+-- hl.window_rule({ name = "zathura-opacity", match = { class = "(zathura|org\\.pwmt\\.zathura)" }, opacity = "0.88 0.80" })
 
 -- -------------------- floating apps --------------------
 -- ----- mpv -----
--- hl.window_rule({ name = "mpv-float", match = { class = "mpv" }, float = true, size = "600 400" })
-hl.window_rule({ name = "mpv-ws6", match = { class = "mpv" }, workspace = "6 silent", fullscreen = true })
+hl.window_rule({ name = "mpv-float", match = { class = "mpv" }, workspace = "6 silent", fullscreen = true })
 
 -- ----- thunar -----
-hl.window_rule({ name = "thunar-float", match = { class = "thunar" }, float = true, size = "800 600", center = true, border_size = 0 })
+hl.window_rule({ name = "thunar-float", match = { class = "thunar" }, float = true, size = "960 580", center = true, border_size = 0 })
 
 -- ----- zed -----
-hl.window_rule({ name = "zed-float", match = { class = "dev.zed.Zed" }, float = true, size = "800 600", center = true, border_size = 0 })
+hl.window_rule({ name = "zed-float", match = { class = "dev.zed.Zed" }, float = true, size = "960 580", center = true, border_size = 0 })
 
 -- ----- telegram -----
-hl.window_rule({ name = "telegram-float", match = { class = "org.telegram.desktop" }, float = true, size = "800 600", center = true, border_size = 0 })
+hl.window_rule({
+    name = "telegram-float",
+    match = { class = "org.telegram.desktop" },
+    float = true,
+    size = "875 621",
+    center = true,
+    border_size = 0
+})
 
 -- ----- viewnior -----
 hl.window_rule({
@@ -117,7 +124,7 @@ hl.window_rule({
     match  = { class = "(zathura|org\\.pwmt\\.zathura)" },
     float  = true,
     center = true,
-    size   = "(monitor_w*0.52) (monitor_h*0.68)",
+    size   = "(monitor_w*0.65) (monitor_h*0.75)",
 })
 
 -- -------------------- dialogs --------------------
@@ -126,7 +133,7 @@ hl.window_rule({
     name    = "thunar-dialogs",
     match   = { class = "thunar", title = "(Rename|Create|Delete|Properties).*" },
     float   = true,
-    size    = "600 250",
+    size    = "(monitor_w*0.35) (monitor_h*0.3)",
     center  = true,
     opacity = "0.92 override 0.92 override",
 })
@@ -137,7 +144,7 @@ hl.window_rule({
     match   = { class = "firefox|xdg-desktop-portal-gtk|brave-origin-beta|xdg-desktop-portal-gtk", title = ".*Save.*|.*Opening.*" },
     float   = true,
     center  = true,
-    size    = "800 500",
+    size    = "(monitor_w*0.5) (monitor_h*0.6)",
     opacity = "0.92 override 0.92 override",
 })
 
@@ -147,7 +154,7 @@ hl.window_rule({
     match       = { class = "org.telegram.desktop", title = "(Choose an image|Choose Files|Choose download path|Save Audio File|Save voice message|Save Video|Save File|Save Image)" },
     float       = true,
     center      = true,
-    size        = "380 360",
+    size        = "(monitor_w*0.4) (monitor_h*0.45)",
     opacity     = "1.0 override 1.0 override",
     border_size = 0,
 })

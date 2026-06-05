@@ -659,4 +659,3 @@ function __extra_cnf
     clear; echo -s $G "$title 󰄬" $N
     return 0
 end
-

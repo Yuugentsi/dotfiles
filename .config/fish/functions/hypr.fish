@@ -1,4 +1,3 @@
-# ─────────── hypr ───────────
 function hypr -d "hyprland tools"
     # ─── hypr ───
     # -------------------- variables --------------------
@@ -47,12 +46,19 @@ function hypr -d "hyprland tools"
             set mon_res (string match -rg 'mode\s*=\s*"([^"]+)"' -- $mon_line)
         end
 
+        # current gaps
+        set -l gaps_cur (sed -n '5p' "$appear_file" | string match -rg 'gaps_in\s*=\s*(\d+)')
+        set -l gaps_label "normal"
+        test "$gaps_cur" = 0; and set gaps_label "zero"
+        test "$gaps_cur" = 2; and set gaps_label "work"
+
         echo "$P󰍹 Hypr$N"
         echo "  [1] 󰍹 Monitor  $O$mon_res$N"
         echo "  [2] 󰇀 Opacity  $(test $opac_any -eq 1; and echo $O; or echo $X)$opac_st$N"
         echo "  [3]  Monochrome  $(test $mono_any -eq 1; and echo $O; or echo $X)$mono_st$N"
         echo "  [4]  Animations  $(test $anim_any -eq 1; and echo $O; or echo $X)$anim_st$N"
         echo "  [5]  Effects  $(test $fx_any -eq 1; and echo $O; or echo $X)$fx_st$N"
+        echo "  [6]  Gaps  $O$gaps_label$N"
         echo "$D  [0] 󰜺 exit$N"
         read -P "→ " main_choice
 
@@ -79,6 +85,10 @@ function hypr -d "hyprland tools"
             # ─── case 5: shadow/blur ───
             case 5
                 __hypr_shadowblur
+
+            # ─── case 6: gaps ───
+            case 6
+                __hypr_gaps
 
             case '*'
                 clear
@@ -171,18 +181,10 @@ function __hypr_opacity
     set -l N (set_color normal)
 
     set -l rule_file "$HOME/.config/hypr/lua/windowrules.lua"
-    set -l any 0
-    set -l lines
+    set -l lines (grep -nE 'hl\.window_rule\([^)]*name = ".*-opacity"' "$rule_file" | cut -d: -f1)
 
-    for l in (seq (wc -l < "$rule_file"))
-        set -l line (sed -n "$l p" "$rule_file")
-        if string match -qr 'hl\.window_rule\([^)]*name = ".*?-opacity"' -- "$line"
-            set lines $lines $l
-            if string match -qr '^\s*hl\.' -- "$line"
-                set any 1
-            end
-        end
-    end
+    set -l any 0
+    grep -qE '^\s*hl\.window_rule\([^)]*name = ".*-opacity"' "$rule_file"; and set any 1
 
     for l in $lines
         if test $any -eq 1
@@ -242,18 +244,10 @@ function __hypr_animations
     set -l N (set_color normal)
 
     set -l appear_file "$HOME/.config/hypr/lua/appearance.lua"
-    set -l any 0
-    set -l lines
+    set -l lines (grep -nE 'hl\.animation\(.*enabled\s*=' "$appear_file" | cut -d: -f1)
 
-    for l in (seq (wc -l < "$appear_file"))
-        set -l line (sed -n "$l p" "$appear_file")
-        if string match -qr 'hl\.animation\(.*enabled\s*=' -- "$line"
-            set lines $lines $l
-            if string match -qr 'enabled\s*=\s*true' -- "$line"
-                set any 1
-            end
-        end
-    end
+    set -l any 0
+    grep -qE 'hl\.animation\(.*enabled = true' "$appear_file"; and set any 1
 
     for l in $lines
         if test $any -eq 1
@@ -280,19 +274,10 @@ function __hypr_shadowblur
     set -l N (set_color normal)
 
     set -l appear_file "$HOME/.config/hypr/lua/appearance.lua"
-    set -l any 0
-    set -l lines
+    set -l lines (grep -nE 'enabled\s*=' "$appear_file" | grep -v 'hl\.animation' | cut -d: -f1)
 
-    for l in (seq (wc -l < "$appear_file"))
-        set -l line (sed -n "$l p" "$appear_file")
-        if string match -qr 'enabled\s*=' -- "$line"
-            and not string match -qr 'hl\.animation' -- "$line"
-            set lines $lines $l
-            if string match -qr 'enabled\s*=\s*true' -- "$line"
-                set any 1
-            end
-        end
-    end
+    set -l any 0
+    grep 'enabled = true' "$appear_file" | grep -qv 'hl\.animation'; and set any 1
 
     for l in $lines
         if test $any -eq 1
@@ -309,4 +294,38 @@ function __hypr_shadowblur
     else
         echo "$G󰄬 shadow/blur on$N"
     end
+end
+
+# ─── gaps cycle ───
+function __hypr_gaps
+    set -l P (set_color cba6f7)
+    set -l G (set_color green)
+    set -l R (set_color red)
+    set -l Y (set_color yellow)
+    set -l N (set_color normal)
+
+    set -l appear_file "$HOME/.config/hypr/lua/appearance.lua"
+
+    set -l cur (sed -n '5p' "$appear_file" | string match -rg 'gaps_in\s*=\s*([0-9]+)')
+    set -l in
+    set -l out
+    set -l label
+
+    switch "$cur"
+        case 5
+            set in 0;   set out 0;  set label "zero";   set c $R
+        case 0
+            set in 2;   set out 8;  set label "work";   set c $Y
+        case 2
+            set in 5;   set out 20; set label "normal";  set c $G
+        case '*'
+            set in 5;   set out 20; set label "normal";  set c $G
+    end
+
+    sed -i "5c\        gaps_in          = $in," "$appear_file"
+    sed -i "6c\        gaps_out         = $out," "$appear_file"
+
+    hyprctl reload
+    clear
+    echo "$c󰄬 gaps: $label ($in/$out)$N"
 end

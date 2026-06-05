@@ -26,4 +26,9 @@ hl.on("hyprland.start", function()
     local mpv_dedup =
     "bash -c 'while true; do if [ \"$(pgrep -x mpv | wc -l)\" -gt 1 ]; then pkill -x -o mpv; fi; sleep 1; done'"
     exec(mpv_dedup)
+
+    -- ----- zathura -----
+    local zathura_dedup =
+    "bash -c 'while true; do if [ \"$(pgrep -x zathura | wc -l)\" -gt 1 ]; then pkill -x -o zathura; fi; sleep 1; done'"
+    exec(zathura_dedup)
 end)

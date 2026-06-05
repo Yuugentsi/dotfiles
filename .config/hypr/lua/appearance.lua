@@ -55,15 +55,17 @@ hl.config({
         dim_inactive     = true,
         dim_strength     = 0.12,
 
+        -- ----- shadow -----
         shadow           = {
-            enabled      = false,
+            enabled = true,
             range        = 4,
             render_power = 3,
             color        = 0xee1a1a1a,
         },
 
+        -- ----- blur -----
         blur             = {
-            enabled  = false,
+            enabled = true,
             size     = 12,
             passes   = 3,
             noise    = 0.05,

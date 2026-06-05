@@ -31,13 +31,32 @@ hl.window_rule({ name = "rofi-animation", match = { class = "rofi" }, animation 
 
 -- -------------------- floating apps --------------------
 -- ----- mpv -----
-hl.window_rule({ name = "mpv-float", match = { class = "mpv" }, workspace = "6 silent", fullscreen = true })
+hl.window_rule({
+    name = "mpv-float",
+    match = { class = "mpv" },
+    workspace = "6 silent",
+    fullscreen = true
+})
 
 -- ----- thunar -----
-hl.window_rule({ name = "thunar-float", match = { class = "thunar" }, float = true, size = "960 580", center = true, border_size = 0 })
+hl.window_rule({
+    name = "thunar-float",
+    match = { class = "thunar" },
+    float = true,
+    size = "960 580",
+    center = true,
+    border_size = 0
+})
 
 -- ----- zed -----
-hl.window_rule({ name = "zed-float", match = { class = "dev.zed.Zed" }, float = true, size = "960 580", center = true, border_size = 0 })
+hl.window_rule({
+    name = "zed-float",
+    match = { class = "dev.zed.Zed" },
+    float = true,
+    size = "960 580",
+    center = true,
+    border_size = 0
+})
 
 -- ----- telegram -----
 hl.window_rule({

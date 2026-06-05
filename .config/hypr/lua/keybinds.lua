@@ -105,6 +105,7 @@ hl.bind(MOD .. " + SHIFT + comma", hl.dsp.layout("swapcol l"))
 hl.bind(MOD .. " + p", hl.dsp.layout("promote"))
 
 -- -------------------- scripts --------------------
+bind_exec(MOD .. " + Z", "bash $HOME/.config/hypr/scripts/utils.sh z")
 bind_exec("ALT + T", "bash $HOME/.config/hypr/scripts/utils.sh toggle")
 bind_exec("F1", "bash $HOME/.config/hypr/scripts/utils.sh play")
 -- ----- autostart -----

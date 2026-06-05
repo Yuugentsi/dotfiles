@@ -180,3 +180,8 @@ tooltip {
     color: #fdba74;
     text-shadow: 0px 0px 4px rgba(253, 186, 116, 0.4);
 }
+
+#custom-power {
+    color: #f0435a;
+    text-shadow: 0px 0px 6px rgba(240, 67, 90, 0.5);
+}

@@ -30,7 +30,8 @@ hl.window_rule({ name = "kitty-opacity", match = { class = "kitty" }, opacity = 
 
 -- -------------------- floating apps --------------------
 -- ----- mpv -----
-hl.window_rule({ name = "mpv-float", match = { class = "mpv" }, float = true, size = "370 208" })
+-- hl.window_rule({ name = "mpv-float", match = { class = "mpv" }, float = true, size = "600 400" })
+hl.window_rule({ name = "mpv-ws6", match = { class = "mpv" }, workspace = "6 silent", fullscreen = true })
 
 -- ----- thunar -----
 hl.window_rule({ name = "thunar-float", match = { class = "thunar" }, float = true, size = "800 600", center = true, border_size = 0 })
@@ -146,7 +147,7 @@ hl.window_rule({
     match       = { class = "org.telegram.desktop", title = "(Choose an image|Choose Files|Choose download path|Save Audio File|Save voice message|Save Video|Save File|Save Image)" },
     float       = true,
     center      = true,
-    size        = "780 560",
+    size        = "380 360",
     opacity     = "1.0 override 1.0 override",
     border_size = 0,
 })

@@ -61,8 +61,37 @@ case "${1:-}" in
         fi
         ;;
 
+    # ----- zeditor (SUPER + Z) -----
+    # bind_exec("SUPER + Z", "$HOME/.config/hypr/scripts/utils.sh z")
+    z)
+        CLASS="dev.zed.Zed"
+        EXEC="zeditor"
+        PGEXEC="zed-editor"
+        SPECIAL="zed"
+
+        if ! pgrep -x "$PGEXEC" > /dev/null 2>&1; then
+            "$EXEC" &
+            exit 0
+        fi
+
+        DATA=$(hyprctl clients -j | jq -r ".[] | select(.class == \"$CLASS\") | \"\\(.address) \\(.workspace.name)\"" | head -1)
+
+        if [ -z "$DATA" ]; then
+            "$EXEC" &
+            exit 0
+        fi
+
+        ADDR="${DATA%% *}"
+        WS="${DATA#* }"
+
+        if [[ "$WS" == special* ]]; then
+            hyprctl dispatch "hl.dsp.workspace.toggle_special(\"$SPECIAL\")"
+        else
+            hyprctl dispatch "hl.dsp.window.move({ workspace = 'special:$SPECIAL', window = 'address:${ADDR}' })"
+        fi
+        ;;
     *)
-        echo "Usage: $0 {toggle|play}"
+        echo "Usage: $0 {toggle|play|z}"
         exit 1
         ;;
 esac

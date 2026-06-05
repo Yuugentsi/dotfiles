@@ -3,6 +3,7 @@
 # mp4
 # yt
 # ytl
+# --
 function mp3 --description 'yt mp3'
     set -l out_dir "$HOME/media/music/yt"
     mkdir -p "$out_dir"

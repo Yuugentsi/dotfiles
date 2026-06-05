@@ -125,6 +125,7 @@ bind_exec("ALT + G", "bash $HOME/.config/hypr/scripts/video.sh")
 bind_exec("SUPER + Escape", "bash $HOME/.config/hypr/scripts/websites.sh")
 bind_exec("SUPER + V", "bash $HOME/.config/hypr/scripts/clipboard.sh")
 bind_exec("ALT + V", "bash $HOME/.config/hypr/scripts/clipboard.sh images")
+bind_exec("ALT + N", "bash $HOME/.config/hypr/scripts/utils.sh note")
 
 -- -------------------- workspace navigation --------------------
 -- ----- navigation -----

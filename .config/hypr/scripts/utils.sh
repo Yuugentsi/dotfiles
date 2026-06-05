@@ -90,8 +90,29 @@ case "${1:-}" in
             hyprctl dispatch "hl.dsp.window.move({ workspace = 'special:$SPECIAL', window = 'address:${ADDR}' })"
         fi
         ;;
+    # ----- notes (ALT + N) -----
+    # bind_exec("ALT + N", "$HOME/.config/hypr/scripts/utils.sh note")
+    note)
+        notes="$HOME/0/documents/txt/notes.txt"
+        mkdir -p "$(dirname "$notes")"
+
+        content=$(wl-paste 2>/dev/null)
+        if [ -z "$content" ]; then
+            hyprctl notify -1 2000 "rgb(cba6f7)" "󰅙 clipboard empty"
+            exit 1
+        fi
+
+        last=$(tail -n 2 "$notes" 2>/dev/null | head -1)
+        if [ "$last" = "$content" ]; then
+            hyprctl notify -1 2000 "rgb(fab387)" "󰅜 duplicate"
+            exit 0
+        fi
+
+        printf "%s\n-------------\n" "$content" >> "$notes"
+        hyprctl notify -1 2000 "rgb(a6e3a1)" "󰄬 note saved"
+        ;;
     *)
-        echo "Usage: $0 {toggle|play|z}"
+        echo "Usage: $0 {toggle|play|z|note}"
         exit 1
         ;;
 esac

@@ -19,7 +19,7 @@
 # search     → find files by name
 # sunset     → screen warmth
 # up         → update system
-#
+# --
 # ─────────── n ───────────
 function n -d "neovim"
     nvim $argv

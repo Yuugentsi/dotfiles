@@ -7,10 +7,10 @@ hl.on("hyprland.start", function()
     end
     -- -------------------- exec --------------------
     exec("waybar")
-    exec("hyprsunset -t 2000")
+    -- exec("hyprsunset -t 2000")
     exec("swaync")
     exec("spotify")
-    exec("hyprctl dispatch exec [workspace 1] firefox")
+    exec("zen-browser")
 
     -- ----- spotify-mpv -----
     local spotify_monitor =

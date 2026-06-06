@@ -33,6 +33,11 @@ case "${1:-}" in
     # ----- random music (F1) -----
     # bind_exec("F1", "$HOME/.config/hypr/scripts/utils.sh play")
     play)
+        if pgrep -x spotify >/dev/null 2>&1; then
+            playerctl -p spotify next 2>/dev/null
+            exit 0
+        fi
+
         SOCKET="$HOME/.config/mpv-socket"
         MUSIC_DIR="$HOME/media/music"
         PLAYED_FILE="/tmp/play.txt"

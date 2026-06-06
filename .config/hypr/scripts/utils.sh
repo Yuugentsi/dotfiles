@@ -30,6 +30,17 @@ case "${1:-}" in
         fi
         ;;
 
+    # ----- spotify (ALT + F1) -----
+    # bind_exec("ALT + F1", "$HOME/.config/hypr/scripts/utils.sh spotify")
+    spotify)
+        if pgrep -x spotify >/dev/null 2>&1; then
+            status=$(playerctl -p spotify status 2>/dev/null)
+            [ "$status" = "Paused" ] && playerctl -p spotify play-pause
+        else
+            spotify &
+        fi
+        ;;
+
     # ----- random music (F1) -----
     # bind_exec("F1", "$HOME/.config/hypr/scripts/utils.sh play")
     play)

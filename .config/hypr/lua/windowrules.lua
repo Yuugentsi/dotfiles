@@ -48,16 +48,6 @@ hl.window_rule({
     border_size = 0
 })
 
--- ----- zed -----
-hl.window_rule({
-    name = "zed-float",
-    match = { class = "dev.zed.Zed" },
-    float = true,
-    size = "960 580",
-    center = true,
-    border_size = 0
-})
-
 -- ----- telegram -----
 hl.window_rule({
     name = "telegram-float",
@@ -130,11 +120,12 @@ hl.window_rule({
 
 -- ----- kitty-float -----
 hl.window_rule({
-    name   = "kitty-float",
-    match  = { class = "kitty-float" },
-    float  = true,
-    center = true,
-    size   = "(monitor_w*0.42) (monitor_h*0.48)",
+    name    = "kitty-float",
+    match   = { class = "kitty-float" },
+    float   = true,
+    center  = true,
+    size    = "(monitor_w*0.55) (monitor_h*0.60)",
+    opacity = "0.88 0.80",
 })
 
 -- ----- zathura -----
@@ -155,6 +146,16 @@ hl.window_rule({
     size    = "(monitor_w*0.35) (monitor_h*0.3)",
     center  = true,
     opacity = "0.92 override 0.92 override",
+})
+
+-- ----- zed -----
+hl.window_rule({
+    name = "zed-float",
+    match = { class = "dev.zed.Zed" },
+    float = true,
+    size = "960 580",
+    center = true,
+    border_size = 0
 })
 
 -- ----- firefox -----

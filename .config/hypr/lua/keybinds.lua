@@ -107,7 +107,9 @@ hl.bind(MOD .. " + p", hl.dsp.layout("promote"))
 -- -------------------- scripts --------------------
 bind_exec(MOD .. " + Z", "bash $HOME/.config/hypr/scripts/utils.sh z")
 bind_exec("ALT + T", "bash $HOME/.config/hypr/scripts/utils.sh toggle")
+bind_exec("ALT + Q", "bash $HOME/.config/hypr/scripts/kitty.sh")
 bind_exec("F1", "bash $HOME/.config/hypr/scripts/utils.sh play")
+bind_exec("ALT + F1", "bash $HOME/.config/hypr/scripts/utils.sh spotify")
 -- ----- autostart -----
 hl.on("hyprland.start", function()
     local function exec(cmd) hl.exec_cmd(cmd) end

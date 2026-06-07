@@ -98,17 +98,18 @@ run_music_picker() {
     local RANDOM_PLAYED="/tmp/music-picker-random-played.txt"
 
     local ROFI_MUSIC_THEME=(
-        -theme-str '* { font: "JetBrainsMono Nerd Font Medium 12"; bg: #101014ee; bg-alt: #19191fee; bg-hover: #272731ee; fg: #f4f4f5; muted: #a1a1aa; border: #3f3f46; accent: #fafafa; }'
-        -theme-str 'window { width: 46%; background-color: @bg; transparency: "real"; border: 1px; border-color: @border; border-radius: 16px; }'
-        -theme-str 'mainbox { background-color: transparent; padding: 0px; spacing: 0px; }'
-        -theme-str 'inputbar { background-color: @bg-alt; padding: 8px; border: 0px; border-radius: 0px; children: [ entry ]; }'
+        -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }'
+        -theme-str 'window { width: 54%; background-color: @bg; transparency: "real"; border: 2px; border-color: @glow; border-radius: 18px; }'
+        -theme-str 'mainbox { background-color: transparent; padding: 8px; spacing: 4px; }'
+        -theme-str 'inputbar { background-color: rgba(255,255,255,0.07); padding: 6px 10px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }'
         -theme-str 'entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }'
-        -theme-str 'listview { background-color: transparent; columns: 1; lines: 12; fixed-height: false; dynamic: true; spacing: 0px; scrollbar: true; }'
-        -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 36px; border: 0px; border-radius: 0px; }'
+        -theme-str 'listview { background-color: transparent; columns: 1; lines: 12; fixed-height: false; dynamic: true; spacing: 2px; scrollbar: true; scrollbar-width: 4px; }'
+        -theme-str 'scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }'
+        -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 28px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }'
         -theme-str 'element normal.normal { background-color: @bg-alt; text-color: @fg; }'
         -theme-str 'element alternate.normal { background-color: @bg-alt; text-color: @fg; }'
-        -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; }'
-        -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #fafafa; }'
+        -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }'
+        -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; }'
         -theme-str 'element normal.normal element-text { background-color: transparent; text-color: @fg; }'
         -theme-str 'element alternate.normal element-text { background-color: transparent; text-color: @fg; }'
         -theme-str 'element selected.normal element-text { background-color: transparent; text-color: @accent; }'
@@ -186,6 +187,7 @@ run_music_picker() {
     all_count=$(get_total_count)
 
     local ALL_OPTION="󰒓  ALL ($all_count)"
+    local TRACKLIST_OPTION="󰎸  Tracklist ($all_count)"
 
     local artist_entries
     artist_entries=$(
@@ -196,7 +198,7 @@ run_music_picker() {
     )
 
     local chosen_artist
-    chosen_artist=$(printf '%s\n%s\n%s' "${now_playing:+$now_playing}" "$ALL_OPTION" "$artist_entries" \
+    chosen_artist=$(printf '%s\n%s\n%s\n%s' "${now_playing:+$now_playing}" "$ALL_OPTION" "$TRACKLIST_OPTION" "$artist_entries" \
         | sed '/^$/d' \
         | rofi_custom_menu "󰝚  Artist:")
     local artist_status=$?
@@ -215,6 +217,58 @@ run_music_picker() {
     if [[ "$chosen_artist" == "$ALL_OPTION" ]]; then
         : > "$RANDOM_PLAYED"
         run_mpv --shuffle --no-video "$MUSIC_DIR"/**/* >/dev/null 2>&1 &
+        exit 0
+    fi
+
+    if [[ "$chosen_artist" == "$TRACKLIST_OPTION" ]]; then
+        local all_tracks
+        all_tracks=$(list_tracks "$MUSIC_DIR" | sort)
+
+        local -a track_paths=()
+        local -a track_display_list=()
+
+        while IFS= read -r path; do
+            local rel="${path#$MUSIC_DIR/}"
+            local artist_dir="${rel%%/*}"
+            local rest="${rel#*/}"
+            if [[ "$rest" == */* ]]; then
+                local alb="${rest%%/*}"
+                local file="${rest#*/}"
+                local name="${file%.*}"
+                track_display_list+=("$artist_dir - $alb / $name")
+            else
+                local name="${rest%.*}"
+                track_display_list+=("$artist_dir - $name")
+            fi
+            track_paths+=("$path")
+        done <<< "$all_tracks"
+
+        local display_text
+        display_text=$(printf '%s\n' "${track_display_list[@]}" | rofi_menu "  Track:")
+        [[ -z "$display_text" ]] && exit 0
+
+        local sel_idx=-1
+        for i in "${!track_display_list[@]}"; do
+            if [[ "${track_display_list[$i]}" == "$display_text" ]]; then
+                sel_idx=$i
+                break
+            fi
+        done
+
+        [[ $sel_idx -eq -1 ]] && exit 0
+
+        local track_path="${track_paths[$sel_idx]}"
+
+        local tmp_playlist
+        tmp_playlist=$(mktemp /tmp/mpv-playlist-XXXX.m3u)
+
+        echo "$track_path" > "$tmp_playlist"
+
+        if [[ $((sel_idx + 1)) -lt ${#track_paths[@]} ]]; then
+            printf '%s\n' "${track_paths[@]:$((sel_idx + 1))}" >> "$tmp_playlist"
+        fi
+
+        run_mpv --no-video --playlist="$tmp_playlist" >/dev/null 2>&1 &
         exit 0
     fi
 
@@ -279,7 +333,7 @@ run_music_picker() {
                 track_display_list+=("$alb / $name")
             else
                 local name="${rel%.*}"
-                track_display_list+=("(Root) / $name")
+                track_display_list+=("$name")
             fi
             track_paths+=("$path")
         done <<< "$all_tracks"

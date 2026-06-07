@@ -13,11 +13,21 @@ run_sites_menu() {
     rofi_menu() {
         local lines="${2:-10}"
         rofi -dmenu -i \
-            -theme-str 'window { width: 520px; }' \
-            -theme-str 'mainbox { padding: 0px; spacing: 0px; }' \
-            -theme-str 'inputbar { padding: 8px; }' \
-            -theme-str "listview { columns: 1; lines: ${lines}; fixed-height: false; dynamic: true; spacing: 0px; }" \
-            -theme-str 'element { padding: 4px 8px; }' \
+            -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }' \
+            -theme-str 'window { width: 54%; background-color: @bg; transparency: "real"; border: 2px; border-color: @glow; border-radius: 18px; }' \
+            -theme-str 'mainbox { background-color: transparent; padding: 8px; spacing: 4px; }' \
+            -theme-str 'inputbar { background-color: rgba(255,255,255,0.07); padding: 6px 10px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }' \
+            -theme-str 'entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }' \
+            -theme-str "listview { columns: 1; lines: ${lines}; fixed-height: false; dynamic: true; spacing: 2px; scrollbar: true; scrollbar-width: 4px; }" \
+            -theme-str 'scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }' \
+            -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 28px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }' \
+            -theme-str 'element normal.normal { background-color: @bg-alt; text-color: @fg; }' \
+            -theme-str 'element alternate.normal { background-color: @bg-alt; text-color: @fg; }' \
+            -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }' \
+            -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; }' \
+            -theme-str 'element normal.normal element-text { background-color: transparent; text-color: @fg; }' \
+            -theme-str 'element alternate.normal element-text { background-color: transparent; text-color: @fg; }' \
+            -theme-str 'element selected.normal element-text { background-color: transparent; text-color: @accent; }' \
             -p "$1"
     }
 
@@ -41,9 +51,6 @@ run_sites_menu() {
 
     local anime_urls=(
         "https://animekai.to/home"
-        "https://animepahe.si/"
-        "https://aniwatchtv.to/home"
-        "https://animeyy.com"
         "https://www.miruro.tv/"
         "https://kuudere.ru"
         "https://kaa.lt/"
@@ -65,15 +72,12 @@ run_sites_menu() {
         "https://wikipedia.org"
         "https://mail.proton.me/u/0/inbox"
         "https://pass.proton.me/u/0"
+        "https://citywalks.live"
     )
 
     local streaming_urls=(
         "https://www.cineby.sc/"
-        "https://www.bitcine.net/"
-        "https://www.fmovies.gd/"
-        "https://xprime.su/"
         "https://67movies.net"
-        "https://cinegram.net"
         "https://popcornmovies.org/home"
         "https://shuttletv.su"
     )
@@ -100,9 +104,6 @@ run_sites_menu() {
             *DeepSeek) "$BROWSER" "https://chat.deepseek.com/" ;;
             *Qwen) "$BROWSER" "https://chat.qwen.ai/" ;;
             *AnimeKai) "$BROWSER" "https://animekai.to/home" ;;
-            *AnimePahe) "$BROWSER" "https://animepahe.si/" ;;
-            *AniWatchTV) "$BROWSER" "https://aniwatchtv.to/home" ;;
-            *AnimeYY) "$BROWSER" "https://animeyy.com" ;;
             *Miruro) "$BROWSER" "https://www.miruro.tv/" ;;
             *Kuudere) "$BROWSER" "https://kuudere.ru" ;;
             *Kaa) "$BROWSER" "https://kaa.lt/" ;;
@@ -128,13 +129,10 @@ run_sites_menu() {
             *Wikipedia) "$BROWSER" "https://wikipedia.org" ;;
             *Proton\ Mail) "$BROWSER" "https://mail.proton.me/u/0/inbox" ;;
             *Proton\ Pass) "$BROWSER" "https://pass.proton.me/u/0" ;;
+            *CityWalks) "$BROWSER" "https://citywalks.live" ;;
             *X.com) "$BROWSER" "https://x.com" ;;
             *Cineby) "$BROWSER" "https://www.cineby.sc/" ;;
-            *Bitcine) "$BROWSER" "https://www.bitcine.net/" ;;
-            *Fmovies) "$BROWSER" "https://www.fmovies.gd/" ;;
-            *XPrime) "$BROWSER" "https://xprime.su/" ;;
             *67Movies) "$BROWSER" "https://67movies.net" ;;
-            *Cinegram) "$BROWSER" "https://cinegram.net" ;;
             *PopcornMovies) "$BROWSER" "https://popcornmovies.org/home" ;;
             *ShuttleTV) "$BROWSER" "https://shuttletv.su" ;;
             *aria2) zeditor "$HOME/.config/aria2" ;;
@@ -153,9 +151,6 @@ run_sites_menu() {
     }
 
     local anime_entries='❀  AnimeKai
-❀  AnimePahe
-❀  AniWatchTV
-❀  AnimeYY
 ❀  Miruro
 ❀  Kuudere
 ❀  Kaa'
@@ -188,16 +183,13 @@ run_sites_menu() {
 ❀  GitHub
 ❀  Wikipedia
 ❀  Proton Mail
-❀  Proton Pass'
+❀  Proton Pass
+❀  CityWalks'
     local web_count
     web_count=$(printf '%s\n' "$web_entries" | wc -l)
 
     local streaming_entries='❀  Cineby
-❀  Bitcine
-❀  Fmovies
-❀  XPrime
 ❀  67Movies
-❀  Cinegram
 ❀  PopcornMovies
 ❀  ShuttleTV'
     local streaming_count

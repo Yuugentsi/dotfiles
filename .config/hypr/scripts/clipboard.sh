@@ -14,12 +14,21 @@ run_clipboard_manager() {
     rofi_menu() {
         rofi -dmenu -i \
             -sep $'\x1f' \
-            -theme-str 'window { width: 46%; }' \
-            -theme-str 'mainbox { padding: 0px; spacing: 0px; }' \
-            -theme-str 'inputbar { padding: 8px; }' \
-            -theme-str 'listview { columns: 1; lines: 12; fixed-height: true; dynamic: false; spacing: 0px; scrollbar: true; }' \
-            -theme-str 'element { padding: 4px 8px; height: 36px; }' \
-            -theme-str 'element-text { expand: true; }' \
+            -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }' \
+            -theme-str 'window { width: 54%; background-color: @bg; transparency: "real"; border: 2px; border-color: @glow; border-radius: 18px; }' \
+            -theme-str 'mainbox { background-color: transparent; padding: 8px; spacing: 4px; }' \
+            -theme-str 'inputbar { background-color: rgba(255,255,255,0.07); padding: 6px 10px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }' \
+            -theme-str 'entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }' \
+            -theme-str 'listview { columns: 1; lines: 12; fixed-height: true; dynamic: false; spacing: 2px; scrollbar: true; scrollbar-width: 4px; }' \
+            -theme-str 'scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }' \
+            -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 28px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }' \
+            -theme-str 'element normal.normal { background-color: @bg-alt; text-color: @fg; }' \
+            -theme-str 'element alternate.normal { background-color: @bg-alt; text-color: @fg; }' \
+            -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }' \
+            -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; expand: true; }' \
+            -theme-str 'element normal.normal element-text { background-color: transparent; text-color: @fg; }' \
+            -theme-str 'element alternate.normal element-text { background-color: transparent; text-color: @fg; }' \
+            -theme-str 'element selected.normal element-text { background-color: transparent; text-color: @accent; }' \
             -p "$1"
     }
 

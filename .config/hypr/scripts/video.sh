@@ -28,21 +28,41 @@ run_mpv() {
 
 _video_rofi_menu() {
     rofi -dmenu -i -no-custom \
-        -theme-str 'window { width: 520px; }' \
-        -theme-str 'mainbox { padding: 0px; spacing: 0px; }' \
-        -theme-str 'inputbar { padding: 8px; }' \
-        -theme-str 'listview { columns: 1; lines: 8; fixed-height: false; dynamic: true; spacing: 0px; }' \
-        -theme-str 'element { padding: 4px 8px; }' \
+        -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }' \
+        -theme-str 'window { width: 54%; background-color: @bg; transparency: "real"; border: 2px; border-color: @glow; border-radius: 18px; }' \
+        -theme-str 'mainbox { background-color: transparent; padding: 8px; spacing: 4px; }' \
+        -theme-str 'inputbar { background-color: rgba(255,255,255,0.07); padding: 6px 10px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }' \
+        -theme-str 'entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }' \
+        -theme-str 'listview { columns: 1; lines: 12; fixed-height: false; dynamic: true; spacing: 2px; scrollbar: true; scrollbar-width: 4px; }' \
+        -theme-str 'scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }' \
+        -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 28px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }' \
+        -theme-str 'element normal.normal { background-color: @bg-alt; text-color: @fg; }' \
+        -theme-str 'element alternate.normal { background-color: @bg-alt; text-color: @fg; }' \
+        -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }' \
+        -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; }' \
+        -theme-str 'element normal.normal element-text { background-color: transparent; text-color: @fg; }' \
+        -theme-str 'element alternate.normal element-text { background-color: transparent; text-color: @fg; }' \
+        -theme-str 'element selected.normal element-text { background-color: transparent; text-color: @accent; }' \
         -p "$1"
 }
 
 _video_rofi_custom_menu() {
     rofi -dmenu -i -no-custom -kb-custom-1 "Control+t" -kb-custom-2 "Control+r" \
-        -theme-str 'window { width: 520px; }' \
-        -theme-str 'mainbox { padding: 0px; spacing: 0px; }' \
-        -theme-str 'inputbar { padding: 8px; }' \
-        -theme-str 'listview { columns: 1; lines: 8; fixed-height: false; dynamic: true; spacing: 0px; }' \
-        -theme-str 'element { padding: 4px 8px; }' \
+        -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }' \
+        -theme-str 'window { width: 54%; background-color: @bg; transparency: "real"; border: 2px; border-color: @glow; border-radius: 18px; }' \
+        -theme-str 'mainbox { background-color: transparent; padding: 8px; spacing: 4px; }' \
+        -theme-str 'inputbar { background-color: rgba(255,255,255,0.07); padding: 6px 10px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }' \
+        -theme-str 'entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }' \
+        -theme-str 'listview { columns: 1; lines: 12; fixed-height: false; dynamic: true; spacing: 2px; scrollbar: true; scrollbar-width: 4px; }' \
+        -theme-str 'scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }' \
+        -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 28px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }' \
+        -theme-str 'element normal.normal { background-color: @bg-alt; text-color: @fg; }' \
+        -theme-str 'element alternate.normal { background-color: @bg-alt; text-color: @fg; }' \
+        -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }' \
+        -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; }' \
+        -theme-str 'element normal.normal element-text { background-color: transparent; text-color: @fg; }' \
+        -theme-str 'element alternate.normal element-text { background-color: transparent; text-color: @fg; }' \
+        -theme-str 'element selected.normal element-text { background-color: transparent; text-color: @accent; }' \
         -p "$1"
 }
 
@@ -249,6 +269,7 @@ _video_browse() {
     all_count=$(_video_files_count "$current_dir")
 
     local ALL_OPTION="󰒓  ALL ($all_count)"
+    local TRACKLIST_OPTION="󰎸  Tracklist ($all_count)"
 
     local last_entry=""
     if [[ "$is_root" == "1" && "$SHOW_LAST_VIDEO" == "TRUE" && -f "$VIDEO_LAST" ]]; then
@@ -270,7 +291,7 @@ _video_browse() {
         -o -iname "*.avi" -o -iname "*.mov" -o -iname "*.flv" \
     \) 2>/dev/null | sed "s|$current_dir/||" | sort)
 
-    local entries="$ALL_OPTION"
+    local entries="$ALL_OPTION\n$TRACKLIST_OPTION"
 
     if [[ "$is_root" == "1" && -f "$YT_LIST" ]]; then
         local yt_count
@@ -314,6 +335,38 @@ _video_browse() {
 
     if [[ "$chosen" == "$ALL_OPTION" ]]; then
         _video_play_all "$current_dir"
+    fi
+
+    if [[ "$chosen" == "$TRACKLIST_OPTION" ]]; then
+        local all_videos
+        all_videos=$(_video_files_find "$VIDEO_DIR" | sort)
+
+        local -a video_paths=()
+        local -a video_display_list=()
+
+        while IFS= read -r path; do
+            local rel="${path#$VIDEO_DIR/}"
+            local name="${rel%.*}"
+            video_display_list+=("$name")
+            video_paths+=("$path")
+        done <<< "$all_videos"
+
+        local display_text
+        display_text=$(printf '%s\n' "${video_display_list[@]}" | _video_rofi_menu "  Video:")
+        [[ -z "$display_text" ]] && exit 0
+
+        local sel_idx=-1
+        for i in "${!video_display_list[@]}"; do
+            if [[ "${video_display_list[$i]}" == "$display_text" ]]; then
+                sel_idx=$i
+                break
+            fi
+        done
+
+        [[ $sel_idx -eq -1 ]] && exit 0
+
+        _video_play_file "${video_paths[$sel_idx]}"
+        exit 0
     fi
 
     if [[ "$is_root" == "1" && "$chosen" == 󰉋*"txt"* ]]; then

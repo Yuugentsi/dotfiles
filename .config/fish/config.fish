@@ -94,6 +94,9 @@ function h -d "list functions"
             if test -n "$name"; and contains -- "$name" $skip
                 continue
             end
+            if test -n "$name"; and string match -qr '^__' -- "$name"
+                continue
+            end
             set -a visible $entry
         end
 

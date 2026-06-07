@@ -14,7 +14,7 @@ function _config_backup
     echo "→ $out"
 end
 
-function config
+function config -d "open config dirs"
     set -l c "$HOME/.config"
     rm -f /tmp/config_action
 
@@ -71,14 +71,14 @@ end
 # bconfig → dotfiles zip
 #         → ✿ bconfig
 # ───────────────────────────
-function bconfig
+function bconfig -d "zip dotfiles backup"
     set -l base "$HOME"
     set -l config "$HOME/.config"
     set -l dir "$HOME/.cache/bzip"
     set -l zipname "dotfiles_"(date "+%m-%d-%y_%H-%M-%S")".zip"
     set -l zipfile "$dir/$zipname"
 
-    set -l items aria2 fish swayimg gallery-dl swaync waybar hypr kitty wofi mpv river yt-dlp zathura
+    set -l items aria2 fish fuzzel gallery-dl hypr kitty mpv nano nvim qt6ct river rofi swayimg swaync waybar wofi yt-dlp zathura zed
     set -l valid_items
 
     mkdir -p "$dir"
@@ -119,24 +119,27 @@ function bconfig
 end
 
 
-function b
+function b -d "copy file content to clipboard"
+    clear
     if test -z "$argv[1]"
-        set_color white
-        echo "B Clipboard"
-        echo
-        echo "b       text → clipboard"
-        echo "        b file.conf"
-        echo
-        echo "ba      file path → clipboard"
-        echo "        ba file.txt"
-        echo
-        echo "bzip    zip files"
-        echo "        bzip mpv hypr aria2"
-        echo
-        echo "bconfig zip dotfiles"
-        echo "        bconfig"
-        echo
-        set_color normal
+        set -l P (set_color cba6f7)
+        set -l W (set_color white)
+        set -l N (set_color normal)
+
+        echo "$P󰆍$N"
+        echo "$P  ────────────────────────────$N"
+        echo "$W  b$N       $P text → clipboard$N"
+        echo "           $P b file.conf$N"
+        echo "$P  ────────────────────────────$N"
+        echo "$W  ba$N      $P file path → clipboard$N"
+        echo "           $P ba file.txt$N"
+        echo "$P  ────────────────────────────$N"
+        echo "$W  bzip$N    $P zip files$N"
+        echo "           $P bzip mpv hypr aria2$N"
+        echo "$P  ────────────────────────────$N"
+        echo "$W  bconfig$N $P zip dotfiles$N"
+        echo "           $P bconfig$N"
+        echo "$P  ────────────────────────────$N"
         return 0
     end
 
@@ -152,7 +155,7 @@ function b
 end
 
 
-function ba
+function ba -d "copy file path to clipboard"
     if test -z "$argv[1]"
         hyprctl notify 5 3000 "rgb(ff0000)" "󰈔"
         return 1
@@ -172,7 +175,7 @@ function ba
 end
 
 
-function bzip
+function bzip -d "zip files & copy path"
     if test (count $argv) -eq 0
         hyprctl notify 5 3000 "rgb(ff0000)" "󰈔"
         return 1

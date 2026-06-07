@@ -1,25 +1,24 @@
-# ─────────── utils ───────────
-# cbz        → create .cbz
-# clients    → hyprctl clients
-# clip       → clipboard manager
-# cls        → clear screen
-# del        → uninstall packages
-# extract    → extract archives
-# zips       → zip directory
-# lf         → list files with date
-# mem        → memory monitor
-# merge      → move files up from subfolders
-# mu         → play music
-# n          → neovim
-# nodisplay  → hide/show apps
-# playing    → now playing playerctl
-# pomodoro   → 15min timer
-# power      → shutdown/reboot/logout
-# samba      → samba share
-# search     → find files by name
-# sunset     → screen warmth
-# up         → update system
-# --
+# ───────── utils ─────────
+# cbz        create .cbz
+# clients    hyprctl clients
+# clip       clipboard manager
+# del        uninstall packages
+# extract    extract archives
+# font       switch kitty & rofi fonts
+# lf         list files by date
+# mem        memory monitor
+# merge      move files up from subfolders
+# mu         play music
+# n          neovim
+# nodisplay  hide/show desktop apps
+# playing    now playing (playerctl)
+# pomodoro   15min timer
+# power      shutdown/reboot/logout
+# samba      samba share
+# search     find files by name
+# sunset     screen warmth (hyprsunset)
+# up         update system
+# zips       zip directory
 # ─────────── n ───────────
 function n -d "neovim"
     nvim $argv
@@ -1250,5 +1249,155 @@ function past -d "thunar bookmarks"
             > "$bookmarks_file"
 
         echo "bookmarks restored"
+    end
+end
+#
+# ─────────── font ───────────
+function font -d "switch fonts"
+    # ttf-jetbrains-mono-nerd ttf-firacode-nerd ttf-cascadia-code-nerd ttf-hack-nerd ttf-iosevka-nerd
+    set -l P (set_color cba6f7)
+    set -l G (set_color green)
+    set -l D (set_color brblack)
+    set -l N (set_color normal)
+
+    set -l kitty "$HOME/.config/kitty/kitty.conf"
+    set -l rofi "$HOME/.config/rofi/config.rasi"
+    set -l waybar "$HOME/.config/waybar/style.css"
+    set -l zed "$HOME/.config/zed/settings.json"
+
+
+    while true
+        set -l presets
+        set -l names
+        set -l active
+
+        set -l blocks (grep -nE '^(#\s*)?font_family\s' "$kitty")
+        if test -z "$blocks"
+            echo "$P󰅙 no font presets found$N"
+            break
+        end
+
+        set -l i 1
+        for line in $blocks
+            set -l parts (string split ':' -- $line)
+            set -l num $parts[1]
+            set -l content (string join ':' -- $parts[2..-1])
+
+            set -l raw_name (string replace -r '^\s*#\s*' '' -- "$content" | string replace 'font_family ' '')
+            set names $names $raw_name
+            set presets $presets $num
+
+            if string match -qr '^\s*font_family' -- "$content"
+                set active $i
+            end
+
+            echo "  [$i] $(test "$i" = "$active"; and echo $G; or echo $D)$raw_name$N"
+            set i (math $i + 1)
+        end
+
+        echo "$D  [0] 󰜺 exit$N"
+        read -P "→ " choice
+
+        switch $choice
+            case 0
+                clear
+                return 0
+
+            case '*'
+                if not string match -qr '^\d+$' -- $choice
+                    or test $choice -lt 1
+                    or test $choice -gt (count $presets)
+                    echo "$P󰅙 invalid$N"
+                    sleep 0.5
+                    clear
+                    continue
+                end
+
+                set -l chosen $presets[$choice]
+                set -l chosen_name $names[$choice]
+
+                # ── kitty ──
+                sed -i 's/^font_family/#font_family/' "$kitty"
+                sed -i 's/^bold_font/#bold_font/' "$kitty"
+                sed -i 's/^italic_font/#italic_font/' "$kitty"
+                sed -i 's/^bold_italic_font/#bold_italic_font/' "$kitty"
+
+                sed -i $chosen's/^#//' "$kitty"
+                sed -i (math $chosen + 1)'s/^#//' "$kitty"
+                sed -i (math $chosen + 2)'s/^#//' "$kitty"
+                sed -i (math $chosen + 3)'s/^#//' "$kitty"
+
+                # ── waybar ──
+                if string match -qr 'JetBrains' -- "$chosen_name"
+                    sed -i 's/font-family: "[^"]*"/font-family: "JetBrains Mono"/' "$waybar"
+                else
+                    sed -i 's/font-family: "[^"]*"/font-family: "monofur"/' "$waybar"
+                end
+                pkill -x waybar 2>/dev/null; waybar &>/dev/null &
+
+                # ── rofi ──
+                set -l active_line (grep -n '^\s*font: "' "$rofi" | tail -1)
+                set -l rofi_size (string match -rg 'font:\s*".*?\s+([\d.]+)' -- $active_line)
+                if test -z "$rofi_size"
+                    set rofi_size "10.5"
+                end
+
+                sed -i 's/^\(\s*\)font: "/\1\/\/font: "/' "$rofi"
+                if string match -qr 'JetBrains' -- "$chosen_name"
+                    sed -i 's|^\(\s*\)//font: "JetBrainsMono[^"]*"|\1font: "JetBrainsMono Nerd Font Medium '$rofi_size'"|' "$rofi"
+                else
+                    sed -i 's|^\(\s*\)//font: "monofur[^"]*"|\1font: "monofur '$rofi_size'"|' "$rofi"
+                end
+
+                # ── zed ──
+                if string match -qr 'JetBrains' -- "$chosen_name"
+                    sed -i 's/"font_family": "[^"]*"/"font_family": "JetBrains Mono"/g' "$zed"
+                    sed -i 's/"ui_font_family": "[^"]*"/"ui_font_family": "JetBrains Mono"/' "$zed"
+                    sed -i 's/"buffer_font_family": "[^"]*"/"buffer_font_family": "JetBrains Mono"/' "$zed"
+                else
+                    sed -i 's/"font_family": "[^"]*"/"font_family": "monofur"/g' "$zed"
+                    sed -i 's/"ui_font_family": "[^"]*"/"ui_font_family": "monofur"/' "$zed"
+                    sed -i 's/"buffer_font_family": "[^"]*"/"buffer_font_family": "monofur"/' "$zed"
+                end
+
+                clear
+                echo "$G󰄬 $chosen_name$N"
+        end
+    end
+end
+# ─────────── ps ───────────
+function ps -d "find & delete config dirs"
+    set -l P (set_color cba6f7)
+    set -l R (set_color red)
+    set -l G (set_color green)
+    set -l D (set_color brblack)
+    set -l N (set_color normal)
+
+    clear
+    set dirs (find "$HOME/.config" -maxdepth 1 -type d | grep -i "$argv[1]")
+
+    if test -z "$dirs"
+        echo "$P󰅙 no matches for$N $D$argv[1]$N"
+        return 1
+    end
+
+    echo "$P󰇘 Delete Config$N"
+    echo "$D──────────────────────────────$N"
+    set sel (printf "%s\n" $dirs | fzf --prompt="󰇘 delete? ")
+
+    if test -z "$sel"
+        clear
+        return
+    end
+
+    echo ""
+    read -P "󰅙 rm -rf $sel ? [y/N] " -l confirm
+    if test "$confirm" = y
+        rm -rf "$sel"
+        clear
+        echo "$G󰄬 deleted$N $D$sel$N"
+    else
+        clear
+        echo "$P󰄬 cancelled$N"
     end
 end

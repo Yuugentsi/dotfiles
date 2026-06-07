@@ -1,5 +1,5 @@
 # ─────────── art ───────────
-function art
+function art -d "tag all albums via metadata"
     set artist (basename (pwd))
 
     set reset (printf '%b' '\033[0m')
@@ -384,7 +384,7 @@ end
 
 
 # ─────────── art mp3───────────
-function artmp3
+function artmp3 -d "tag current album with artist & album"
     set artist (basename (dirname (pwd)))
     set album (basename (pwd))
 
@@ -473,7 +473,7 @@ function artmp3
     end
 end
 # ─────────── tracks ───────────
-function tracks
+function tracks -d "tag tracks with artist/album/year"
     set reset (printf '%b' '\033[0m')
     set bold (printf '%b' '\033[1m')
     set green (printf '%b' '\033[32m')

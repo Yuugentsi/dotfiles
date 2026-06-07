@@ -1,8 +1,8 @@
 #!/bin/bash
 # bind_exec("SUPER + G", "$HOME/.config/hypr/scripts/music.sh")
 MUSIC_DIR="${MUSIC_DIR:-${HOME}/media/music}"
-CACHE_FILE="/tmp/music-picker-cache.txt"
-CACHE_MTIME_FILE="/tmp/music-picker-cache-mtime.txt"
+CACHE_FILE="${HOME}/.cache/scripts/music/cache.txt"
+CACHE_MTIME_FILE="${HOME}/.cache/scripts/music/cache-mtime.txt"
 
 for b in zen-browser firefox brave librewolf chromium; do
     if command -v "$b" &>/dev/null; then
@@ -32,6 +32,7 @@ get_mtime() {
 build_cache() {
     local tmp
     tmp=$(mktemp)
+    mkdir -p "$(dirname "$CACHE_FILE")"
 
     while IFS= read -r artist_dir; do
         local artist_name artist_count

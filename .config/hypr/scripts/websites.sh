@@ -73,6 +73,7 @@ run_sites_menu() {
         "https://mail.proton.me/u/0/inbox"
         "https://pass.proton.me/u/0"
         "https://citywalks.live"
+        "https://www.lofi.cafe/"
     )
 
     local streaming_urls=(
@@ -90,6 +91,14 @@ run_sites_menu() {
         "https://pinterest.com"
         "https://fmhy.net/beginners-guide"
         "https://x.com"
+    )
+
+    local tech_urls=(
+        "https://hackernoon.com/"
+        "https://www.reuters.com/technology/"
+        "https://www.wsj.com/tech"
+        "https://www.androidpolice.com/"
+        "https://techcrunch.com/"
     )
 
     open_site_choice() {
@@ -130,7 +139,13 @@ run_sites_menu() {
             *Proton\ Mail) "$BROWSER" "https://mail.proton.me/u/0/inbox" ;;
             *Proton\ Pass) "$BROWSER" "https://pass.proton.me/u/0" ;;
             *CityWalks) "$BROWSER" "https://citywalks.live" ;;
+            *Lofi\ Cafe) "$BROWSER" "https://www.lofi.cafe/" ;;
             *X.com) "$BROWSER" "https://x.com" ;;
+            *HackerNoon) "$BROWSER" "https://hackernoon.com/" ;;
+            *Reuters\ Tech) "$BROWSER" "https://www.reuters.com/technology/" ;;
+            *WSJ\ Tech) "$BROWSER" "https://www.wsj.com/tech" ;;
+            *Android\ Police) "$BROWSER" "https://www.androidpolice.com/" ;;
+            *TechCrunch) "$BROWSER" "https://techcrunch.com/" ;;
             *Cineby) "$BROWSER" "https://www.cineby.sc/" ;;
             *67Movies) "$BROWSER" "https://67movies.net" ;;
             *PopcornMovies) "$BROWSER" "https://popcornmovies.org/home" ;;
@@ -184,7 +199,8 @@ run_sites_menu() {
 ❀  Wikipedia
 ❀  Proton Mail
 ❀  Proton Pass
-❀  CityWalks'
+❀  CityWalks
+❀  Lofi Cafe'
     local web_count
     web_count=$(printf '%s\n' "$web_entries" | wc -l)
 
@@ -194,6 +210,14 @@ run_sites_menu() {
 ❀  ShuttleTV'
     local streaming_count
     streaming_count=$(printf '%s\n' "$streaming_entries" | wc -l)
+
+    local tech_entries='❀  HackerNoon
+❀  Reuters Tech
+❀  WSJ Tech
+❀  Android Police
+❀  TechCrunch'
+    local tech_count
+    tech_count=$(printf '%s\n' "$tech_entries" | wc -l)
 
     local favorites_entries='❀  Wallhaven
 ❀  YouTube
@@ -221,12 +245,12 @@ run_sites_menu() {
     config_count=$(printf '%s\n' "$config_entries" | wc -l)
 
     local all_entries
-    all_entries=$(printf '%s\n%s\n%s\n%s\n%s\n%s' "$favorites_entries" "$ai_entries" "$anime_entries" "$web_entries" "$streaming_entries" "$config_entries")
+    all_entries=$(printf '%s\n%s\n%s\n%s\n%s\n%s\n%s' "$favorites_entries" "$ai_entries" "$anime_entries" "$tech_entries" "$web_entries" "$streaming_entries" "$config_entries")
     local all_count
     all_count=$(printf '%s\n' "$all_entries" | wc -l)
 
     local chosen
-    chosen=$(printf '❀  Search All (%s)\n❀  Favorites (%s)\n❀  Config (%s)\n❀  Web (%s)\n❀  AI (%s)\n❀  Anime (%s)\n❀  Streaming (%s)\n❀  Power' "$all_count" "$favorites_count" "$config_count" "$web_count" "$ai_count" "$anime_count" "$streaming_count" \
+    chosen=$(printf '❀  Search All (%s)\n❀  Favorites (%s)\n❀  Config (%s)\n❀  Web (%s)\n❀  Tech (%s)\n❀  AI (%s)\n❀  Anime (%s)\n❀  Streaming (%s)\n❀  Power' "$all_count" "$favorites_count" "$config_count" "$web_count" "$tech_count" "$ai_count" "$anime_count" "$streaming_count" \
         | rofi_menu "❀  Sites:" 8)
     [[ -z "$chosen" ]] && exit 0
 
@@ -301,6 +325,16 @@ run_sites_menu() {
                 open_all "${ai_urls[@]}"
             else
                 open_site_choice "$ai_choice"
+            fi
+            ;;
+        *"Tech ("*")")
+            local tech_choice
+            tech_choice=$(printf '❀  Open All\n%s' "$tech_entries" | rofi_menu "❀  Tech:")
+            [[ -z "$tech_choice" ]] && exit 0
+            if [[ "$tech_choice" == *"Open All" ]]; then
+                open_all "${tech_urls[@]}"
+            else
+                open_site_choice "$tech_choice"
             fi
             ;;
         *"Anime ("*")")

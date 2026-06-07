@@ -661,3 +661,130 @@ function __extra_cnf
     clear; echo -s $G "$title 󰄬" $N
     return 0
 end
+#
+function ytp --description 'yt mp3 clip'
+    set -l out_dir "$HOME/media/music/yt"
+    mkdir -p "$out_dir"
+    set -l CHANNEL_NAME_IN_FILENAME true
+    set -l green (set_color green)
+    set -l red (set_color red)
+    set -l yellow (set_color yellow)
+    set -l reset (set_color normal)
+
+    if not command -v yt-dlp >/dev/null 2>&1
+        echo -s $red "yt-dlp not found" $reset
+        return 1
+    end
+
+    mkdir -p "$out_dir"
+
+    function __ytp_download --no-scope-shadowing
+        set -l url $argv[1]
+        set -l out "$out_dir"
+        set -l title (yt-dlp --no-config --no-warnings --no-playlist --skip-download --print "%(title)s" "$url" 2>/dev/null | head -n 1)
+        test -n "$title"; or set title "ytp"
+
+        yt-dlp \
+            --no-config \
+            --cookies-from-browser firefox \
+            -x \
+            --audio-format mp3 \
+            --audio-quality 0 \
+            --no-playlist \
+            -o "$out/%(uploader)s - %(title)s.%(ext)s" \
+            "$url"
+        set -l code $status
+
+        if test $code -ne 0
+            if command -v hyprctl >/dev/null 2>&1
+                hyprctl notify -1 2200 "rgb(cba6f7)" "fontsize:18 󰅙" >/dev/null 2>&1
+            end
+        else
+            if command -v hyprctl >/dev/null 2>&1
+                hyprctl notify 5 3000 "rgb(00ff00)" "fontsize:18 $title" >/dev/null 2>&1
+            end
+        end
+
+        return $code
+    end
+
+    if test -n "$argv[1]"
+        __ytp_download "$argv[1]"
+        functions -e __ytp_download
+        return $status
+    end
+
+    if not command -v wl-paste >/dev/null 2>&1
+        echo -s $red "wl-paste not found" $reset
+        return 1
+    end
+
+    set -l worker_pid
+    set -l state_dir "/tmp/ytp_queue_$fish_pid"
+    set -l queue_file "$state_dir/queue"
+    set -l seen_file "$state_dir/seen"
+    set -l active_file "$state_dir/active"
+    set -l current_clip_file "$state_dir/current"
+    rm -rf "$state_dir"
+    mkdir -p "$state_dir"
+    touch "$queue_file" "$seen_file"
+    wl-paste -n 2>/dev/null | string trim > "$current_clip_file"
+
+    clear
+    echo "󱎫"
+
+    wl-paste --watch fish -c '
+        set -l clip (cat | string trim)
+        set -l queue_file $argv[1]
+        set -l seen_file $argv[2]
+        set -l active_file $argv[3]
+        set -l current_clip_file $argv[4]
+
+        if not string match -qr "^https?://(www\.)?(youtube\.com|youtu\.be)/" -- "$clip"
+            exit 0
+        end
+
+        if test -f "$current_clip_file"
+            set -l current_clip (cat "$current_clip_file")
+            if test -n "$current_clip"; and test "$clip" = "$current_clip"
+                rm -f "$current_clip_file"
+                exit 0
+            end
+        end
+
+        if grep -Fxq -- "$clip" "$seen_file" 2>/dev/null
+            exit 0
+        end
+
+        echo "$clip" >> "$seen_file"
+        echo "$clip" >> "$queue_file"
+
+        set -l total (wc -l < "$queue_file" | string trim)
+        if command -v hyprctl >/dev/null 2>&1
+            hyprctl notify -1 2200 "rgb(cba6f7)" "fontsize:18 󱐋 $total" >/dev/null 2>&1
+        end
+    ' "$queue_file" "$seen_file" "$active_file" "$current_clip_file" &
+    set -l watch_pid $last_pid
+
+    while true
+        if test -n "$worker_pid"; and not kill -0 $worker_pid >/dev/null 2>&1
+            wait $worker_pid >/dev/null 2>&1
+            set -e worker_pid
+            echo 0 > "$active_file"
+        end
+
+        if test -z "$worker_pid"; and test -s "$queue_file"
+            set -l next (head -n 1 "$queue_file")
+            tail -n +2 "$queue_file" > "$queue_file.tmp"
+            mv "$queue_file.tmp" "$queue_file"
+
+            if test -n "$next"
+                echo 1 > "$active_file"
+                clear
+                __ytp_download "$next"
+            end
+        end
+
+        sleep 0.15
+    end
+end

@@ -1,5 +1,56 @@
-# ─────────── shell ───────────
+# ──────── shell ────────
+# c          clear screen
+# mkcd       create & enter dir
+# rd         remove current dir
+# empty      delete empty folders
+# zipast     zip current folder
+# dt         show date/time
+# min        time until next hour
+# bak          backup config dir
+# note         append note to ~/notes.txt
+# volume 100    set audio volume
+# ───────────────────────
 set -g fish_greeting
+
+# ─────────── syntax highlight ───────────
+set -g fish_color_normal cdd6f4
+set -g fish_color_command 89b4fa
+set -g fish_color_keyword cba6f7
+set -g fish_color_quote a6e3a1
+set -g fish_color_redirection fab387
+set -g fish_color_end f5c2e7
+set -g fish_color_error f38ba8 --bold
+set -g fish_color_param cdd6f4
+set -g fish_color_valid_path --underline
+set -g fish_color_option f9e2af
+set -g fish_color_comment 6c7086
+set -g fish_color_selection --background=585b70
+set -g fish_color_operator f5c2e7
+set -g fish_color_escape f5c2e7
+set -g fish_color_autosuggestion 585b70
+set -g fish_color_cwd 89b4fa
+set -g fish_color_cwd_root f38ba8
+set -g fish_color_user a6e3a1
+set -g fish_color_host 89b4fa
+set -g fish_color_host_remote f9e2af
+set -g fish_color_status f38ba8
+set -g fish_color_cancel f5c2e7
+set -g fish_color_search_match --background=585b70
+set -g fish_color_history_current 94e2d5
+
+# ─────────── pager ───────────
+set -g fish_pager_color_progress cba6f7
+set -g fish_pager_color_prefix 89b4fa
+set -g fish_pager_color_completion cdd6f4
+set -g fish_pager_color_description 6c7086
+set -g fish_pager_color_selected_background 313244
+set -g fish_pager_color_selected_prefix b4befe
+set -g fish_pager_color_selected_completion cdd6f4
+set -g fish_pager_color_selected_description a6adc8
+set -g fish_pager_color_secondary_background 1e1e2e
+set -g fish_pager_color_secondary_prefix 89b4fa
+set -g fish_pager_color_secondary_completion cdd6f4
+set -g fish_pager_color_secondary_description 6c7086
 
 # ─────────── functions ───────────
 for f in ~/.config/fish/functions/*.fish
@@ -7,17 +58,40 @@ for f in ~/.config/fish/functions/*.fish
 end
 
 # functions
-function c; clear; end
+abbr -a c clear
 function mkcd; mkdir -p $argv[1]; and cd $argv[1]; end
 #function gh; git clone $argv[1]; and cd (basename (string replace -r '\.git$' '' $argv[1])); end
-function rd; set -l p (pwd); cd ..; rm -rf $p; end
+function rd; clear; set -l p (pwd); cd ..; read -l -P "󰅙 rm -rf $p ? [y/N] " confirm; test "$confirm" = y; and rm -rf $p; and clear; and echo "󰄬 deleted $p"; end
 function empty; set -l n (find (pwd) -type d -empty 2>/dev/null | wc -l); find (pwd) -type d -empty -delete 2>/dev/null; echo "$n folders deleted"; end
 function zipast; zip -r (basename $PWD).zip . > /dev/null; clear; du -h (basename $PWD).zip; end
 function dt; clear; set -l now (date '+%s'); set -l midnight (date -d 'tomorrow 00:00:00' '+%s'); set -l left (math -s0 "$midnight - $now"); set -l h (math -s0 "$left / 3600"); set -l m (math -s0 "($left % 3600) / 60"); printf "󰔚 %s - 󰑔 %s - 󰕑 %sh%sm\n" (date '+%H:%M:%S') (date '+%m/%d/%Y') $h $m; end
+function min; set -l n (date +%s); set -l h (date +%H); set -l nx (math "$h + 1"); set -l nxh (date -d "$nx:00:00" +%s); set -l l (math "$nxh - $n"); set -l m (math -s0 "$l / 60"); set -l s (math -s0 "$l % 60"); clear; echo "󰔚 $m min $s sec"; end
 function volume; clear; set -q argv[1]; and set p $argv[1]; or set p 100; wpctl set-volume @DEFAULT_AUDIO_SINK@ (math "min(max($p, 30), 110) / 100"); end
+function bak -d "backup dir to bak/"; set -l d (pwd); if set -q argv[1]; set d (realpath "$argv[1]"); end; mkdir -p "$d/bak"; for f in "$d"/*; test "$f" != "$d/bak"; and cp -r "$f" "$d/bak/"; end; clear; and echo "󰄬 $d/bak"; end
 
+# ─────────── note ───────────
+function note
+    set -l file ~/notes.txt
+
+    if set -q argv[1]
+        set -l t (date "+%H:%M:%S")
+
+        echo "─── $t ───" >> $file
+        echo (string join " " -- $argv) >> $file
+    end
+
+    clear
+    tail -10 $file
+end
 # ─────────── prompt ───────────
+set -g fish_transient_prompt 1
+
 function fish_prompt
+    if set -q argv[1]
+        echo -n "❯ "
+        return
+    end
+
     set -l last_status $status
 
     set -l status_color f5c2e7
@@ -239,3 +313,4 @@ function _grid
         set i (math $i + 2)
     end
 end
+

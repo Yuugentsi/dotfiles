@@ -14,7 +14,7 @@
 # playing    now playing (playerctl)
 # pomodoro   15min timer
 # power      shutdown/reboot/logout
-# samba      samba share
+
 # search     find files by name
 # sunset     screen warmth (hyprsunset)
 # up         update system
@@ -371,85 +371,7 @@ function playing -d "now playing"
     end
 end
 
-# ─────────── samba ───────────
-function samba -d "samba share"
-    sudo -v >/dev/null 2>&1
 
-    while true
-        set -l PURPLE (set_color cba6f7)
-        set -l GREEN (set_color green)
-        set -l RED (set_color red)
-        set -l DIM (set_color brblack)
-        set -l RESET (set_color normal)
-
-        set -l is_on 0
-        if systemctl is-active --quiet smb
-            set is_on 1
-        end
-
-        set -l ip (ip -4 addr show | grep -oP 'inet \K[\d.]+' | grep -v '127.0.0.1' | head -1)
-
-        echo "$PURPLE󰤐 Samba$RESET"
-        echo "$DIM────────────────────────────$RESET"
-        if test $is_on -eq 1
-            echo "$GREEN  [1] 󰄬 online$RESET $DIM$ip$RESET"
-            echo "  [2] 󰄬 offline"
-        else
-            echo "  [1] 󰄬 online"
-            echo "$RED  [2] 󰄬 offline$RESET"
-        end
-        echo "$DIM────────────────────────────$RESET"
-        echo "$DIM  [0] 󰜺 exit$RESET"
-        echo ""
-        read -n 1 -P "→ " choice
-
-        switch $choice
-            case 0
-                return 0
-
-            case 1
-                if not command -v smbd >/dev/null 2>&1
-                    sudo pacman -S samba --noconfirm >/dev/null 2>&1
-                end
-
-                set -l share "$HOME/samba/"
-                test -d "$share"; or mkdir -p "$share" >/dev/null 2>&1
-                chmod 777 "$share" >/dev/null 2>&1
-
-                echo "[global]
-   workgroup = WORKGROUP
-   map to guest = Bad User
-[all]
-   path = $share
-   writable = yes
-   guest ok = yes
-   guest only = yes" | sudo tee /etc/samba/smb.conf >/dev/null 2>&1
-
-                if sudo systemctl enable --now smb nmb >/dev/null 2>&1
-                    set -l ip (ip -4 addr show | grep -oP 'inet \K[\d.]+' | grep -v '127.0.0.1' | head -1)
-                    clear
-                    echo -s $GREEN "󰄬 online $ip" $RESET
-                else
-                    echo "󰅙 offline"
-                end
-
-            case 2
-                sudo systemctl stop smb nmb >/dev/null 2>&1
-                sudo systemctl disable smb nmb >/dev/null 2>&1
-                sudo pacman -Rs samba --noconfirm >/dev/null 2>&1
-                sudo rm -rf /etc/samba /var/lib/samba /var/log/samba >/dev/null 2>&1
-                sudo rm -rf "$HOME/samba/" >/dev/null 2>&1
-                clear
-                echo -s $RED "󰄬 offline" $RESET
-
-            case '*'
-                echo "! invalid option"
-                sleep 0.8
-        end
-
-        clear
-    end
-end
 # ─────────── clip ───────────
 function clip -d "clipboard manager"
     switch "$argv[1]"

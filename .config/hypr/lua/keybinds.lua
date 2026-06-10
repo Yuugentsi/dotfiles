@@ -118,6 +118,7 @@ hl.on("hyprland.start", function()
     exec("bash $HOME/.config/hypr/scripts/wallpaper.sh daemon")
     exec("python $HOME/.config/hypr/scripts/utils.py watch")
     exec("python $HOME/.config/hypr/scripts/utils.py anime")
+    exec("bash $HOME/.config/hypr/scripts/utils.sh workspace")
 end)
 
 -- ----- media -----

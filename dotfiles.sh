@@ -5,149 +5,34 @@ sudo -v
 
 REPO_URL="https://github.com/Yuugentsi/dotfile.git"
 
-# ─────────── git ───────────
-echo "󰊢 git"
-sudo pacman -S --needed --noconfirm git
+echo ""
+echo "  > 1"
+echo "  > 2 ⚙"
+echo ""
+read -p "  -> " choice
+echo ""
 
-# ─────────── clone ───────────
+# ----------- clone -----------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -d "$SCRIPT_DIR/fish" ] && [ -d "$SCRIPT_DIR/hypr" ]; then
     DOTFILES_DIR="$SCRIPT_DIR"
 else
     rm -rf "/tmp/dotfiles"
-    echo "󰊢 cloning..."
+    echo "cloning..."
     git clone "$REPO_URL" "/tmp/dotfiles"
     DOTFILES_DIR="/tmp/dotfiles"
 fi
 
-# ─────────── packages ───────────
-echo "󰮯 installing..."
-sudo pacman -S --needed --noconfirm \
-    brightnessctl   \
-    cliphist        \
-    firefox         \
-    firefox-ublock-origin \
-    firefox-dark-reader \
-    fish            \
-    fd              \
-    gvfs            \
-    hyprland        \
-    hypridle        \
-    hyprlock        \
-    hyprpaper       \
-    hyprshot        \
-    hyprsunset      \
-    imagemagick     \
-    jq              \
-    kitty           \
-    mpv             \
-    mpv-mpris       \
-    playerctl       \
-    nano            \
-    rofi            \
-    swayimg         \
-    thunar          \
-    qt6ct           \
-    kvantum         \
-    tree            \
-    ttf-jetbrains-mono \
-    ttf-jetbrains-mono-nerd \
-    noto-fonts      \
-    oxygen-cursors  \
-    adw-gtk-theme   \
-    breeze-icons    \
-    noto-fonts-cjk  \
-    noto-fonts-emoji \
-    noto-fonts-extra \
-    waybar          \
-    wl-clipboard    \
-    yt-dlp          \
-    zathura         \
-    zathura-cb      \
-    ffmpegthumbnailer \
-    fzf             \
-    tumbler         \
-    qt6ct           \
-    zed             \
-    zip             \
-    unzip           \
-    libarchive       \
-    xdg-desktop-portal-hyprland
+install_extractor() {
+    APP_ID="extract.desktop"
+    BIN_DIR="${HOME}/.local/bin"
+    APP_DIR="${HOME}/.local/share/applications"
+    SCRIPT_PATH="${BIN_DIR}/extract.sh"
+    DESKTOP_PATH="${APP_DIR}/${APP_ID}"
 
-# ─────────── spotx ───────────
-echo "󰝚 spotx"
-bash <(curl -sSL https://spotx-official.github.io/run.sh) || true
+    mkdir -p "${BIN_DIR}" "${APP_DIR}"
 
-# ─────────── shell ───────────
-echo "󰈺 shell → fish"
-sudo chsh -s /usr/bin/fish "$USER"
-
-# ─────────── dirs ───────────
-echo "󰉋 media"
-MEDIA="${HOME}/media"
-for d in music video pictures documents; do
-    [ -d "$MEDIA/$d" ] || mkdir -p "$MEDIA/$d"
-done
-
-# ─────────── config ───────────
-TARGET_DIR="${HOME}/.config"
-mkdir -p "$TARGET_DIR"
-
-for dir in "$DOTFILES_DIR"/.config/*/; do
-    name="$(basename "$dir")"
-    [ "$name" = ".git" ] && continue
-    echo " 󰄬 ${name}"
-    rm -rf "${TARGET_DIR:?}/${name}"
-    cp -r "$dir" "${TARGET_DIR}/"
-done
-
-# ─────────── scripts ───────────
-chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
-
-# ─────────── nodisplay ───────────
-apps_nodisplay=(
-    avahi-discover.desktop bssh.desktop bvnc.desktop
-    xfce4-about.desktop qv4l2.desktop qvidcap.desktop
-    xgps.desktop xgpsspeed.desktop org.freedesktop.Xwayland.desktop
-    kitty-open.desktop thunar-bulk-rename.desktop thunar-settings.desktop
-    org.gnupg.pinentry-qt5.desktop org.gnupg.pinentry-qt.desktop
-    electron36.desktop electron37.desktop
-    rofi.desktop rofi-theme-selector.desktop
-)
-for app in "${apps_nodisplay[@]}"; do
-    file="/usr/share/applications/$app"
-    if [ -f "$file" ] && ! grep -q '^NoDisplay=true$' "$file" 2>/dev/null; then
-        echo "NoDisplay=true" | sudo tee -a "$file" >/dev/null
-    fi
-done
-
-# ─────────── theme ───────────
-echo "󰉋 theme → adw-gtk3-dark"
-gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
-gsettings set org.gnome.desktop.interface icon-theme "breeze-dark" 2>/dev/null || true
-
-# ─────────── yay ───────────
-if ! command -v yay &>/dev/null; then
-    echo "󰮯 yay"
-    sudo pacman -S --needed --noconfirm base-devel
-    git clone https://aur.archlinux.org/yay.git /tmp/yay
-    chown -R "$USER:$USER" /tmp/yay
-    cd /tmp/yay
-    sudo -u "$USER" makepkg -si --noconfirm
-    cd /
-    rm -rf /tmp/yay
-fi
-
-# ─────────── extractor ───────────
-APP_ID="extract.desktop"
-BIN_DIR="${HOME}/.local/bin"
-APP_DIR="${HOME}/.local/share/applications"
-SCRIPT_PATH="${BIN_DIR}/extract.sh"
-DESKTOP_PATH="${APP_DIR}/${APP_ID}"
-
-mkdir -p "${BIN_DIR}" "${APP_DIR}"
-
-cat > "${SCRIPT_PATH}" <<'EOF'
+    cat > "${SCRIPT_PATH}" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -228,9 +113,9 @@ fi
 notify "Archive extracted" "$(basename "${target_dir}")"
 EOF
 
-chmod +x "${SCRIPT_PATH}"
+    chmod +x "${SCRIPT_PATH}"
 
-cat > "${DESKTOP_PATH}" <<EOF
+    cat > "${DESKTOP_PATH}" <<EOF
 [Desktop Entry]
 Type=Application
 Version=1.0
@@ -244,85 +129,240 @@ MimeType=application/epub+zip;application/x-7z-compressed;application/x-7z-compr
 Categories=Utility;Archiving;
 EOF
 
-chmod 644 "${DESKTOP_PATH}"
+    chmod 644 "${DESKTOP_PATH}"
 
-if command -v update-desktop-database >/dev/null 2>&1; then
-  update-desktop-database "${APP_DIR}" >/dev/null 2>&1 || true
-fi
+    if command -v update-desktop-database >/dev/null 2>&1; then
+      update-desktop-database "${APP_DIR}" >/dev/null 2>&1 || true
+    fi
 
-mime_types=(
-  application/epub+zip
-  application/x-7z-compressed
-  application/x-7z-compressed-tar
-  application/x-ace
-  application/x-alz
-  application/x-arc
-  application/x-arj
-  application/x-brotli
-  application/x-brotli-compressed-tar
-  application/x-bzip
-  application/x-bzip2
-  application/bzip2
-  application/x-bzip-compressed-tar
-  application/x-bzip1
-  application/x-bzip1-compressed-tar
-  application/x-cabinet
-  application/x-cbr
-  application/x-cd-image
-  application/x-compress
-  application/x-compressed-tar
-  application/x-cpio
-  application/vnd.debian.binary-package
-  application/x-ear
-  application/x-ms-dos-executable
-  application/x-gtar
-  application/x-gzip
-  application/gzip
-  application/x-gzpostscript
-  application/x-java-archive
-  application/java-archive
-  application/jar
-  application/jar-archive
-  application/x-lha
-  application/x-lzh-compressed
-  application/x-lrzip
-  application/x-lrzip-compressed-tar
-  application/x-lzip
-  application/x-lzip-compressed-tar
-  application/x-lzma
-  application/x-lzma-compressed-tar
-  application/x-lzop
-  application/x-lzop-compressed-tar
-  application/x-ms-wim
-  application/x-rar
-  application/x-rar-compressed
-  application/x-rpm
-  application/x-source-rpm
-  application/x-rzip
-  application/x-tar
-  application/x-tarz
-  application/x-stuffit
-  application/x-war
-  application/x-xz
-  application/x-xz-compressed-tar
-  application/x-zip
-  application/x-zip-compressed
-  application/x-zoo
-  application/zstd
-  application/x-zstd
-  application/x-zstd-compressed-tar
-  application/zip
-  application/x-archive
-  application/vnd.ms-cab-compressed
-)
+    mime_types=(
+      application/epub+zip
+      application/x-7z-compressed
+      application/x-7z-compressed-tar
+      application/x-ace
+      application/x-alz
+      application/x-arc
+      application/x-arj
+      application/x-brotli
+      application/x-brotli-compressed-tar
+      application/x-bzip
+      application/x-bzip2
+      application/bzip2
+      application/x-bzip-compressed-tar
+      application/x-bzip1
+      application/x-bzip1-compressed-tar
+      application/x-cabinet
+      application/x-cbr
+      application/x-cd-image
+      application/x-compress
+      application/x-compressed-tar
+      application/x-cpio
+      application/vnd.debian.binary-package
+      application/x-ear
+      application/x-ms-dos-executable
+      application/x-gtar
+      application/x-gzip
+      application/gzip
+      application/x-gzpostscript
+      application/x-java-archive
+      application/java-archive
+      application/jar
+      application/jar-archive
+      application/x-lha
+      application/x-lzh-compressed
+      application/x-lrzip
+      application/x-lrzip-compressed-tar
+      application/x-lzip
+      application/x-lzip-compressed-tar
+      application/x-lzma
+      application/x-lzma-compressed-tar
+      application/x-lzop
+      application/x-lzop-compressed-tar
+      application/x-ms-wim
+      application/x-rar
+      application/x-rar-compressed
+      application/x-rpm
+      application/x-source-rpm
+      application/x-rzip
+      application/x-tar
+      application/x-tarz
+      application/x-stuffit
+      application/x-war
+      application/x-xz
+      application/x-xz-compressed-tar
+      application/x-zip
+      application/x-zip-compressed
+      application/x-zoo
+      application/zstd
+      application/x-zstd
+      application/x-zstd-compressed-tar
+      application/zip
+      application/x-archive
+      application/vnd.ms-cab-compressed
+    )
 
-for mime in "${mime_types[@]}"; do
-  xdg-mime default "${APP_ID}" "${mime}" >/dev/null 2>&1 || true
-done
+    for mime in "${mime_types[@]}"; do
+      xdg-mime default "${APP_ID}" "${mime}" >/dev/null 2>&1 || true
+    done
 
-echo "󰄬 Extractor installed: ${SCRIPT_PATH}"
+    echo "Extractor installed: ${SCRIPT_PATH}"
+}
 
-# ─────────── reload ───────────
-hyprctl reload 2>/dev/null || true
+case "$choice" in
+    1)
+        # ----------- git -----------
+        echo "git"
+        sudo pacman -S --needed --noconfirm git
 
-echo "󰄬 done"
+        # ----------- packages -----------
+        echo "installing..."
+        sudo pacman -S --needed --noconfirm \
+            brightnessctl   \
+            cliphist        \
+            firefox         \
+            firefox-ublock-origin \
+            firefox-dark-reader \
+            fish            \
+            fd              \
+            gvfs            \
+            hyprland        \
+            hypridle        \
+            hyprlock        \
+            hyprpaper       \
+            hyprshot        \
+            hyprsunset      \
+            imagemagick     \
+            jq              \
+            kitty           \
+            mpv             \
+            mpv-mpris       \
+            playerctl       \
+            nano            \
+            rofi            \
+            swayimg         \
+            thunar          \
+            qt6ct           \
+            kvantum         \
+            tree            \
+            ttf-jetbrains-mono \
+            ttf-jetbrains-mono-nerd \
+            noto-fonts      \
+            oxygen-cursors  \
+            adw-gtk-theme   \
+            breeze-icons    \
+            noto-fonts-cjk  \
+            noto-fonts-emoji \
+            noto-fonts-extra \
+            waybar          \
+            wl-clipboard    \
+            yt-dlp          \
+            zathura         \
+            zathura-cb      \
+            ffmpegthumbnailer \
+            fzf             \
+            tumbler         \
+            qt6ct           \
+            zed             \
+            zip             \
+            unzip           \
+            libarchive       \
+            xdg-desktop-portal-hyprland
+
+        # ----------- spotx -----------
+        echo "spotx"
+        bash <(curl -sSL https://spotx-official.github.io/run.sh) || true
+
+        # ----------- shell -----------
+        echo "shell -> fish"
+        sudo chsh -s /usr/bin/fish "$USER"
+
+        # ----------- dirs -----------
+        echo "media"
+        MEDIA="${HOME}/media"
+        for d in music video pictures documents; do
+            [ -d "$MEDIA/$d" ] || mkdir -p "$MEDIA/$d"
+        done
+
+        # ----------- config -----------
+        TARGET_DIR="${HOME}/.config"
+        mkdir -p "$TARGET_DIR"
+
+        for dir in "$DOTFILES_DIR"/.config/*/; do
+            name="$(basename "$dir")"
+            [ "$name" = ".git" ] && continue
+            echo " ${name}"
+            rm -rf "${TARGET_DIR:?}/${name}"
+            cp -r "$dir" "${TARGET_DIR}/"
+        done
+
+        # ----------- scripts -----------
+        chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
+
+        # ----------- nodisplay -----------
+        apps_nodisplay=(
+            avahi-discover.desktop bssh.desktop bvnc.desktop
+            xfce4-about.desktop qv4l2.desktop qvidcap.desktop
+            xgps.desktop xgpsspeed.desktop org.freedesktop.Xwayland.desktop
+            kitty-open.desktop thunar-bulk-rename.desktop thunar-settings.desktop
+            org.gnupg.pinentry-qt5.desktop org.gnupg.pinentry-qt.desktop
+            electron36.desktop electron37.desktop
+            rofi.desktop rofi-theme-selector.desktop
+        )
+        for app in "${apps_nodisplay[@]}"; do
+            file="/usr/share/applications/$app"
+            if [ -f "$file" ] && ! grep -q '^NoDisplay=true$' "$file" 2>/dev/null; then
+                echo "NoDisplay=true" | sudo tee -a "$file" >/dev/null
+            fi
+        done
+
+        # ----------- theme -----------
+        echo "theme -> adw-gtk3-dark"
+        gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface icon-theme "breeze-dark" 2>/dev/null || true
+
+        # ----------- yay -----------
+        if ! command -v yay &>/dev/null; then
+            echo "yay"
+            sudo pacman -S --needed --noconfirm base-devel
+            git clone https://aur.archlinux.org/yay.git /tmp/yay
+            chown -R "$USER:$USER" /tmp/yay
+            cd /tmp/yay
+            sudo -u "$USER" makepkg -si --noconfirm
+            cd /
+            rm -rf /tmp/yay
+        fi
+
+        # ----------- extractor -----------
+        install_extractor
+
+        hyprctl reload 2>/dev/null || true
+
+        echo "done"
+        ;;
+    2)
+        TARGET_DIR="${HOME}/.config"
+        mkdir -p "$TARGET_DIR"
+
+        for dir in "$DOTFILES_DIR"/.config/*/; do
+            name="$(basename "$dir")"
+            [ "$name" = ".git" ] && continue
+            echo " ${name}"
+            rm -rf "${TARGET_DIR:?}/${name}"
+            cp -r "$dir" "${TARGET_DIR}/"
+        done
+
+        chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
+
+        # ----------- extractor -----------
+        install_extractor
+
+        # ----------- reload -----------
+        hyprctl reload 2>/dev/null || true
+
+        echo "done"
+        ;;
+    *)
+        echo "invalid"
+        exit 1
+        ;;
+esac

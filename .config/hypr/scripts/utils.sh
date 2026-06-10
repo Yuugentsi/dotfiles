@@ -127,8 +127,26 @@ case "${1:-}" in
         printf "%s\n-------------\n" "$content" >> "$notes"
         hyprctl notify -1 2000 "rgb(a6e3a1)" "󰄬 note saved"
         ;;
+    # ----- workspace notify -----
+    # exec("bash $HOME/.config/hypr/scripts/utils.sh workspace")
+    workspace)
+        STATE=true
+        ICONS=("" ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉)
+        socat -U - "UNIX-CONNECT:$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock" | while read -r line; do
+            case "$line" in
+                workspace\>\>*)
+                    $STATE || continue
+                    ws="${line#workspace>>}"
+                    icon="●"
+                    [[ "$ws" =~ ^[0-9]+$ ]] && icon="${ICONS[$ws]}"
+                    hyprctl dismissnotify 1 2>/dev/null
+                    hyprctl notify 1 2000 "rgb(a6e3a1)" "fontsize:18 $icon" 2>/dev/null
+                    ;;
+            esac
+        done
+        ;;
     *)
-        echo "Usage: $0 {toggle|play|z|note}"
+        echo "Usage: $0 {toggle|play|z|note|workspace}"
         exit 1
         ;;
 esac

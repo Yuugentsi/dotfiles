@@ -21,11 +21,12 @@ hl.window_rule({ name = "rofi-animation", match = { class = "rofi" }, animation 
 -- -------------------- opacity --------------------
 hl.window_rule({ name = "zed-opacity", match = { class = "dev.zed.Zed" }, opacity = "0.90 0.88" })
 hl.window_rule({ name = "firefox-opacity", match = { class = "firefox" }, opacity = "0.82 0.62" })
+hl.window_rule({ name = "zen-opacity", match = { class = "zen" }, opacity = "0.70 0.70" })
 hl.window_rule({ name = "spotify-opacity", match = { class = "Spotify" }, opacity = "0.85 0.75" })
 hl.window_rule({ name = "thunar-opacity", match = { class = "thunar" }, opacity = "0.80 0.80" })
 hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.88 0.82" })
 hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.60 0.70" })
-hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.80 0.80" })
+hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.65 0.65" })
 hl.window_rule({ name = "kitty-opacity", match = { class = "kitty" }, opacity = "0.80 0.80" })
 hl.window_rule({ name = "zathura-opacity", match = { class = "(zathura|org\\.pwmt\\.zathura)" }, opacity = "0.88 0.80" })
 
@@ -43,7 +44,7 @@ hl.window_rule({
     name = "thunar-float",
     match = { class = "thunar" },
     float = true,
-    size = "960 580",
+    size = "1100 700",
     center = true,
     border_size = 0
 })
@@ -53,7 +54,7 @@ hl.window_rule({
     name = "telegram-float",
     match = { class = "org.telegram.desktop" },
     float = true,
-    size = "875 621",
+    size = "1097 631",
     center = true,
     border_size = 0
 })
@@ -164,8 +165,9 @@ hl.window_rule({
     match   = { class = "firefox|xdg-desktop-portal-gtk|brave-origin-beta|xdg-desktop-portal-gtk", title = ".*Save.*|.*Opening.*" },
     float   = true,
     center  = true,
-    size    = "(monitor_w*0.5) (monitor_h*0.6)",
+    size    = "875 621",
     opacity = "0.92 override 0.92 override",
+    border_size = 0,
 })
 
 -- ----- telegram -----
@@ -177,6 +179,16 @@ hl.window_rule({
     size        = "(monitor_w*0.4) (monitor_h*0.45)",
     opacity     = "1.0 override 1.0 override",
     border_size = 0,
+})
+
+-- ----- telegram-media-viewer -----
+hl.window_rule({
+    name    = "telegram-media-pip",
+    match   = { class = "org.telegram.desktop", title = "Media viewer" },
+    float   = true,
+    center  = true,
+    opacity = "1.0 1.0",
+    size    = "850 600",
 })
 
 -- -------------------- system behavior --------------------

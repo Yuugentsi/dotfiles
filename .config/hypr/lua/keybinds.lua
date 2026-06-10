@@ -110,6 +110,7 @@ bind_exec("ALT + T", "bash $HOME/.config/hypr/scripts/utils.sh toggle")
 bind_exec("ALT + Q", "bash $HOME/.config/hypr/scripts/kitty.sh")
 bind_exec("F1", "bash $HOME/.config/hypr/scripts/utils.sh play")
 bind_exec("ALT + F1", "bash $HOME/.config/hypr/scripts/utils.sh spotify")
+bind_exec(MOD .. " + F1", "playerctl previous")
 -- ----- autostart -----
 hl.on("hyprland.start", function()
     local function exec(cmd) hl.exec_cmd(cmd) end

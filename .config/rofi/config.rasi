@@ -21,7 +21,7 @@ configuration {
 * {
     font: "monofur 10.5";
     //font: "JetBrainsMono Nerd Font Medium 10.5";
-    bg: rgba(12, 4, 8, 0.75);
+    bg: rgba(12, 4, 8, 0.70);
     bg-alt: rgba(255, 255, 255, 0.05);
     bg-hover: rgba(200, 90, 120, 0.25);
     fg: #ffe0ec;

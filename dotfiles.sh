@@ -353,6 +353,10 @@ case "$choice" in
 
         chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
 
+        # ----------- shell -----------
+        sudo pacman -S --needed --noconfirm fish
+        sudo chsh -s /usr/bin/fish "$USER"
+
         # ----------- extractor -----------
         install_extractor
 

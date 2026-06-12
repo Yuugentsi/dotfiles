@@ -39,7 +39,7 @@ local vol_mute =
 local vol_down =
 "bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); [ $v -le 15 ] && v=15 || v=$((v-5)); wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(ffaa00)\" \"fontsize:18  ${v}%\"'"
 local vol_up   =
-"bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 80 ] && v=80; wpctl set-volume --limit 0.80 @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(33ff33)\" \"fontsize:18 󰕾 ${v}%\"'"
+"bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 95 ] && v=95; wpctl set-volume --limit 0.95 @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(33ff33)\" \"fontsize:18 󰕾 ${v}%\"'"
 
 bind_exec("F6", vol_mute, { repeating = true })
 bind_exec("F7", vol_down, { repeating = true })

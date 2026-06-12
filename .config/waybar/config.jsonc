@@ -103,10 +103,10 @@
     "exec": "sh -c 'if pgrep -x hyprsunset > /dev/null; then T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 3600); echo \"{\\\"text\\\":\\\"󰖔\\\",\\\"class\\\":\\\"on\\\",\\\"tooltip\\\":\\\"󰖔 ${T}K\\\"}\"; else echo \"{\\\"text\\\":\\\"\\\",\\\"class\\\":\\\"\\\"}\"; fi'",
     "tooltip": true,
     "interval": 0.2,
-    "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 3600 & fi'",
-    "on-click-right": "sh -c 'pkill -x hyprsunset 2>/dev/null; sleep 0.3; echo 3600 > /tmp/hyprsunset_temp; hyprsunset -t 3600 &'",
-    "on-scroll-up": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 3600); T=$((T+100)); [ $T -gt 3600 ] && T=3600; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
-    "on-scroll-down": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 3600); T=$((T-100)); [ $T -lt 3600 ] && T=3600; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
+    "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2700 & fi'",
+    "on-click-right": "sh -c 'pkill -x hyprsunset 2>/dev/null; sleep 0.3; echo 2700 > /tmp/hyprsunset_temp; hyprsunset -t 2700 &'",
+    "on-scroll-up": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2700); T=$((T+100)); [ $T -gt 2700 ] && T=2700; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
+    "on-scroll-down": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2700); T=$((T-100)); [ $T -lt 2700 ] && T=2700; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
   },
 
   "custom/stop-music": {

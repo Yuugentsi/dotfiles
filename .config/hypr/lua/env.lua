@@ -1,5 +1,5 @@
 -- ─── env ───
--- adw-gtk-theme breeze-icons oxygen-cursors
+-- adw-gtk-theme mate Materia-dark oxygen-cursors
 local env_vars = {
     -- cursor
     XCURSOR_THEME                       = "Oxygen_Zion",
@@ -28,8 +28,8 @@ end
 
 -- ─── theme ───
 local themes = {
-    ["org.gnome.desktop.interface gtk-theme"]  = "adw-gtk3-dark",
-    ["org.gnome.desktop.interface icon-theme"] = "breeze-dark",
+    ["org.gnome.desktop.interface gtk-theme"]  = "Materia-dark",
+    ["org.gnome.desktop.interface icon-theme"] = "mate",
 }
 
 for key, val in pairs(themes) do

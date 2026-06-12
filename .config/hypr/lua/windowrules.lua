@@ -44,7 +44,7 @@ hl.window_rule({
     name = "thunar-float",
     match = { class = "thunar" },
     float = true,
-    size = "1100 700",
+    size = "900 600",
     center = true,
     border_size = 0
 })

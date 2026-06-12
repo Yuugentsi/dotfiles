@@ -57,16 +57,24 @@ for f in ~/.config/fish/functions/*.fish
     source $f
 end
 
-# functions
+# --- functions ---
 abbr -a c clear
+# --- mkdir
 function mkcd; mkdir -p $argv[1]; and cd $argv[1]; end
 #function gh; git clone $argv[1]; and cd (basename (string replace -r '\.git$' '' $argv[1])); end
+# --- clear
 function rd; clear; set -l p (pwd); cd ..; read -l -P "󰅙 rm -rf $p ? [y/N] " confirm; test "$confirm" = y; and rm -rf $p; and clear; and echo "󰄬 deleted $p"; end
+# --- empty
 function empty; set -l n (find (pwd) -type d -empty 2>/dev/null | wc -l); find (pwd) -type d -empty -delete 2>/dev/null; echo "$n folders deleted"; end
+# --- zip
 function zipast; zip -r (basename $PWD).zip . > /dev/null; clear; du -h (basename $PWD).zip; end
+# --- time ---
 function dt; clear; set -l now (date '+%s'); set -l midnight (date -d 'tomorrow 00:00:00' '+%s'); set -l left (math -s0 "$midnight - $now"); set -l h (math -s0 "$left / 3600"); set -l m (math -s0 "($left % 3600) / 60"); printf "󰔚 %s - 󰑔 %s - 󰕑 %sh%sm\n" (date '+%H:%M:%S') (date '+%m/%d/%Y') $h $m; end
+# ---
 function min; set -l n (date +%s); set -l h (date +%H); set -l nx (math "$h + 1"); set -l nxh (date -d "$nx:00:00" +%s); set -l l (math "$nxh - $n"); set -l m (math -s0 "$l / 60"); set -l s (math -s0 "$l % 60"); clear; echo "󰔚 $m min $s sec"; end
+# --- volume ---
 function volume; clear; set -q argv[1]; and set p $argv[1]; or set p 100; wpctl set-volume @DEFAULT_AUDIO_SINK@ (math "min(max($p, 30), 110) / 100"); end
+# ---
 function bak -d "backup dir to bak/"; set -l d (pwd); if set -q argv[1]; set d (realpath "$argv[1]"); end; mkdir -p "$d/bak"; for f in "$d"/*; test "$f" != "$d/bak"; and cp -r "$f" "$d/bak/"; end; clear; and echo "󰄬 $d/bak"; end
 
 # ─────────── note ───────────
@@ -88,7 +96,7 @@ set -g fish_transient_prompt 1
 
 function fish_prompt
     if set -q argv[1]
-        echo -n "❯ "
+        echo -n "ᗧ "
         return
     end
 
@@ -103,11 +111,11 @@ function fish_prompt
     string match -q "$HOME" "$PWD"; and set pwd "~"
 
     set -l DIM (set_color 7c5cbf)
-    set -l DIR (set_color c8b8de --bold)
+    set -l DIR (set_color a89cc8 --bold)
     set -l N (set_color normal)
 
-    echo -s "$DIM╭─$N $DIR$pwd$N"
-    echo -n -s "$DIM╰─$N " (set_color $status_color --bold) "❯ " (set_color normal)
+    echo -s "$DIM╭─$N $DIR $pwd$N"
+    echo -n -s "$DIM╰─$N " (set_color $status_color --bold) "ᗧ " (set_color normal)
 end
 # ─────────── venv ───────────
 function venv
@@ -313,4 +321,3 @@ function _grid
         set i (math $i + 2)
     end
 end
-

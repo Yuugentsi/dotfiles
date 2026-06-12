@@ -1,5 +1,5 @@
 * {
-  font-family: "monofur", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 14px;
   font-weight: 500;
   border: none;
@@ -9,12 +9,12 @@
 
 window#waybar {
   background: transparent;
-  color: #f0b8c8;
+  color: #a89cc8;
 }
 
 .modules-center {
-  background: rgba(24, 6, 14, 0.34);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  border: none;
   border-radius: 999px;
   padding: 4px 8px;
 }
@@ -33,47 +33,51 @@ window#waybar {
 #group-power,
 #custom-logout,
 #custom-reboot {
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  border: none;
   border-radius: 999px;
   margin: 0 4px;
   padding: 2px 11px;
-  color: #f0b8c8;
+  color: #a89cc8;
 }
 
 #workspaces {
   padding: 1px 8px;
+  font-size: 10px;
 }
 
 #workspaces button {
   background: transparent;
-  color: rgba(230, 160, 180, 0.55);
-  padding: 0 4px;
+  color: rgba(168, 156, 200, 0.55);
+  padding: 0 6px;
   margin: 0;
   border-radius: 999px;
   border: none;
   box-shadow: none;
   outline: none;
   transition: color 140ms ease;
+  min-height: 0;
+  min-width: 0;
+  font-size: 10px;
 }
 
 #workspaces button.active {
-  color: #ffffff;
-  text-shadow: 0px 0px 8px #e898ae;
+  color: #a89cc8;
+  text-shadow: 0px 0px 8px #a89cc8;
   border: none;
   box-shadow: none;
 }
 
 #workspaces button:hover {
-  color: #f0b8c8;
-  text-shadow: 0px 0px 8px rgba(232, 152, 174, 0.6);
+  color: #a89cc8;
+  text-shadow: 0px 0px 8px rgba(168, 156, 200, 0.6);
   border: none;
   box-shadow: none;
 }
 
 #workspaces button.urgent {
-  color: #f06292;
-  text-shadow: 0px 0px 8px #f06292;
+  color: #a89cc8;
+  text-shadow: 0px 0px 8px #a89cc8;
 }
 
 #taskbar {
@@ -87,20 +91,20 @@ window#waybar {
 
 #taskbar button {
   background: transparent;
-  color: rgba(230, 160, 180, 0.5);
+  color: rgba(168, 156, 200, 0.5);
   margin-right: 4px;
   margin-left: 4px;
   padding: 1px 0;
 }
 
 #taskbar button:hover {
-  color: rgba(230, 160, 180, 0.7);
+  color: rgba(168, 156, 200, 0.7);
 }
 
 #taskbar button.active {
   color: #ffffff;
-  background: rgba(160, 60, 100, 0.28);
-  box-shadow: 0px 0px 6px rgba(160, 60, 100, 0.32);
+  background: rgba(110, 90, 150, 0.28);
+  box-shadow: 0px 0px 6px rgba(110, 90, 150, 0.32);
   border-radius: 6px;
   margin: 0 2px;
   padding: 1px 3px;
@@ -108,7 +112,7 @@ window#waybar {
 
 #workspaces .taskbar-window {
   background: transparent;
-  color: rgba(230, 160, 180, 0.4);
+  color: rgba(168, 156, 200, 0.4);
   margin-right: 1px;
   margin-left: 1px;
   padding: 0 2px;
@@ -118,17 +122,19 @@ window#waybar {
 
 #workspaces .taskbar-window.active {
   color: #ffffff;
-  background: rgba(160, 60, 100, 0.24);
+  background: rgba(110, 90, 150, 0.24);
 }
 
 #workspaces .taskbar-window:hover {
-  color: rgba(230, 160, 180, 0.7);
-  background: rgba(160, 60, 100, 0.12);
+  color: rgba(168, 156, 200, 0.7);
+  background: rgba(110, 90, 150, 0.12);
 }
 
 #mpris {
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 6px;
+  background: transparent;
+  border: none;
 }
 
 #mpris.spotify {
@@ -147,19 +153,38 @@ window#waybar {
 }
 
 #pulseaudio {
-  font-size: 12px;
+  font-size: 20px;
   padding: 2px 6px;
 }
 
+#network {
+  font-size: 20px;
+}
+
+#battery {
+  font-size: 20px;
+}
+
+#backlight {
+  font-size: 20px;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.18);
+}
+
+#custom-hyprsunset {
+  font-size: 20px;
+}
+
 #clock {
-  font-size: 12px;
+  font-size: 10px;
   padding: 2px 10px;
   font-feature-settings: "tnum";
 }
 
 #custom-stop-music {
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 5px;
+  background: transparent;
+  border: none;
 }
 
 #custom-stop-music.spotify {
@@ -188,8 +213,8 @@ window#waybar {
 }
 
 #custom-logout {
-  color: #f0b8c8;
-  text-shadow: 0px 0px 4px rgba(240, 184, 200, 0.4);
+  color: #a89cc8;
+  text-shadow: 0px 0px 4px rgba(168, 156, 200, 0.4);
 }
 
 #tray {
@@ -211,11 +236,11 @@ window#waybar {
 
 @keyframes sunPulse {
   0% {
-    color: #f0b8c8;
+    color: #a89cc8;
     text-shadow: 0 0 2px rgba(255, 255, 255, 0.12);
   }
   100% {
-    color: #f0b8c8;
+    color: #a89cc8;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.34);
   }
 }

@@ -54,7 +54,7 @@ hl.window_rule({
     name = "telegram-float",
     match = { class = "org.telegram.desktop" },
     float = true,
-    size = "1097 631",
+    size = "880 520",
     center = true,
     border_size = 0
 })

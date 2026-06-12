@@ -8,6 +8,7 @@ REPO_URL="https://github.com/Yuugentsi/dotfile.git"
 echo ""
 echo "  > 1"
 echo "  > 2 ⚙"
+echo "  > 3 packages"
 echo ""
 read -p "  -> " choice
 echo ""
@@ -248,8 +249,8 @@ case "$choice" in
             ttf-jetbrains-mono-nerd \
             noto-fonts      \
             oxygen-cursors  \
-            adw-gtk-theme   \
-            breeze-icons    \
+            mate-icon-theme   \
+            materia-gtk-theme    \
             noto-fonts-cjk  \
             noto-fonts-emoji \
             noto-fonts-extra \
@@ -278,7 +279,7 @@ case "$choice" in
 
         # ----------- dirs -----------
         echo "media"
-        MEDIA="${HOME}/media"
+        MEDIA="${HOME}/0"
         for d in music video pictures documents; do
             [ -d "$MEDIA/$d" ] || mkdir -p "$MEDIA/$d"
         done
@@ -362,6 +363,87 @@ case "$choice" in
 
         # ----------- reload -----------
         hyprctl reload 2>/dev/null || true
+
+        echo "done"
+        ;;
+    3)
+        # ----------- git -----------
+        echo "git"
+        sudo pacman -S --needed --noconfirm git
+
+        # ----------- packages -----------
+        echo "installing..."
+        sudo pacman -S --needed --noconfirm \
+            brightnessctl   \
+            cliphist        \
+            firefox         \
+            firefox-ublock-origin \
+            firefox-dark-reader \
+            fish            \
+            fd              \
+            gvfs            \
+            hyprland        \
+            hypridle        \
+            hyprlock        \
+            hyprpaper       \
+            hyprshot        \
+            hyprsunset      \
+            imagemagick     \
+            jq              \
+            kitty           \
+            mpv             \
+            mpv-mpris       \
+            playerctl       \
+            nano            \
+            rofi            \
+            swayimg         \
+            thunar          \
+            qt6ct           \
+            kvantum         \
+            tree            \
+            ttf-jetbrains-mono \
+            ttf-jetbrains-mono-nerd \
+            noto-fonts      \
+            oxygen-cursors  \
+            mate-icon-theme   \
+            materia-gtk-theme    \
+            noto-fonts-cjk  \
+            noto-fonts-emoji \
+            noto-fonts-extra \
+            waybar          \
+            wl-clipboard    \
+            yt-dlp          \
+            zathura         \
+            zathura-cb      \
+            ffmpegthumbnailer \
+            fzf             \
+            tumbler         \
+            qt6ct           \
+            zed             \
+            zip             \
+            unzip           \
+            libarchive       \
+            xdg-desktop-portal-hyprland
+
+        # ----------- shell -----------
+        echo "shell -> fish"
+        sudo chsh -s /usr/bin/fish "$USER"
+
+        # ----------- dirs -----------
+        echo "media"
+        MEDIA="${HOME}/0"
+        for d in music video pictures documents; do
+            [ -d "$MEDIA/$d" ] || mkdir -p "$MEDIA/$d"
+        done
+
+        # ----------- bookmarks -----------
+        mkdir -p "${HOME}/.config/gtk-3.0"
+        cat > "${HOME}/.config/gtk-3.0/bookmarks" <<EOF
+file://${HOME}/0/documents
+file://${HOME}/0/pictures
+file://${HOME}/0/music
+file://${HOME}/0/video
+EOF
 
         echo "done"
         ;;

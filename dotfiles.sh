@@ -209,6 +209,124 @@ EOF
     echo "Extractor installed: ${SCRIPT_PATH}"
 }
 
+install_packages() {
+    echo "installing..."
+    sudo pacman -S --needed --noconfirm \
+        brightnessctl   \
+        cliphist        \
+        firefox         \
+        firefox-ublock-origin \
+        firefox-dark-reader \
+        fish            \
+        fd              \
+        gvfs            \
+        hyprland        \
+        hypridle        \
+        hyprlock        \
+        hyprpaper       \
+        hyprshot        \
+        hyprsunset      \
+        imagemagick     \
+        jq              \
+        kitty           \
+        mpv             \
+        mpv-mpris       \
+        playerctl       \
+        nano            \
+        rofi            \
+        swayimg         \
+        thunar          \
+        qt6ct           \
+        kvantum         \
+        tree            \
+        ttf-jetbrains-mono \
+        ttf-jetbrains-mono-nerd \
+        noto-fonts      \
+        oxygen-cursors  \
+        mate-icon-theme   \
+        materia-gtk-theme    \
+        noto-fonts-cjk  \
+        noto-fonts-emoji \
+        noto-fonts-extra \
+        waybar          \
+        wl-clipboard    \
+        yt-dlp          \
+        zathura         \
+        zathura-cb      \
+        zoxide          \
+        ffmpegthumbnailer \
+        fzf             \
+        tumbler         \
+        qt6ct           \
+        zed             \
+        zip             \
+        unzip           \
+        libarchive       \
+        xdg-desktop-portal-hyprland
+}
+
+set_shell_fish() {
+    echo "shell -> fish"
+    sudo chsh -s /usr/bin/fish "$USER"
+}
+
+create_media_dirs() {
+    echo "media"
+    MEDIA="${HOME}/0"
+    for d in music video pictures documents; do
+        [ -d "$MEDIA/$d" ] || mkdir -p "$MEDIA/$d"
+    done
+}
+
+copy_dotfiles() {
+    TARGET_DIR="${HOME}/.config"
+    mkdir -p "$TARGET_DIR"
+
+    for dir in "$DOTFILES_DIR"/.config/*/; do
+        name="$(basename "$dir")"
+        [ "$name" = ".git" ] && continue
+        echo " ${name}"
+        rm -rf "${TARGET_DIR:?}/${name}"
+        cp -r "$dir" "${TARGET_DIR}/"
+    done
+
+    chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
+}
+
+reload_hyprland() {
+    hyprctl reload 2>/dev/null || true
+}
+
+create_gtk_bookmarks() {
+    mkdir -p "${HOME}/.config/gtk-3.0"
+    cat > "${HOME}/.config/gtk-3.0/bookmarks" <<EOF
+file://${HOME}/.config
+file://${HOME}/Downloads
+file://${HOME}/0/documents
+file://${HOME}/0/pictures
+file://${HOME}/0/music
+file://${HOME}/0/video
+EOF
+}
+
+apply_nodisplay() {
+    apps_nodisplay=(
+        avahi-discover.desktop bssh.desktop bvnc.desktop
+        xfce4-about.desktop qv4l2.desktop qvidcap.desktop
+        xgps.desktop xgpsspeed.desktop org.freedesktop.Xwayland.desktop
+        kitty-open.desktop thunar-bulk-rename.desktop thunar-settings.desktop
+        org.gnupg.pinentry-qt5.desktop org.gnupg.pinentry-qt.desktop
+        electron36.desktop electron37.desktop
+        rofi.desktop rofi-theme-selector.desktop
+    )
+    for app in "${apps_nodisplay[@]}"; do
+        file="/usr/share/applications/$app"
+        if [ -f "$file" ] && ! grep -q '^NoDisplay=true$' "$file" 2>/dev/null; then
+            echo "NoDisplay=true" | sudo tee -a "$file" >/dev/null
+        fi
+    done
+}
+
 case "$choice" in
     1)
         # ----------- git -----------
@@ -216,105 +334,26 @@ case "$choice" in
         sudo pacman -S --needed --noconfirm git
 
         # ----------- packages -----------
-        echo "installing..."
-        sudo pacman -S --needed --noconfirm \
-            brightnessctl   \
-            cliphist        \
-            firefox         \
-            firefox-ublock-origin \
-            firefox-dark-reader \
-            fish            \
-            fd              \
-            gvfs            \
-            hyprland        \
-            hypridle        \
-            hyprlock        \
-            hyprpaper       \
-            hyprshot        \
-            hyprsunset      \
-            imagemagick     \
-            jq              \
-            kitty           \
-            mpv             \
-            mpv-mpris       \
-            playerctl       \
-            nano            \
-            rofi            \
-            swayimg         \
-            thunar          \
-            qt6ct           \
-            kvantum         \
-            tree            \
-            ttf-jetbrains-mono \
-            ttf-jetbrains-mono-nerd \
-            noto-fonts      \
-            oxygen-cursors  \
-            mate-icon-theme   \
-            materia-gtk-theme    \
-            noto-fonts-cjk  \
-            noto-fonts-emoji \
-            noto-fonts-extra \
-            waybar          \
-            wl-clipboard    \
-            yt-dlp          \
-            zathura         \
-            zathura-cb      \
-            ffmpegthumbnailer \
-            fzf             \
-            tumbler         \
-            qt6ct           \
-            zed             \
-            zip             \
-            unzip           \
-            libarchive       \
-            xdg-desktop-portal-hyprland
+        install_packages
 
         # ----------- spotx -----------
         echo "spotx"
         bash <(curl -sSL https://spotx-official.github.io/run.sh) || true
 
         # ----------- shell -----------
-        echo "shell -> fish"
-        sudo chsh -s /usr/bin/fish "$USER"
+        set_shell_fish
 
         # ----------- dirs -----------
-        echo "media"
-        MEDIA="${HOME}/0"
-        for d in music video pictures documents; do
-            [ -d "$MEDIA/$d" ] || mkdir -p "$MEDIA/$d"
-        done
+        create_media_dirs
 
         # ----------- config -----------
-        TARGET_DIR="${HOME}/.config"
-        mkdir -p "$TARGET_DIR"
+        copy_dotfiles
 
-        for dir in "$DOTFILES_DIR"/.config/*/; do
-            name="$(basename "$dir")"
-            [ "$name" = ".git" ] && continue
-            echo " ${name}"
-            rm -rf "${TARGET_DIR:?}/${name}"
-            cp -r "$dir" "${TARGET_DIR}/"
-        done
-
-        # ----------- scripts -----------
-        chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
+        # ----------- bookmarks -----------
+        create_gtk_bookmarks
 
         # ----------- nodisplay -----------
-        apps_nodisplay=(
-            avahi-discover.desktop bssh.desktop bvnc.desktop
-            xfce4-about.desktop qv4l2.desktop qvidcap.desktop
-            xgps.desktop xgpsspeed.desktop org.freedesktop.Xwayland.desktop
-            kitty-open.desktop thunar-bulk-rename.desktop thunar-settings.desktop
-            org.gnupg.pinentry-qt5.desktop org.gnupg.pinentry-qt.desktop
-            electron36.desktop electron37.desktop
-            rofi.desktop rofi-theme-selector.desktop
-        )
-        for app in "${apps_nodisplay[@]}"; do
-            file="/usr/share/applications/$app"
-            if [ -f "$file" ] && ! grep -q '^NoDisplay=true$' "$file" 2>/dev/null; then
-                echo "NoDisplay=true" | sudo tee -a "$file" >/dev/null
-            fi
-        done
+        apply_nodisplay
 
         # ----------- theme -----------
         echo "theme -> adw-gtk3-dark"
@@ -336,33 +375,21 @@ case "$choice" in
         # ----------- extractor -----------
         install_extractor
 
-        hyprctl reload 2>/dev/null || true
+        reload_hyprland
 
         echo "done"
         ;;
     2)
-        TARGET_DIR="${HOME}/.config"
-        mkdir -p "$TARGET_DIR"
-
-        for dir in "$DOTFILES_DIR"/.config/*/; do
-            name="$(basename "$dir")"
-            [ "$name" = ".git" ] && continue
-            echo " ${name}"
-            rm -rf "${TARGET_DIR:?}/${name}"
-            cp -r "$dir" "${TARGET_DIR}/"
-        done
-
-        chmod +x "${TARGET_DIR}/hypr/scripts/"*.sh 2>/dev/null || true
+        copy_dotfiles
 
         # ----------- shell -----------
         sudo pacman -S --needed --noconfirm fish
-        sudo chsh -s /usr/bin/fish "$USER"
+        set_shell_fish
 
         # ----------- extractor -----------
         install_extractor
 
-        # ----------- reload -----------
-        hyprctl reload 2>/dev/null || true
+        reload_hyprland
 
         echo "done"
         ;;
@@ -372,78 +399,22 @@ case "$choice" in
         sudo pacman -S --needed --noconfirm git
 
         # ----------- packages -----------
-        echo "installing..."
-        sudo pacman -S --needed --noconfirm \
-            brightnessctl   \
-            cliphist        \
-            firefox         \
-            firefox-ublock-origin \
-            firefox-dark-reader \
-            fish            \
-            fd              \
-            gvfs            \
-            hyprland        \
-            hypridle        \
-            hyprlock        \
-            hyprpaper       \
-            hyprshot        \
-            hyprsunset      \
-            imagemagick     \
-            jq              \
-            kitty           \
-            mpv             \
-            mpv-mpris       \
-            playerctl       \
-            nano            \
-            rofi            \
-            swayimg         \
-            thunar          \
-            qt6ct           \
-            kvantum         \
-            tree            \
-            ttf-jetbrains-mono \
-            ttf-jetbrains-mono-nerd \
-            noto-fonts      \
-            oxygen-cursors  \
-            mate-icon-theme   \
-            materia-gtk-theme    \
-            noto-fonts-cjk  \
-            noto-fonts-emoji \
-            noto-fonts-extra \
-            waybar          \
-            wl-clipboard    \
-            yt-dlp          \
-            zathura         \
-            zathura-cb      \
-            ffmpegthumbnailer \
-            fzf             \
-            tumbler         \
-            qt6ct           \
-            zed             \
-            zip             \
-            unzip           \
-            libarchive       \
-            xdg-desktop-portal-hyprland
+        install_packages
 
         # ----------- shell -----------
-        echo "shell -> fish"
-        sudo chsh -s /usr/bin/fish "$USER"
+        set_shell_fish
 
         # ----------- dirs -----------
-        echo "media"
-        MEDIA="${HOME}/0"
-        for d in music video pictures documents; do
-            [ -d "$MEDIA/$d" ] || mkdir -p "$MEDIA/$d"
-        done
+        create_media_dirs
 
         # ----------- bookmarks -----------
-        mkdir -p "${HOME}/.config/gtk-3.0"
-        cat > "${HOME}/.config/gtk-3.0/bookmarks" <<EOF
-file://${HOME}/0/documents
-file://${HOME}/0/pictures
-file://${HOME}/0/music
-file://${HOME}/0/video
-EOF
+        create_gtk_bookmarks
+
+        # ----------- nodisplay -----------
+        apply_nodisplay
+
+        # ----------- extractor -----------
+        install_extractor
 
         echo "done"
         ;;

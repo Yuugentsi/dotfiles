@@ -26,7 +26,7 @@ hl.window_rule({ name = "spotify-opacity", match = { class = "Spotify" }, opacit
 hl.window_rule({ name = "thunar-opacity", match = { class = "thunar" }, opacity = "0.80 0.80" })
 hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.88 0.82" })
 hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.60 0.70" })
-hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.65 0.65" })
+hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.80 0.95" })
 hl.window_rule({ name = "kitty-opacity", match = { class = "kitty" }, opacity = "0.80 0.80" })
 hl.window_rule({ name = "zathura-opacity", match = { class = "(zathura|org\\.pwmt\\.zathura)" }, opacity = "0.88 0.80" })
 

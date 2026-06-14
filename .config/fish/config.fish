@@ -52,6 +52,11 @@ set -g fish_pager_color_secondary_prefix 89b4fa
 set -g fish_pager_color_secondary_completion cdd6f4
 set -g fish_pager_color_secondary_description 6c7086
 
+# ─────────── zoxide ───────────
+if command -q zoxide
+    zoxide init fish | source
+end
+
 # ─────────── functions ───────────
 for f in ~/.config/fish/functions/*.fish
     source $f
@@ -137,6 +142,8 @@ function venv
         echo -s $green "󰄬 venv on" $reset
     end
 end
+# --- venv requirements ---
+function venvr; set -l req "$PWD/requirements.txt"; if not test -f "$req"; echo "requirements.txt not found"; return 1; end; venv; pip install -r "$req"; end
 # ─────────── help ───────────
 function h -d "list functions"
     set -l N (set_color normal)

@@ -25,7 +25,7 @@
 
 local HOME             = os.getenv("HOME")
 local WALLPAPERS_CACHE = HOME .. "/.cache/scripts/wallpapers"
-local WALLPAPERS_DIR   = HOME .. "/media/pictures/wallpapers"
+local WALLPAPERS_DIR   = HOME .. "/0/pictures/wallpapers"
 
 -- ─── helpers
 
@@ -318,7 +318,7 @@ end
 local function open_all_images()
     local count = 0
     local pictures = shell_quote(HOME .. "/Pictures")
-    local media = shell_quote(HOME .. "/media/pictures")
+    local media = shell_quote(HOME .. "/0/pictures")
     local p = io.popen("find " ..
         pictures .. " " .. media .. " -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \\) 2>/dev/null")
     if p then

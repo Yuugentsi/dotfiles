@@ -2,7 +2,7 @@
 # bind_exec("F1", "bash $HOME/.config/hypr/scripts/play.sh")
 
 SOCKET="$HOME/.config/mpv-socket"
-MUSIC_DIR="$HOME/media/music"
+MUSIC_DIR="$HOME/0/music"
 PLAYED_FILE="/tmp/play.txt"
 
 tmp_all=$(mktemp /tmp/play-all-XXXX.txt)

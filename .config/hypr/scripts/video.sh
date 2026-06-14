@@ -1,9 +1,9 @@
 #!/bin/bash
 # bind_exec("ALT + G", "$HOME/.config/hypr/scripts/video.sh")
-VIDEO_DIR="${VIDEO_DIR:-$HOME/media/videos}"
+VIDEO_DIR="${VIDEO_DIR:-$HOME/0/videos}"
 VIDEO_LAST="$HOME/.cache/scripts/video/last_video"
 SHOW_LAST_VIDEO="${SHOW_LAST_VIDEO:-TRUE}"
-YT_LIST="${YT_LIST:-$HOME/media/documents/txt/yt.txt}"
+YT_LIST="${YT_LIST:-$HOME/0/documents/txt/yt.txt}"
 
 cleanup_empty_video_dirs() {
     find "$VIDEO_DIR" -depth -type d ! -path "$VIDEO_DIR" -print0 2>/dev/null \
@@ -227,8 +227,8 @@ _yt_list() {
         local urls
         urls=$(grep -E '^https?://' "$YT_LIST")
         [[ -z "$urls" ]] && notify-send -e -t 2000 "󰎁  yt.txt" "No URLs found" && return
-        mkdir -p "$HOME/media/videos/yt/"
-        kitty --title "yt-dl-all" bash -c "echo '$urls' | yt-dlp -f 'bv*[height<=720]+ba/b[height<=720]' -o '$HOME/media/videos/yt/%(title)s.%(ext)s' -i --batch-file -; echo; read -r -p 'Press Enter to close...'"
+        mkdir -p "$HOME/0/videos/yt/"
+        kitty --title "yt-dl-all" bash -c "echo '$urls' | yt-dlp -f 'bv*[height<=720]+ba/b[height<=720]' -o '$HOME/0/videos/yt/%(title)s.%(ext)s' -i --batch-file -; echo; read -r -p 'Press Enter to close...'"
         return
     fi
 
@@ -248,8 +248,8 @@ _yt_list() {
         local url
         url=$(_yt_get_url "$title")
         [[ -z "$url" ]] && return
-        mkdir -p "$HOME/media/videos/yt/"
-        yt-dlp -f "bv*[height<=720]+ba/b[height<=720]" -o "$HOME/media/videos/yt/%(title)s.%(ext)s" "$url"
+        mkdir -p "$HOME/0/videos/yt/"
+        yt-dlp -f "bv*[height<=720]+ba/b[height<=720]" -o "$HOME/0/videos/yt/%(title)s.%(ext)s" "$url"
         notify-send -e -t 2000 "⬇ Download" "$title downloaded"
     elif [[ "$action" == *delete* ]]; then
         _yt_delete "$title"

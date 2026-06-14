@@ -3,7 +3,7 @@
 CACHE_DIR="$HOME/.cache/scripts/wallpapers"
 WALLPAPER_CACHE="$CACHE_DIR/wallpaper"
 HYPRPAPER_CONFIG="$CACHE_DIR/hyprpaper.conf"
-WALLPAPER_DIR="$HOME/media/pictures/wallpapers"
+WALLPAPER_DIR="$HOME/0/pictures/wallpapers"
 
 run_wallpaper_daemon() {
     mkdir -p "$CACHE_DIR"

@@ -134,7 +134,7 @@
     "format-alt": "{:%m/%d/%Y}",
     "interval": 1,
     "on-click": "mode",
-    "on-click-right": "bash -c 'killall mpv 2>/dev/null; sleep 0.5; file=$(find ~/media/music/ -type f | shuf -n 1); [ -n \"$file\" ] && mpv --no-video \"$file\" &'",
+    "on-click-right": "bash -c 'killall mpv 2>/dev/null; sleep 0.5; file=$(find ~/0/music/ -type f | shuf -n 1); [ -n \"$file\" ] && mpv --no-video \"$file\" &'",
   },
 
   "group/power": {

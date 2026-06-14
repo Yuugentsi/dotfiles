@@ -1,6 +1,6 @@
 {
   "extractor": {
-    "base-directory": "$HOME/media/pictures/gallery-dl",
+    "base-directory": "$HOME/0/pictures/gallery-dl",
     "cookies-from-browser": "firefox",
     "download-archive": "$HOME/.cache/gallery-dl/archive.sqlite3",
     "retries": 6,
@@ -26,7 +26,7 @@
     },
 
     "wallhaven": {
-      "base-directory": "$HOME/media/pictures/wallpapers",
+      "base-directory": "$HOME/0/pictures/wallpapers",
       "filename": "{id}.{extension}"
     }
   },

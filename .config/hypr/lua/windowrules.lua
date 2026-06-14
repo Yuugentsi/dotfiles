@@ -53,8 +53,9 @@ hl.window_rule({
 hl.window_rule({
     name = "telegram-float",
     match = { class = "org.telegram.desktop" },
+    workspace = "3 silent",
     float = true,
-    size = "880 520",
+    size = "1050 650",
     center = true,
     border_size = 0
 })
@@ -183,12 +184,13 @@ hl.window_rule({
 
 -- ----- telegram-media-viewer -----
 hl.window_rule({
-    name    = "telegram-media-pip",
-    match   = { class = "org.telegram.desktop", title = "Media viewer" },
-    float   = true,
-    center  = true,
-    opacity = "1.0 1.0",
-    size    = "850 600",
+    name        = "telegram-media-viewer",
+    match       = { class = "org.telegram.desktop", title = "Media viewer" },
+    float       = true,
+    center      = true,
+    opacity     = "1.0 1.0",
+    size        = "720 540",
+    border_size = 0,
 })
 
 -- -------------------- system behavior --------------------

@@ -21,8 +21,9 @@ bind_exec(MOD .. " + E", MENU)
 bind_exec("ALT + E", EDITOR)
 -- -------------------- windows --------------------
 hl.bind(MOD .. " + C", hl.dsp.window.close())
+bind_exec("ALT + C", "bash -c 'pid=$(hyprctl activewindow -j | jq -r \".pid\"); [ -n \"$pid\" ] && kill -9 \"$pid\"'")
 hl.bind(MOD .. " + M", hl.dsp.exit())
-hl.bind(MOD .. " + I", hl.dsp.window.pin())
+hl.bind(MOD .. " + SHIFT + I", hl.dsp.window.pin())
 hl.bind(MOD .. " + P", hl.dsp.window.pseudo())
 hl.bind(MOD .. " + J", hl.dsp.layout("togglesplit"))
 hl.bind(MOD .. " + Tab", hl.dsp.window.cycle_next())
@@ -85,9 +86,9 @@ bind_exec(MOD .. " + SHIFT + N",
 
 -- -------------------- screenshots --------------------
 local shot_region =
-"hyprshot -m region -z -t 500 -o $HOME/media/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
+"hyprshot -m region -z -t 500 -o $HOME/0/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
 local shot_output =
-"hyprshot -m output -m active -z -t 500 -o $HOME/media/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
+"hyprshot -m output -m active -z -t 500 -o $HOME/0/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
 
 -- ----- region -----
 bind_exec("Print", shot_region)

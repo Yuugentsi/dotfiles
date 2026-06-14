@@ -1,6 +1,6 @@
 #!/bin/bash
 # bind_exec("SUPER + G", "$HOME/.config/hypr/scripts/music.sh")
-MUSIC_DIR="${MUSIC_DIR:-${HOME}/media/music}"
+MUSIC_DIR="${MUSIC_DIR:-${HOME}/0/music}"
 CACHE_FILE="${HOME}/.cache/scripts/music/cache.txt"
 CACHE_MTIME_FILE="${HOME}/.cache/scripts/music/cache-mtime.txt"
 

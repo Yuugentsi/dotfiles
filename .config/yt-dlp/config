@@ -21,6 +21,6 @@
 --no-overwrites
 --no-playlist
 -o %(title)s.%(ext)s
---paths ~/media/videos/
+--paths ~/0/videos/
 --windows-filenames
 

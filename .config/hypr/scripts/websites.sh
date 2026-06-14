@@ -249,12 +249,58 @@ run_sites_menu() {
     local all_count
     all_count=$(printf '%s\n' "$all_entries" | wc -l)
 
+    handle_bang() {
+        local input="$1"
+        local bang query encoded
+        bang=${input%% *}
+        query=${input#* }
+        [ "$bang" = "$query" ] && query=""
+        encoded=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$query" 2>/dev/null || printf '%s' "$query")
+
+        case "$bang" in
+            # search
+            .youtube|.yt) "$BROWSER" "https://www.youtube.com/results?search_query=$encoded" ;;
+            .x|.twitter)   "$BROWSER" "https://x.com/search?q=$encoded&src=typed_query" ;;
+            .dan|.danbooru) "$BROWSER" "https://danbooru.donmai.us/posts?tags=$encoded&z=5" ;;
+            .lastfm|.last) "$BROWSER" "http://last.fm/user/$encoded" ;;
+
+            # direct
+            .walltop|.wall) "$BROWSER" "https://wallhaven.cc/toplist" ;;
+            .wallhot)       "$BROWSER" "https://wallhaven.cc/hot" ;;
+            .github)
+                if [ -n "$query" ]; then
+                    "$BROWSER" "https://github.com/$encoded"
+                else
+                    "$BROWSER" "https://github.com/"
+                fi
+                ;;
+            .git) "$BROWSER" "https://github.com/$encoded" ;;
+
+            # system
+            .update) kitty -e sudo pacman -Syyu ;;
+            .ins)    kitty -e sudo pacman -S --noconfirm "$query" ;;
+            .reboot) systemctl reboot ;;
+            .power)  systemctl poweroff ;;
+
+            # search
+            .g) "$BROWSER" "https://www.google.com/search?q=$encoded" ;;
+        esac
+    }
+
     local chosen
     chosen=$(printf '❀  Search All (%s)\n❀  Favorites (%s)\n❀  Config (%s)\n❀  Web (%s)\n❀  Tech (%s)\n❀  AI (%s)\n❀  Anime (%s)\n❀  Streaming (%s)\n❀  Power' "$all_count" "$favorites_count" "$config_count" "$web_count" "$tech_count" "$ai_count" "$anime_count" "$streaming_count" \
         | rofi_menu "❀  Sites:" 8)
     [[ -z "$chosen" ]] && exit 0
 
     case "$chosen" in
+        '.'*)
+            handle_bang "$chosen"
+            exit 0
+            ;;
+        https://www.youtube.com/*|https://youtube.com/*|https://youtu.be/*)
+            kitty --hold -e bash -c "mkdir -p '$HOME/0/music/yt' && yt-dlp -x --audio-format mp3 --audio-quality 0 -P '$HOME/0/music/yt' -o '%(title)s.%(ext)s' '$chosen' && read -p 'Done. Press enter...'"
+            exit 0
+            ;;
         *"Search All ("*")")
             local all_choice
             all_choice=$(printf '%s\n' "$all_entries" | rofi_menu "❀  All:")

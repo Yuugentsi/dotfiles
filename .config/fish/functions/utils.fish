@@ -36,7 +36,7 @@ function mu -d "play music"
     sleep 0.1
     clear
 
-    set music_dir "$HOME/media/music"
+    set music_dir "$HOME/0/music"
     if not test -d "$music_dir"
         set music_dir "$HOME/music"
     end
@@ -551,7 +551,7 @@ function pomodoro -d "pomodoro"
     end
 
     set -l file /tmp/pomodoro
-    set -q POMODORO_LOG; or set POMODORO_LOG "$HOME/media/documents"
+    set -q POMODORO_LOG; or set POMODORO_LOG "$HOME/0/documents"
     set -l logdir $POMODORO_LOG
 
     if test -e $file
@@ -1151,11 +1151,11 @@ function past -d "thunar bookmarks"
         set -l paths \
             "$home_dir/.config" \
             "$home_dir/Downloads" \
-            "$home_dir/media" \
-            "$home_dir/media/documents" \
-            "$home_dir/media/music" \
-            "$home_dir/media/pictures" \
-            "$home_dir/media/videos"
+            "$home_dir/0" \
+            "$home_dir/0/documents" \
+            "$home_dir/0/music" \
+            "$home_dir/0/pictures" \
+            "$home_dir/0/videos"
 
         mkdir -p ~/.config/gtk-3.0
         mkdir -p $paths
@@ -1163,11 +1163,11 @@ function past -d "thunar bookmarks"
         printf '%s\n' \
             "file://$home_dir/.config/" \
             "file://$home_dir/Downloads/" \
-            "file://$home_dir/media" \
-            "file://$home_dir/media/documents" \
-            "file://$home_dir/media/music" \
-            "file://$home_dir/media/pictures" \
-            "file://$home_dir/media/videos" \
+            "file://$home_dir/0" \
+            "file://$home_dir/0/documents" \
+            "file://$home_dir/0/music" \
+            "file://$home_dir/0/pictures" \
+            "file://$home_dir/0/videos" \
             > "$bookmarks_file"
 
         echo "bookmarks restored"

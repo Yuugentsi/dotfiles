@@ -50,7 +50,7 @@ case "${1:-}" in
         fi
 
         SOCKET="$HOME/.config/mpv-socket"
-        MUSIC_DIR="$HOME/media/music"
+        MUSIC_DIR="$HOME/0/music"
         PLAYED_FILE="$HOME/.cache/scripts/music/play.txt"
 
         tmp_all=$(mktemp /tmp/play-all-XXXX.txt)

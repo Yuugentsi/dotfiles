@@ -6,7 +6,7 @@
 # ytp
 # --
 function mp3 --description 'yt mp3'
-    set -l out_dir "$HOME/media/music/yt"
+    set -l out_dir "$HOME/0/music/yt"
     mkdir -p "$out_dir"
     set -l green (set_color green)
     set -l red (set_color red)
@@ -228,7 +228,7 @@ function mp3 --description 'yt mp3'
 end
 #
 function mp4 --description 'yt mp4'
-    set -l out_dir "$HOME/media/videos/yt"
+    set -l out_dir "$HOME/0/music/yt"
     mkdir -p "$out_dir"
     set -l green (set_color green)
     set -l red (set_color red)
@@ -412,8 +412,8 @@ end
 #
 function yt
     set -l CHANNEL_NAME_IN_FILENAME true
-    set -l MP3_DIR "$HOME/media/music/yt"
-    set -l MP4_DIR "$HOME/media/videos/yt"
+    set -l MP3_DIR "$HOME/0/music/yt"
+    set -l MP4_DIR "$HOME/0/music/yt"
 
     set -l R (set_color red)
     set -l G (set_color green)
@@ -652,10 +652,10 @@ function __extra_cnf
     set -l title (yt-dlp --no-warnings --no-playlist --skip-download --print "%(title)s" $argv[1] 2>/dev/null | head -n 1)
     test -n "$title"; or set title "?"
     if test "$c" = 1
-        set -l d $HOME/media/music/yt; mkdir -p $d
+        set -l d $HOME/0/music/yt; mkdir -p $d
         yt-dlp --no-config --cookies-from-browser firefox --concurrent-fragments 16 --throttled-rate 100K --embed-thumbnail --add-metadata -x --audio-format mp3 --audio-quality 0 --no-playlist --no-video -o "$d/%(title)s.%(ext)s" $argv[1]
     else if test "$c" = 2
-        set -l d $HOME/media/videos/yt; mkdir -p $d
+        set -l d $HOME/0/music/yt; mkdir -p $d
         yt-dlp --no-config --cookies-from-browser firefox --concurrent-fragments 16 --throttled-rate 100K --embed-thumbnail --add-metadata --sponsorblock-remove sponsor,selfpromo,interaction,preview,filler,intro,outro -f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720]/best" --merge-output-format mp4 --no-playlist -o "$d/%(title)s.%(ext)s" $argv[1]
     else; return 1; end
     clear; echo -s $G "$title 󰄬" $N
@@ -663,7 +663,7 @@ function __extra_cnf
 end
 #
 function ytp --description 'yt mp3 clip'
-    set -l out_dir "$HOME/media/music/yt"
+    set -l out_dir "$HOME/0/music/yt"
     mkdir -p "$out_dir"
     set -l CHANNEL_NAME_IN_FILENAME true
     set -l green (set_color green)

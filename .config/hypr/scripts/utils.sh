@@ -314,8 +314,237 @@ case "${1:-}" in
             esac
         done
         ;;
+    # ----- files (SUPER + I) -----
+    # bind_exec("SUPER + I", "$HOME/.config/hypr/scripts/utils.sh files")
+    files)
+        CACHE_DIR="${HOME}/.cache/scripts/files"
+        CACHE_FILE="${CACHE_DIR}/cache.txt"
+        CACHE_MTIME_FILE="${CACHE_DIR}/cache-mtime.txt"
+        HISTORY_FILE="${CACHE_DIR}/history.txt"
+        LIMIT=5000
+
+        ROFI_THEME=(
+            -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }'
+            -theme-str 'window { width: 54%; background-color: @bg; transparency: "real"; border: 2px; border-color: @glow; border-radius: 18px; }'
+            -theme-str 'mainbox { background-color: transparent; padding: 8px; spacing: 4px; }'
+            -theme-str 'inputbar { background-color: rgba(255,255,255,0.07); padding: 6px 10px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }'
+            -theme-str 'entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }'
+            -theme-str 'listview { columns: 1; lines: 12; fixed-height: false; dynamic: true; spacing: 2px; scrollbar: true; scrollbar-width: 4px; }'
+            -theme-str 'scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }'
+            -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 28px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }'
+            -theme-str 'element normal.normal { background-color: @bg-alt; text-color: @fg; }'
+            -theme-str 'element alternate.normal { background-color: @bg-alt; text-color: @fg; }'
+            -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }'
+            -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; }'
+            -theme-str 'element normal.normal element-text { background-color: transparent; text-color: @fg; }'
+            -theme-str 'element alternate.normal element-text { background-color: transparent; text-color: @fg; }'
+            -theme-str 'element selected.normal element-text { background-color: transparent; text-color: @accent; }'
+        )
+
+        _files_rofi_menu() {
+            local lines="${2:-12}"
+            rofi -dmenu -i -no-custom \
+                "${ROFI_THEME[@]}" \
+                -theme-str "listview { columns: 1; lines: ${lines}; }" \
+                -p "$1"
+        }
+
+        _files_get_mtime() {
+            find "$HOME" -maxdepth 2 -type d ! -path "*/.local" ! -path "*/.cache" | xargs stat --format="%Y %n" 2>/dev/null | sort | md5sum
+        }
+
+        _files_build_cache() {
+            local tmp
+            tmp=$(mktemp)
+            mkdir -p "$CACHE_DIR"
+
+            local fd_args=(
+                --type f --hidden --absolute-path
+                --exclude .git --exclude node_modules --exclude .cache --exclude __pycache__
+                --exclude .venv --exclude venv --exclude target --exclude build --exclude dist
+                --exclude .npm --exclude .cargo --exclude .rustup
+                --exclude .local --exclude .var --exclude .flatpak --exclude .fonts --exclude .icons
+            )
+
+            local dir_args=(
+                --type d --hidden --absolute-path
+                --exclude .git --exclude node_modules --exclude .cache --exclude __pycache__
+                --exclude .venv --exclude venv --exclude target --exclude build --exclude dist
+                --exclude .npm --exclude .cargo --exclude .rustup
+                --exclude .local --exclude .var --exclude .flatpak --exclude .fonts --exclude .icons
+            )
+
+            fd "${dir_args[@]}" . "$HOME" 2>/dev/null | sed "s|$HOME/||" | head -n $LIMIT | \
+                while IFS= read -r line; do
+                    printf 'dir\t%s\n' "$line"
+                done >> "$tmp"
+
+            fd "${fd_args[@]}" . "$HOME" 2>/dev/null | sed "s|$HOME/||" | head -n $LIMIT | \
+                while IFS= read -r line; do
+                    printf 'file\t%s\n' "$line"
+                done >> "$tmp"
+
+            mv "$tmp" "$CACHE_FILE"
+            _files_get_mtime > "$CACHE_MTIME_FILE"
+        }
+
+        _files_refresh_cache() {
+            if [[ ! -f "$CACHE_FILE" ]] || [[ ! -f "$CACHE_MTIME_FILE" ]]; then
+                _files_build_cache
+                return
+            fi
+            local current_mtime
+            current_mtime=$(_files_get_mtime)
+            local cached_mtime
+            cached_mtime=$(cat "$CACHE_MTIME_FILE")
+            if [[ "$current_mtime" != "$cached_mtime" ]]; then
+                _files_build_cache
+            fi
+        }
+
+        _files_get_count() {
+            local type="$1"
+            awk -F'\t' '$1 == "'"$type"'" {count++} END {print count+0}' "$CACHE_FILE" 2>/dev/null
+        }
+
+        _files_get_text_count() {
+            grep -E $'^file\t.*\.(sh|txt|py|lua|json|js|ts|css|html|conf|md|rs|toml|xml|yaml|yml|ini|c|cpp|h|hpp|go|java|rb|php|sql|fish|log|desktop|service|bash|zsh|vim|nvim)$' "$CACHE_FILE" | wc -l
+        }
+
+        _files_get_config_count() {
+            local dirs=(aria2 gallery-dl kitty rofi swayimg mpv swaync fish yt-dlp zathura hypr waybar)
+            local count=0
+            for d in "${dirs[@]}"; do
+                [[ -d "$HOME/.config/$d" ]] && ((count++))
+                if [[ -d "$HOME/.config/$d" ]]; then
+                    count=$((count + $(find "$HOME/.config/$d" -type f 2>/dev/null | wc -l)))
+                fi
+            done
+            echo "$count"
+        }
+
+        _files_save_history() {
+            mkdir -p "$(dirname "$HISTORY_FILE")"
+            local tmp
+            tmp=$(mktemp)
+            grep -Fxv "$1" "$HISTORY_FILE" 2>/dev/null > "$tmp"
+            printf '%s\n' "$1" >> "$tmp"
+            mv "$tmp" "$HISTORY_FILE"
+        }
+
+        pkill -x rofi 2>/dev/null
+        sleep 0.1
+
+        _files_refresh_cache
+
+        file_count=$(_files_get_count file)
+        dir_count=$(_files_get_count dir)
+        text_count=$(_files_get_text_count)
+        config_count=$(_files_get_config_count)
+
+        LAST_READ=$(tail -n 1 "$HISTORY_FILE" 2>/dev/null | grep -v '^$')
+        menu_entries=""
+        [[ -n "$LAST_READ" ]] && menu_entries+="➜  last\n"
+        menu_entries+="󰉋  All Folders ($dir_count)\n󰈙  All Files ($file_count)\n󰈙  Text Files ($text_count)\n󰒓  Config Files ($config_count)\n󰈙  Other Files"
+
+        chosen=$(printf '%b' "$menu_entries" | _files_rofi_menu "❀  Files:" 6)
+
+        [ -z "$chosen" ] && exit 0
+
+        file=""
+
+        if [[ "$chosen" == "➜  last" ]]; then
+            file="$LAST_READ"
+            fullpath="$HOME/$file"
+            if [ -f "$fullpath" ] || [ -d "$fullpath" ]; then
+                if command -v zeditor &>/dev/null; then
+                    nohup zeditor "$fullpath" >/dev/null 2>&1 &
+                else
+                    nohup thunar "$fullpath" >/dev/null 2>&1 &
+                fi
+            else
+                hyprctl notify -1 2000 0 "fontsize:16 󰅙 last not found"
+            fi
+            exit 0
+        fi
+
+        file=""
+
+        if [[ "$chosen" == *"All Folders"* ]]; then
+            file=$(grep $'^dir\t' "$CACHE_FILE" | cut -f2 | sed 's/^/󰉋  /' | _files_rofi_menu "󰉋  Folders:")
+            file="${file#󰉋  }"
+
+        elif [[ "$chosen" == *"All Files"* ]]; then
+            file=$(grep $'^file\t' "$CACHE_FILE" | cut -f2 | sed 's/^/󰈙  /' | _files_rofi_menu "󰈙  Files:")
+            file="${file#󰈙  }"
+
+        elif [[ "$chosen" == *"Text Files"* ]]; then
+            file=$(grep -E $'^file\t.*\.(sh|txt|py|lua|json|js|ts|css|html|conf|md|rs|toml|xml|yaml|yml|ini|c|cpp|h|hpp|go|java|rb|php|sql|fish|log|desktop|service|bash|zsh|vim|nvim)$' "$CACHE_FILE" | cut -f2 | sed 's/^/󰈙  /' | _files_rofi_menu "󰈙  Text:")
+            file="${file#󰈙  }"
+
+        elif [[ "$chosen" == *"Config Files"* ]]; then
+            config_dirs=(aria2 gallery-dl kitty rofi swayimg mpv swaync fish yt-dlp zathura hypr waybar)
+            config_entries="󰒓  Open All\n"
+            for d in "${config_dirs[@]}"; do
+                if [[ -d "$HOME/.config/$d" ]]; then
+                    config_entries+="󰉋  $d\n"
+                    while IFS= read -r f; do
+                        rel=$(echo "$f" | sed "s|$HOME/.config/$d/||")
+                        config_entries+="󰈙  $d/$rel\n"
+                    done < <(find "$HOME/.config/$d" -type f 2>/dev/null | sort)
+                fi
+            done
+            file=$(printf '%b' "$config_entries" | _files_rofi_menu "󰒓  Config:")
+            [[ "$file" == "󰒓  Open All" ]] && {
+                if command -v zeditor &>/dev/null; then
+                    zeditor "$HOME/.config/aria2" "$HOME/.config/gallery-dl" "$HOME/.config/kitty" "$HOME/.config/rofi" "$HOME/.config/swayimg" "$HOME/.config/mpv" "$HOME/.config/swaync" "$HOME/.config/fish" "$HOME/.config/yt-dlp" "$HOME/.config/zathura" "$HOME/.config/hypr" "$HOME/.config/waybar" &>/dev/null &
+                else
+                    thunar "$HOME/.config/aria2" "$HOME/.config/gallery-dl" "$HOME/.config/kitty" "$HOME/.config/rofi" "$HOME/.config/swayimg" "$HOME/.config/mpv" "$HOME/.config/swaync" "$HOME/.config/fish" "$HOME/.config/yt-dlp" "$HOME/.config/zathura" "$HOME/.config/hypr" "$HOME/.config/waybar" &>/dev/null &
+                fi
+                exit 0
+            }
+            file="${file#󰉋  }"
+            file="${file#󰈙  }"
+            [[ -n "$file" ]] && file=".config/$file"
+
+        else
+            file=$(grep -Ev $'^file\t.*\.(sh|txt|py|lua|json|js|ts|css|html|conf|md|rs|toml|xml|yaml|yml|ini|c|cpp|h|hpp|go|java|rb|php|sql|fish|log|desktop|service|bash|zsh|vim|nvim)$' "$CACHE_FILE" | cut -f2 | sed 's/^/󰈙  /' | _files_rofi_menu "󰈙  Other:")
+            file="${file#󰈙  }"
+        fi
+
+        [ -z "$file" ] && exit 0
+
+        fullpath="$HOME/$file"
+
+        if [ -d "$fullpath" ]; then
+            if command -v zeditor &>/dev/null; then
+                nohup zeditor "$fullpath" >/dev/null 2>&1 &
+            else
+                nohup thunar "$fullpath" >/dev/null 2>&1 &
+            fi
+            _files_save_history "$file"
+        elif [ -f "$fullpath" ]; then
+            case "$fullpath" in
+                *.sh|*.txt|*.py|*.lua|*.json|*.js|*.ts|*.css|*.html|*.conf|*.md|*.rs|*.toml|*.xml|*.yaml|*.yml|*.ini|*.c|*.cpp|*.h|*.hpp|*.go|*.java|*.rb|*.php|*.sql|*.fish|*.desktop|*.service|*.bash|*.zsh|*.vim|*.nvim|*.log)
+                    zeditor "$fullpath" &>/dev/null &
+                    ;;
+                *.cbz|*.cbr|*.pdf)
+                    zathura "$fullpath" &>/dev/null &
+                    ;;
+                *.mp4|*.mp3|*.mkv|*.webm|*.avi|*.mov|*.flv|*.m4a|*.ogg|*.flac|*.wav|*.aac|*.opus|*.wma)
+                    mpv "$fullpath" &>/dev/null &
+                    ;;
+                *)
+                    xdg-open "$fullpath" &>/dev/null &
+                    ;;
+            esac
+            _files_save_history "$file"
+        else
+            hyprctl notify -1 2000 0 "fontsize:16 󰅙 not found"
+        fi
+        ;;
     *)
-        echo "Usage: $0 {toggle|play|z|note|manga|workspace}"
+        echo "Usage: $0 {toggle|play|z|note|manga|files|workspace}"
         exit 1
         ;;
 esac

@@ -19,6 +19,7 @@ bind_exec(MOD .. " + F", BROWSER)
 bind_exec("ALT + F", "librewolf --private-window || firefox --private-window || zen-browser --private-window")
 bind_exec(MOD .. " + E", MENU)
 bind_exec("ALT + E", EDITOR)
+bind_exec(MOD .. " + I", "bash $HOME/.config/hypr/scripts/utils.sh files")
 -- -------------------- windows --------------------
 hl.bind(MOD .. " + C", hl.dsp.window.close())
 bind_exec("ALT + C", "bash -c 'pid=$(hyprctl activewindow -j | jq -r \".pid\"); [ -n \"$pid\" ] && kill -9 \"$pid\"'")
@@ -127,7 +128,7 @@ end)
 -- ----- media -----
 bind_exec("SUPER + G", "bash $HOME/.config/hypr/scripts/music.sh")
 bind_exec("ALT + G", "bash $HOME/.config/hypr/scripts/video.sh")
-bind_exec("ALT + M", "bash $HOME/.config/hypr/scripts/utils.sh manga")
+bind_exec("ALT + I", "bash $HOME/.config/hypr/scripts/utils.sh manga")
 
 -- ----- utils -----
 bind_exec("SUPER + Escape", "bash $HOME/.config/hypr/scripts/websites.sh")

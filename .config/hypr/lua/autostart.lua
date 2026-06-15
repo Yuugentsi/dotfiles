@@ -9,27 +9,52 @@ hl.on("hyprland.start", function()
     exec("waybar")
     -- exec("hyprsunset -t 2000")
     exec("swaync")
-    exec("spotify")
+    -- exec("spotify")
     exec("zen-browser")
 
+    -- ----- xdg desktop portal -----
+
     -- ----- spotify-mpv -----
-    local spotify_monitor =
-    "bash -c 'while true; do if playerctl -p spotify status 2>/dev/null | grep -qx Playing; then pkill -x mpv; fi; sleep 2; done'"
-    exec(spotify_monitor)
+    hl.timer(function()
+        local status = io.popen("playerctl -p spotify status 2>/dev/null"):read("*l")
+        if status == "Playing" then
+            exec("pkill -x mpv")
+        end
+    end, { timeout = 2000, type = "repeat" })
 
     -- ----- spotify -----
-    local spotify_resume =
-    "bash -c 'while true; do if playerctl -p spotify status 2>/dev/null | grep -qx Paused; then playerctl -p spotify play; fi; sleep 1; done'"
-    exec(spotify_resume)
+    hl.timer(function()
+        local status = io.popen("playerctl -p spotify status 2>/dev/null"):read("*l")
+        if status == "Paused" then
+            exec("playerctl -p spotify play")
+        end
+    end, { timeout = 1000, type = "repeat" })
 
     -- ----- mpv -----
-    local mpv_dedup =
-    "bash -c 'while true; do if [ \"$(pgrep -x mpv | wc -l)\" -gt 1 ]; then pkill -x -o mpv; fi; sleep 1; done'"
-    exec(mpv_dedup)
+    hl.timer(function()
+        local mpvs = tonumber(io.popen("pgrep -x mpv 2>/dev/null | wc -l"):read("*a")) or 0
+        if mpvs > 1 then
+            exec("pkill -x -o mpv")
+        end
+    end, { timeout = 1000, type = "repeat" })
 
     -- ----- zathura -----
-    local zathura_dedup =
-    "bash -c 'while true; do if [ \"$(pgrep -x zathura | wc -l)\" -gt 1 ]; then pkill -x -o zathura; fi; sleep 1; done'"
-    exec(zathura_dedup)
+    hl.timer(function()
+        local zaths = tonumber(io.popen("pgrep -x zathura 2>/dev/null | wc -l"):read("*a")) or 0
+        if zaths > 1 then
+            exec("pkill -x -o zathura")
+        end
+    end, { timeout = 1000, type = "repeat" })
 
+end)
+
+-- ----- shutdown cleanup -----
+hl.on("hyprland.shutdown", function()
+    local function exec(cmd)
+        hl.exec_cmd(cmd)
+    end
+    exec("pkill -x hypridle")
+    exec("pkill -x hyprpaper")
+    exec("pkill -x swaync")
+    exec("pkill -x waybar")
 end)

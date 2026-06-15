@@ -28,11 +28,13 @@ hl.bind(MOD .. " + P", hl.dsp.window.pseudo())
 hl.bind(MOD .. " + J", hl.dsp.layout("togglesplit"))
 hl.bind(MOD .. " + Tab", hl.dsp.window.cycle_next())
 hl.bind("F11", hl.dsp.window.fullscreen())
+hl.bind(MOD .. " + B", hl.dsp.window.center())
 
 -- ----- groups -----
 hl.bind("ALT + down", hl.dsp.window.close())
 hl.bind("ALT + up", hl.dsp.group.toggle())
 
+hl.config({ binds = { workspace_back_and_forth = true, workspace_center_on = 1 } })
 -- -------------------- media --------------------
 -- ----- audio -----
 local vol_mute =
@@ -108,7 +110,7 @@ hl.bind(MOD .. " + p", hl.dsp.layout("promote"))
 -- -------------------- scripts --------------------
 bind_exec(MOD .. " + Z", "bash $HOME/.config/hypr/scripts/utils.sh z")
 bind_exec("ALT + T", "bash $HOME/.config/hypr/scripts/utils.sh toggle")
-bind_exec("ALT + Q", "bash $HOME/.config/hypr/scripts/kitty.sh")
+bind_exec("ALT + Q", "bash $HOME/.config/hypr/scripts/utils.sh kitty")
 bind_exec("F1", "bash $HOME/.config/hypr/scripts/utils.sh play")
 bind_exec("ALT + F1", "bash $HOME/.config/hypr/scripts/utils.sh spotify")
 bind_exec(MOD .. " + F1", "playerctl previous")
@@ -125,6 +127,7 @@ end)
 -- ----- media -----
 bind_exec("SUPER + G", "bash $HOME/.config/hypr/scripts/music.sh")
 bind_exec("ALT + G", "bash $HOME/.config/hypr/scripts/video.sh")
+bind_exec("ALT + M", "bash $HOME/.config/hypr/scripts/utils.sh manga")
 
 -- ----- utils -----
 bind_exec("SUPER + Escape", "bash $HOME/.config/hypr/scripts/websites.sh")
@@ -154,4 +157,3 @@ for i = 1, 10 do
     hl.bind(MOD .. " + " .. key, hl.dsp.focus({ workspace = i }))
     hl.bind(MOD .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
-

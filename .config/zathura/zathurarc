@@ -1,6 +1,7 @@
 # ─── settings ───
 set fullscreen true
 set adjust-open width
+set page-cache-size 40
 
 # ─── fullscreen ───
 map f toggle_fullscreen

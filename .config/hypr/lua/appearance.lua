@@ -1,5 +1,6 @@
 -- ─── appearance ───
 --
+hl.config({ xwayland = { force_zero_scaling = true } })
 -- -------------------- general --------------------
 hl.config({
     general = {
@@ -72,6 +73,7 @@ hl.config({
             noise    = 0.05,
             contrast = 1.2,
             vibrancy = 0.3,
+            popups   = true,
         },
     },
 })

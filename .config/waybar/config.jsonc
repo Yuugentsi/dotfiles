@@ -6,11 +6,9 @@
   "modules-left": ["hyprland/workspaces", "wlr/taskbar"],
   "modules-center": ["mpris", "custom/stop-music"],
   "modules-right": [
-    "battery",
     "backlight",
     "custom/hyprsunset",
     "pulseaudio",
-    "network",
     "clock",
     "tray",
     "group/power",
@@ -140,6 +138,12 @@
     "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%'",
   },
 
+  "memory": {
+    "format": "󰍛",
+    "tooltip-format": "󰍛 {percentage}% · {used:0.1f}G / {total:0.1f}G",
+    "on-click": "sh -c 'hyprctl notify 10 3000 \"rgb(a89cc8)\" \"󰍛 $(free -h | awk \"/^Mem:/{printf \\\"%s/%s\\\", \\$3, \\$2}\")\"'"
+  },
+
   "group/power": {
     "orientation": "inherit",
     "drawer": {
@@ -147,7 +151,7 @@
       "children-class": "not-power",
       "transition-left-to-right": false,
     },
-    "modules": ["custom/power", "custom/reboot", "custom/logout"],
+    "modules": ["custom/power", "battery", "network", "memory", "custom/reboot", "custom/logout"],
   },
 
   "custom/logout": {

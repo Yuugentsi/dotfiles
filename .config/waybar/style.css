@@ -28,6 +28,7 @@ window#waybar {
 #custom-hyprsunset,
 #pulseaudio,
 #clock,
+#memory,
 #custom-power,
 #custom-stop-music,
 #group-power,
@@ -131,7 +132,7 @@ window#waybar {
 }
 
 #mpris {
-  font-size: 11px;
+  font-size: 6px;
   padding: 1px 6px;
   background: transparent;
   border: none;
@@ -153,7 +154,7 @@ window#waybar {
 }
 
 #pulseaudio {
-  font-size: 14px;
+  font-size: 12px;
   padding: 2px 6px;
 }
 

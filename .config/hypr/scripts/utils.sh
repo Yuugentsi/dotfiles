@@ -191,6 +191,30 @@ case "${1:-}" in
         printf "%s\n-------------\n" "$content" >> "$notes"
         hyprctl notify -1 2000 "rgb(a6e3a1)" "󰄬 note saved"
         ;;
+    # ----- mpv (ALT + M) -----
+    # bind_exec("ALT + M", "$HOME/.config/hypr/scripts/utils.sh mpv")
+    mpv)
+        SPECIAL="mpv"
+        CLASS="mpv"
+
+        EXISTING_SPECIAL=$(hyprctl clients -j | jq -r ".[] | select(.workspace.name == \"special:$SPECIAL\") | .address" | head -1)
+
+        if [ -n "$EXISTING_SPECIAL" ]; then
+            hyprctl dispatch "hl.dsp.workspace.toggle_special(\"$SPECIAL\")"
+            exit 0
+        fi
+
+        DATA=$(hyprctl clients -j | jq -r ".[] | select(.class == \"$CLASS\") | \"\\(.address) \\(.workspace.name)\"" | head -1)
+
+        if [ -n "$DATA" ]; then
+            ADDR="${DATA%% *}"
+            hyprctl dispatch "hl.dsp.window.move({ workspace = 'special:$SPECIAL', window = 'address:${ADDR}' })"
+            exit 0
+        fi
+
+        exit 0
+        ;;
+
     # ----- kitty (ALT + Q) -----
     # bind_exec("ALT + Q", "$HOME/.config/hypr/scripts/utils.sh kitty")
     kitty)

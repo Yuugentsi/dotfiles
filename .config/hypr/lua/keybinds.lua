@@ -127,7 +127,7 @@ end)
 
 -- ----- media -----
 bind_exec("SUPER + G", "bash $HOME/.config/hypr/scripts/music.sh")
-bind_exec("ALT + M", "bash $HOME/.config/hypr/scripts/mpv.sh")
+bind_exec("ALT + M", "bash $HOME/.config/hypr/scripts/utils.sh mpv")
 bind_exec("ALT + G", "bash $HOME/.config/hypr/scripts/video.sh")
 bind_exec("ALT + I", "bash $HOME/.config/hypr/scripts/utils.sh manga")
 

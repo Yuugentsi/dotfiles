@@ -195,9 +195,19 @@ case "${1:-}" in
     # bind_exec("ALT + Q", "$HOME/.config/hypr/scripts/utils.sh kitty")
     kitty)
         SPECIAL="kitty"
-        EXISTING=$(hyprctl clients -j | jq -r '.[] | select(.workspace.name == "special:kitty") | .address' | head -1)
+        CURRENT_WS=$(hyprctl activeworkspace -j | jq -r '.name')
+
+        MPV_SPECIAL=$(hyprctl clients -j | jq -r '.[] | select(.workspace.name == "special:mpv") | .address' | head -1)
+        [ -n "$MPV_SPECIAL" ] && hyprctl dispatch "hl.dsp.window.move({ workspace = '${CURRENT_WS}', window = 'address:${MPV_SPECIAL}' })"
+
+        EXISTING=$(hyprctl clients -j | jq -r '.[] | select(.class == "kitty-float") | .address' | head -1)
         if [ -n "$EXISTING" ]; then
-            hyprctl dispatch "hl.dsp.workspace.toggle_special(\"$SPECIAL\")"
+            IN_SPECIAL=$(hyprctl clients -j | jq -r ".[] | select(.address == \"$EXISTING\" and .workspace.name == \"special:$SPECIAL\") | .address")
+            if [ -n "$IN_SPECIAL" ]; then
+                hyprctl dispatch "hl.dsp.workspace.toggle_special(\"$SPECIAL\")"
+            else
+                hyprctl dispatch "hl.dsp.window.move({ workspace = 'special:$SPECIAL', window = 'address:${EXISTING}' })"
+            fi
             exit 0
         fi
         kitty --class kitty-float &

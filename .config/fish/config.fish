@@ -12,6 +12,9 @@
 # ───────────────────────
 set -g fish_greeting
 
+# ─────────── path ───────────
+fish_add_path ~/.local/bin
+
 # ─────────── syntax highlight ───────────
 set -g fish_color_normal cdd6f4
 set -g fish_color_command 89b4fa

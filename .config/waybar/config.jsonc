@@ -51,15 +51,12 @@
   },
 
   "battery": {
-    "states": {
-      "warning": 30,
-      "critical": 15,
+    "interval": 60,
+    "format": "{capacity}% {icon}",
+    "format-icons": {
+      "default": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+      "charging": ["󰢟", "󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"]
     },
-    "format": "{icon}",
-    "format-icons": ["", "", "", "", ""],
-    "tooltip-format": " {capacity}%",
-    "on-click-right": "sh -c 'kitty & Telegram &'",
-    "on-click": "sh -c 'if [ -f /tmp/lowlight_mode ]; then pkill hyprsunset; PREV=$(cat /tmp/lowlight_brightness 2>/dev/null || echo 90); brightnessctl set ${PREV}%; rm /tmp/lowlight_mode /tmp/lowlight_brightness /tmp/hyprsunset_temp; else CUR=$(brightnessctl get); MAX=$(brightnessctl max); PCT=$((CUR*100/MAX)); echo $PCT > /tmp/lowlight_brightness; brightnessctl set 50%; pkill hyprsunset 2>/dev/null; sleep 0.2; echo 3600 > /tmp/hyprsunset_temp; hyprsunset -t 3600 & touch /tmp/lowlight_mode; fi'",
   },
 
   "pulseaudio": {

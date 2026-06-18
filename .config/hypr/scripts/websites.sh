@@ -58,7 +58,7 @@ run_sites_menu() {
 
     local web_urls=(
         "https://reddit.com"
-        "https://letterboxd.com"
+        "https://letterboxd.com/yuugentsi/"
         "https://www.privacyguides.org/en/tools/"
         "https://news.ycombinator.com/"
         "https://lobste.rs/"
@@ -118,9 +118,9 @@ run_sites_menu() {
             *Kaa) "$BROWSER" "https://kaa.lt/" ;;
             *Twitter) "$BROWSER" "https://x.com" ;;
             *Reddit) "$BROWSER" "https://reddit.com" ;;
-            *Letterboxd) "$BROWSER" "https://letterboxd.com" ;;
+            *Letterboxd) "$BROWSER" "https://letterboxd.com/yuugentsi/" ;;
             *Pinterest) "$BROWSER" "https://pinterest.com" ;;
-            *Last.fm) "$BROWSER" "https://last.fm" ;;
+            *Last.fm) "$BROWSER" "https://last.fm/user/yuugentsi" ;;
             *Privacy\ Guides) "$BROWSER" "https://www.privacyguides.org/en/tools/" ;;
             *Hacker\ News) "$BROWSER" "https://news.ycombinator.com/" ;;
             *Lobsters) "$BROWSER" "https://lobste.rs/" ;;
@@ -134,7 +134,7 @@ run_sites_menu() {
             *Wallhaven) "$BROWSER" "https://wallhaven.cc/toplist" ;;
             *DeepL) "$BROWSER" "https://www.deepl.com/en" ;;
             *Gmail) "$BROWSER" "https://mail.google.com" ;;
-            *GitHub) "$BROWSER" "https://github.com" ;;
+            *GitHub) "$BROWSER" "https://github.com/yuugentsi" ;;
             *Wikipedia) "$BROWSER" "https://wikipedia.org" ;;
             *Proton\ Mail) "$BROWSER" "https://mail.proton.me/u/0/inbox" ;;
             *Proton\ Pass) "$BROWSER" "https://pass.proton.me/u/0" ;;
@@ -271,7 +271,7 @@ run_sites_menu() {
                 if [ -n "$query" ]; then
                     "$BROWSER" "https://github.com/$encoded"
                 else
-                    "$BROWSER" "https://github.com/"
+                    "$BROWSER" "https://github.com/yuugentsi"
                 fi
                 ;;
             .git) "$BROWSER" "https://github.com/$encoded" ;;

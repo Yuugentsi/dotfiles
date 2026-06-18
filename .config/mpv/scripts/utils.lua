@@ -156,7 +156,6 @@ local function show_help()
         mp.osd_message("", 0)
     end)
 end
-
 -- ─────────── bindings ───────────
 mp.add_forced_key_binding("ENTER", "press-fast-enter", handle_fast, { complex = true })
 mp.add_forced_key_binding("KP_ENTER", "press-fast-kp-enter", handle_fast, { complex = true })

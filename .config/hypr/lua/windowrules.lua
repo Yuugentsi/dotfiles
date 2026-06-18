@@ -74,7 +74,7 @@ hl.window_rule({
 -- ----- telegram -----
 hl.window_rule({
     name = "telegram-float",
-    match = { class = "org.telegram.desktop" },
+    match = { class = "org.telegram.desktop", title = "^(?!Media viewer$).*" },
     workspace = "6 silent",
     float = true,
     size = "1050 650",

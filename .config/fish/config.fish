@@ -65,25 +65,25 @@ end
 # --- functions ---
 abbr -a c clear
 # --- mkdir
-function mkcd; mkdir -p $argv[1]; and cd $argv[1]; end
+function mkcd -d "mkdir and cd"; mkdir -p $argv[1]; and cd $argv[1]; end
 #function gh; git clone $argv[1]; and cd (basename (string replace -r '\.git$' '' $argv[1])); end
 # --- clear
-function rd; clear; set -l p (pwd); cd ..; read -l -P "󰅙 rm -rf $p ? [y/N] " confirm; test "$confirm" = y; and rm -rf $p; and clear; and echo "󰄬 deleted $p"; end
+function rd -d "remove current dir"; clear; set -l p (pwd); cd ..; read -l -P "󰅙 rm -rf $p ? [y/N] " confirm; test "$confirm" = y; and rm -rf $p; and clear; and echo "󰄬 deleted $p"; end
 # --- empty
-function empty; set -l n (find (pwd) -type d -empty 2>/dev/null | wc -l); find (pwd) -type d -empty -delete 2>/dev/null; echo "$n folders deleted"; end
+function empty -d "delete empty dirs"; set -l n (find (pwd) -type d -empty 2>/dev/null | wc -l); find (pwd) -type d -empty -delete 2>/dev/null; echo "$n folders deleted"; end
 # --- zip
-function zipast; zip -r (basename $PWD).zip . > /dev/null; clear; du -h (basename $PWD).zip; end
+function zipast -d "zip current dir"; zip -r (basename $PWD).zip . > /dev/null; clear; du -h (basename $PWD).zip; end
 # --- time ---
-function dt; clear; set -l now (date '+%s'); set -l midnight (date -d 'tomorrow 00:00:00' '+%s'); set -l left (math -s0 "$midnight - $now"); set -l h (math -s0 "$left / 3600"); set -l m (math -s0 "($left % 3600) / 60"); printf "󰔚 %s - 󰑔 %s - 󰕑 %sh%sm\n" (date '+%H:%M:%S') (date '+%m/%d/%Y') $h $m; end
+function dt -d "date and time"; clear; set -l now (date '+%s'); set -l midnight (date -d 'tomorrow 00:00:00' '+%s'); set -l left (math -s0 "$midnight - $now"); set -l h (math -s0 "$left / 3600"); set -l m (math -s0 "($left % 3600) / 60"); printf "󰔚 %s - 󰑔 %s - 󰕑 %sh%sm\n" (date '+%H:%M:%S') (date '+%m/%d/%Y') $h $m; end
 # ---
-function min; set -l n (date +%s); set -l h (date +%H); set -l nx (math "$h + 1"); set -l nxh (date -d "$nx:00:00" +%s); set -l l (math "$nxh - $n"); set -l m (math -s0 "$l / 60"); set -l s (math -s0 "$l % 60"); clear; echo "󰔚 $m min $s sec"; end
+function min -d "minutes to next hour"; set -l n (date +%s); set -l h (date +%H); set -l nx (math "$h + 1"); set -l nxh (date -d "$nx:00:00" +%s); set -l l (math "$nxh - $n"); set -l m (math -s0 "$l / 60"); set -l s (math -s0 "$l % 60"); clear; echo "󰔚 $m min $s sec"; end
 # --- volume ---
-function volume; clear; set -q argv[1]; and set p $argv[1]; or set p 100; wpctl set-volume @DEFAULT_AUDIO_SINK@ (math "min(max($p, 30), 110) / 100"); end
+function volume -d "set audio volume"; clear; set -q argv[1]; and set p $argv[1]; or set p 100; wpctl set-volume @DEFAULT_AUDIO_SINK@ (math "min(max($p, 30), 110) / 100"); end
 # ---
 function bak -d "backup dir to bak/"; set -l d (pwd); if set -q argv[1]; set d (realpath "$argv[1]"); end; mkdir -p "$d/bak"; for f in "$d"/*; test "$f" != "$d/bak"; and cp -r "$f" "$d/bak/"; end; clear; and echo "󰄬 $d/bak"; end
 
 # ─────────── note ───────────
-function note
+function note -d "note in ~/notes.txt"
     set -l file ~/notes.txt
 
     if set -q argv[1]
@@ -99,7 +99,7 @@ end
 # ─────────── prompt ───────────
 set -g fish_transient_prompt 1
 
-function fish_prompt
+function fish_prompt -d "custom prompt"
     if set -q argv[1]
         echo -n "ᗧ "
         return
@@ -123,7 +123,7 @@ function fish_prompt
     echo -n -s "$DIM╰─$N " (set_color $status_color --bold) "ᗧ " (set_color normal)
 end
 # ─────────── venv ───────────
-function venv
+function venv -d "toggle python venv"
     set -l green (set_color green)
     set -l red (set_color red)
     set -l reset (set_color normal)
@@ -143,7 +143,7 @@ function venv
     end
 end
 # --- venv requirements ---
-function venvr; set -l req "$PWD/requirements.txt"; if not test -f "$req"; echo "requirements.txt not found"; return 1; end; venv; pip install -r "$req"; end
+function venvr -d "venv and install requirements"; set -l req "$PWD/requirements.txt"; if not test -f "$req"; echo "requirements.txt not found"; return 1; end; venv; pip install -r "$req"; end
 # ─────────── help ───────────
 function h -d "list functions"
     set -l N (set_color normal)
@@ -158,19 +158,41 @@ function h -d "list functions"
         (set_color fab387)
 
     set -l skip _config_backup fish_command_not_found __extra_cnf
+    set -l FS (printf '\x1f')
 
-    set -l dir "$HOME/.config/fish/functions"
-    set -l files (command ls -1 "$dir"/*.fish 2>/dev/null)
-
-    if test -z "$files"
-        echo "no functions found"
-        return 1
+    set -l cfg_sections
+    set -l cfg "$HOME/.config/fish/config.fish"
+    if test -f "$cfg"
+        set -l entries (grep -E "^function " "$cfg" 2>/dev/null)
+        set -l visible
+        for entry in $entries
+            set -l name (string match -rg '^function\s+(\S+)' -- "$entry")
+            if test -n "$name"; and contains -- "$name" $skip
+                continue
+            end
+            if test -n "$name"; and string match -qr '^_' -- "$name"
+                continue
+            end
+            set -a visible $entry
+        end
+        set -l count (count $visible)
+        if test $count -gt 0
+            set -a cfg_sections "$count$FS""config""$FS"(string join '§' $visible)
+        end
     end
 
     set -l sections
+    set -l dir "$HOME/.config/fish/functions"
+    set -l files
+    if test -d "$dir"
+        set files (find "$dir" -maxdepth 1 -type f -name '*.fish' 2>/dev/null)
+    end
 
     for file in $files
         set -l fname (basename "$file" .fish)
+        if test "$fname" = "config"
+            set fname "functions/config"
+        end
         set -l entries (grep -E "^function " "$file" 2>/dev/null)
 
         if test -z "$entries"
@@ -183,7 +205,7 @@ function h -d "list functions"
             if test -n "$name"; and contains -- "$name" $skip
                 continue
             end
-            if test -n "$name"; and string match -qr '^__' -- "$name"
+            if test -n "$name"; and string match -qr '^_' -- "$name"
                 continue
             end
             set -a visible $entry
@@ -194,25 +216,33 @@ function h -d "list functions"
             continue
         end
 
-        set -a sections "$count|$fname|"(string join '§' $visible)
+        set -a sections "$count$FS$fname$FS"(string join '§' $visible)
     end
 
-    set -l total_files (count $sections)
+    set -l ordered $cfg_sections
+    if test (count $sections) -gt 0
+        set -a ordered (printf '%s\0' $sections | sort -t "$FS" -k1 -rn -z | string split0)
+    end
+
+    set -l total_files (count $ordered)
     set -l total_funcs 0
-    for s in $sections
-        set -l first (string split '|' $s)[1]
+    for s in $ordered
+        set -l first (string split "$FS" $s)[1]
         set total_funcs (math $total_funcs + $first)
+    end
+
+    if test $total_files -eq 0
+        echo "no functions found"
+        return 1
     end
 
     echo ""
     echo "  Fish Functions"
     echo ""
 
-    set -l sorted (printf '%s\0' $sections | sort -t'|' -k1 -rn -z | string split0)
     set -l idx 0
-
-    for section in $sorted
-        set -l parts (string split '|' $section)
+    for section in $ordered
+        set -l parts (string split "$FS" $section)
         set -l count $parts[1]
         set -l fname $parts[2]
         set -l entries_str $parts[3]
@@ -226,8 +256,8 @@ function h -d "list functions"
         set -l i 0
         for entry in $visible
             set -l i (math $i + 1)
-            set -l name (string match -rg '^function\s+(\S+)' -- "$entry")
-            set -l desc (string match -rg -- '-(?:description|d)\s+[\x27"]([^\x27"]+)[\x27"]' -- "$entry")
+            set -l name (string match -rg '^function\s+([^;\s]+)' -- "$entry")
+            set -l desc (string match -rg -- '^function\s+[^;\s]+\s+(?:-d|-description)\s+[\x27"]([^\x27"]+)[\x27"]' -- "$entry")
             if test $i -eq $count
                 if test -n "$desc"
                     printf "  $c└── %s$N → %s\n" "$name" "$desc"
@@ -250,7 +280,7 @@ function h -d "list functions"
     echo ""
 end
 # ─────────── ls ───────────
-function l
+function l -d "categorized ls"
     set -e folders zip audio video images text lua other
 
     for item in *

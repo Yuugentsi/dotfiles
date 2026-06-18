@@ -71,7 +71,7 @@
       "default": ["", "", ""],
     },
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 90 ] && v=90; wpctl set-volume --limit 0.9 @DEFAULT_AUDIO_SINK@ ${v}%'",
+    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 120 ] && v=120; wpctl set-volume --limit 1.2 @DEFAULT_AUDIO_SINK@ ${v}%'",
     "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%'",
   },
 
@@ -134,7 +134,7 @@
     "interval": 1,
     "on-click": "mode",
     "on-click-right": "bash -c 'killall mpv 2>/dev/null; sleep 0.5; file=$(find ~/0/music/ -type f | shuf -n 1); [ -n \"$file\" ] && mpv --no-video \"$file\" &'",
-    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 90 ] && v=90; wpctl set-volume --limit 0.9 @DEFAULT_AUDIO_SINK@ ${v}%'",
+    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 120 ] && v=120; wpctl set-volume --limit 1.2 @DEFAULT_AUDIO_SINK@ ${v}%'",
     "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%'",
   },
 

@@ -20,6 +20,10 @@ local env_vars = {
 
     -- browser
     MOZ_ENABLE_WAYLAND                  = "1",
+
+    -- SDL / Electron
+    SDL_VIDEODRIVER                     = "wayland",
+    ELECTRON_OZONE_PLATFORM_HINT        = "auto",
 }
 
 for k, v in pairs(env_vars) do

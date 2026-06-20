@@ -5,7 +5,7 @@ hl.workspace_rule({ workspace = "f[1]", gaps_out = 0, gaps_in = 0 })
 
 hl.workspace_rule({ workspace = "4", on_created_empty = "librewolf" })
 hl.workspace_rule({ workspace = "5", on_created_empty = "kitty" })
-hl.workspace_rule({ workspace = "6", on_created_empty = "Telegram" })
+hl.workspace_rule({ workspace = "6", layout = "master" })
 hl.workspace_rule({ workspace = "7", on_created_empty = "thunar" })
 hl.workspace_rule({
     workspace = "8",

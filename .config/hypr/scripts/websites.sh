@@ -59,6 +59,8 @@ run_sites_menu() {
     local web_urls=(
         "https://reddit.com"
         "https://letterboxd.com/yuugentsi/"
+        "https://myanimelist.net"
+        "https://anilist.co"
         "https://www.privacyguides.org/en/tools/"
         "https://news.ycombinator.com/"
         "https://lobste.rs/"
@@ -116,6 +118,8 @@ run_sites_menu() {
             *Miruro) "$BROWSER" "https://www.miruro.tv/" ;;
             *Kuudere) "$BROWSER" "https://kuudere.ru" ;;
             *Kaa) "$BROWSER" "https://kaa.lt/" ;;
+            *MyAnimeList) "$BROWSER" "https://myanimelist.net" ;;
+            *AniList) "$BROWSER" "https://anilist.co" ;;
             *Twitter) "$BROWSER" "https://x.com" ;;
             *Reddit) "$BROWSER" "https://reddit.com" ;;
             *Letterboxd) "$BROWSER" "https://letterboxd.com/yuugentsi/" ;;
@@ -186,6 +190,8 @@ run_sites_menu() {
 
     local web_entries='❀  Reddit
 ❀  Letterboxd
+❀  MyAnimeList
+❀  AniList
 ❀  Privacy Guides
 ❀  Hacker News
 ❀  Lobsters

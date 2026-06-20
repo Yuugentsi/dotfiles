@@ -7,9 +7,9 @@ hl.on("hyprland.start", function()
     end
     -- -------------------- exec --------------------
     exec("waybar")
-    -- exec("hyprsunset -t 2000")
+    --exec("hyprsunset -t 2000")
     exec("swaync")
-    -- exec("spotify")
+    exec("spotify")
     exec("zen-browser")
 
     -- ----- xdg desktop portal -----
@@ -29,23 +29,28 @@ hl.on("hyprland.start", function()
             exec("playerctl -p spotify play")
         end
     end, { timeout = 1000, type = "repeat" })
+end)
 
-    -- ----- mpv -----
-    hl.timer(function()
-        local mpvs = tonumber(io.popen("pgrep -x mpv 2>/dev/null | wc -l"):read("*a")) or 0
-        if mpvs > 1 then
-            exec("pkill -x -o mpv")
-        end
-    end, { timeout = 1000, type = "repeat" })
+-- ----- single instance apps -----
+local function limit_instance(class)
+    local count = tonumber(io.popen("pgrep -x " .. class .. " 2>/dev/null | wc -l"):read("*a")) or 0
+    if count > 1 then
+        hl.exec_cmd("pkill -x -o " .. class)
+    end
+end
 
-    -- ----- zathura -----
-    hl.timer(function()
-        local zaths = tonumber(io.popen("pgrep -x zathura 2>/dev/null | wc -l"):read("*a")) or 0
-        if zaths > 1 then
-            exec("pkill -x -o zathura")
-        end
-    end, { timeout = 1000, type = "repeat" })
+-- ----- mpv -----
+hl.on("window.open", function(w)
+    if w.class == "mpv" then
+        limit_instance("mpv")
+    end
+end)
 
+-- ----- zathura -----
+hl.on("window.open", function(w)
+    if w.class == "org.pwmt.zathura" then
+        limit_instance("zathura")
+    end
 end)
 
 -- ----- shutdown cleanup -----

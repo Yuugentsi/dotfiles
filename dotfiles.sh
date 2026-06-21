@@ -233,6 +233,7 @@ install_packages() {
         mpv-mpris       \
         playerctl       \
         nano            \
+        pacman-contrib  \
         rofi            \
         swayimg         \
         thunar          \

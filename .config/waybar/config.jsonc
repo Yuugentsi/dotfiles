@@ -116,6 +116,7 @@
   "mpris": {
     "format": "{title}",
     "format-paused": "\u23f8 {title}",
+    "max-length": 80,
     "tooltip-format": "",
     "tooltip": true,
     "interval": 1,

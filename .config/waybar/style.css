@@ -132,8 +132,8 @@ window#waybar {
 }
 
 #mpris {
-  font-size: 11px;
-  padding: 2px 8px;
+  font-size: 10px;
+  padding: 1px 6px;
   background: transparent;
   border: none;
 }

@@ -22,7 +22,7 @@ local env_vars = {
     MOZ_ENABLE_WAYLAND                  = "1",
 
     -- SDL / Electron
-    SDL_VIDEODRIVER                     = "wayland",
+    SDL_VIDEODRIVER                     = "wayland,x11",
     ELECTRON_OZONE_PLATFORM_HINT        = "auto",
 }
 

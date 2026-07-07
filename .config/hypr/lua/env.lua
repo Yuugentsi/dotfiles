@@ -33,7 +33,7 @@ end
 -- ─── theme ───
 local themes = {
     ["org.gnome.desktop.interface gtk-theme"]  = "Pop-dark",
-    ["org.gnome.desktop.interface icon-theme"] = "bloom",
+    ["org.gnome.desktop.interface icon-theme"] = "Sea",
 }
 
 for key, val in pairs(themes) do

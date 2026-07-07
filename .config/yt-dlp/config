@@ -1,5 +1,5 @@
 # ─── cookies ───
---cookies-from-browser firefox
+#--cookies-from-browser firefox
 
 # ─── sponsorblock ───
 --sponsorblock-remove sponsor,selfpromo,interaction,preview,filler,intro,outro
@@ -23,4 +23,3 @@
 -o %(title)s.%(ext)s
 --paths ~/0/videos/
 --windows-filenames
-

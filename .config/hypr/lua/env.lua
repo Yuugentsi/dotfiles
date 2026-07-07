@@ -1,5 +1,4 @@
 -- ─── env ───
--- adw-gtk-theme mate Materia-dark oxygen-cursors
 local env_vars = {
     -- cursor
     XCURSOR_THEME                       = "Oxygen_Zion",
@@ -20,6 +19,7 @@ local env_vars = {
 
     -- browser
     MOZ_ENABLE_WAYLAND                  = "1",
+    BROWSER                             = "brave-origin",
 
     -- SDL / Electron
     SDL_VIDEODRIVER                     = "wayland,x11",
@@ -32,10 +32,10 @@ end
 
 -- ─── theme ───
 local themes = {
-    ["org.gnome.desktop.interface gtk-theme"]  = "Materia-dark",
-    ["org.gnome.desktop.interface icon-theme"] = "mate",
+    ["org.gnome.desktop.interface gtk-theme"]  = "Pop-dark",
+    ["org.gnome.desktop.interface icon-theme"] = "bloom",
 }
 
 for key, val in pairs(themes) do
-    hl.exec_cmd("gsettings set " .. key .. " '" .. val .. "'")
+    hl.exec_cmd("GSETTINGS_BACKEND=dconf gsettings set " .. key .. " '" .. val .. "'")
 end

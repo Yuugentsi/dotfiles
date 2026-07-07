@@ -7,10 +7,14 @@ hl.on("hyprland.start", function()
     end
     -- -------------------- exec --------------------
     exec("waybar")
-    --exec("hyprsunset -t 2000")
+    exec("hyprsunset -t 2000")
     exec("swaync")
+    exec("hypridle")
     exec("spotify")
-    exec("zen-browser")
+    exec("kitty opencode --continue")
+    exec("bash ~/.config/hypr/scripts/clipboard.sh daemon")
+    exec("bash ~/.config/hypr/scripts/wallpaper.sh daemon")
+    exec("bash ~/.config/hypr/scripts/utils.sh workspace")
 
     -- ----- xdg desktop portal -----
 
@@ -52,6 +56,7 @@ hl.on("window.open", function(w)
         limit_instance("zathura")
     end
 end)
+
 
 -- ----- shutdown cleanup -----
 hl.on("hyprland.shutdown", function()

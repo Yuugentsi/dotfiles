@@ -46,6 +46,7 @@ _video_rofi_menu() {
         -p "$1"
 }
 
+
 _video_rofi_custom_menu() {
     rofi -dmenu -i -no-custom -kb-custom-1 "Control+t" -kb-custom-2 "Control+r" \
         -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }' \
@@ -125,6 +126,56 @@ _video_random_no_repeat() {
     exit 0
 }
 
+_video_ytdl_options() {
+    local opts="format=bestvideo[height<=720]+bestaudio/best[height<=720]/best"
+    if [[ -d "$HOME/.config/BraveSoftware/Brave-Origin" ]]; then
+        opts="$opts,cookies-from-browser=brave:$HOME/.config/BraveSoftware/Brave-Origin"
+    elif [[ -d "$HOME/.config/BraveSoftware/Brave-Browser" ]]; then
+        opts="$opts,cookies-from-browser=brave:$HOME/.config/BraveSoftware/Brave-Browser"
+    elif [[ -d "$HOME/.mozilla/firefox" ]]; then
+        opts="$opts,cookies-from-browser=firefox"
+    elif [[ -d "$HOME/.var/app/org.mozilla.firefox/config/mozilla/firefox" ]]; then
+        opts="$opts,cookies-from-browser=firefox"
+    elif [[ -d "$HOME/.config/chromium" ]]; then
+        opts="$opts,cookies-from-browser=chromium"
+    elif [[ -d "$HOME/.config/google-chrome" ]]; then
+        opts="$opts,cookies-from-browser=chrome"
+    fi
+    echo "--ytdl-raw-options=$opts"
+}
+
+_video_open_url() {
+    if ! command -v wl-paste >/dev/null 2>&1; then
+        hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  Install wl-clipboard"
+        exit 0
+    fi
+
+    local url
+    url=$(wl-paste 2>/dev/null | tr -d '[:space:]')
+
+    if [[ -z "$url" ]]; then
+        hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  Clipboard empty"
+        exit 0
+    fi
+
+    if [[ ! "$url" =~ ^https?:// ]]; then
+        hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  Clipboard is not a URL"
+        exit 0
+    fi
+
+    if ! command -v yt-dlp >/dev/null 2>&1; then
+        hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  Install yt-dlp"
+        exit 0
+    fi
+
+    local ytdl_opts
+    ytdl_opts=$(_video_ytdl_options)
+
+    hyprctl notify 5 3000 "rgb(a6e3a1)" "󰎁  Opening URL..."
+    run_mpv "$ytdl_opts" "$url" >/dev/null 2>&1 &
+    exit 0
+}
+
 _yt_count() {
     [[ ! -f "$YT_LIST" ]] && echo 0 && return
     awk '
@@ -196,14 +247,14 @@ _yt_list() {
     sleep 0.1
 
     if [[ ! -f "$YT_LIST" ]]; then
-        notify-send -e -t 2000 "󰎁  Video" "yt.txt not found"
+        hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  Video: yt.txt not found"
         return
     fi
 
     local list
     list=$(_yt_list_entries)
 
-    [[ -z "$list" ]] && notify-send -e -t 2000 "󰎁  yt.txt" "List is empty" && return
+    [[ -z "$list" ]] && hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  yt.txt: List is empty" && return
 
     local yt_count
     yt_count=$(printf '%s\n' "$list" | sed '/^$/d' | wc -l)
@@ -218,7 +269,7 @@ _yt_list() {
     if [[ "$chosen" == "$ALL_OPTION" ]]; then
         local urls
         urls=$(grep -E '^https?://' "$YT_LIST")
-        [[ -z "$urls" ]] && notify-send -e -t 2000 "󰎁  yt.txt" "No URLs found" && return
+        [[ -z "$urls" ]] && hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  yt.txt: No URLs found" && return
         echo "$urls" | run_mpv --playlist=- >/dev/null 2>&1 &
         return
     fi
@@ -226,7 +277,7 @@ _yt_list() {
     if [[ "$chosen" == "$DOWNLOAD_ALL_OPTION" ]]; then
         local urls
         urls=$(grep -E '^https?://' "$YT_LIST")
-        [[ -z "$urls" ]] && notify-send -e -t 2000 "󰎁  yt.txt" "No URLs found" && return
+        [[ -z "$urls" ]] && hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  yt.txt: No URLs found" && return
         mkdir -p "$HOME/0/videos/yt/"
         kitty --title "yt-dl-all" bash -c "echo '$urls' | yt-dlp -f 'bv*[height<=720]+ba/b[height<=720]' -o '$HOME/0/videos/yt/%(title)s.%(ext)s' -i --batch-file -; echo; read -r -p 'Press Enter to close...'"
         return
@@ -250,10 +301,10 @@ _yt_list() {
         [[ -z "$url" ]] && return
         mkdir -p "$HOME/0/videos/yt/"
         yt-dlp -f "bv*[height<=720]+ba/b[height<=720]" -o "$HOME/0/videos/yt/%(title)s.%(ext)s" "$url"
-        notify-send -e -t 2000 "⬇ Download" "$title downloaded"
+        hyprctl notify 5 3000 "rgb(a6e3a1)" "⬇ Download: $title downloaded"
     elif [[ "$action" == *delete* ]]; then
         _yt_delete "$title"
-        notify-send "󰗨 deleted" "$title"
+        hyprctl notify 5 3000 "rgb(a6e3a1)" "󰗨 deleted: $title"
     fi
 }
 
@@ -297,6 +348,10 @@ _video_browse() {
         local yt_count
         yt_count=$(_yt_count)
         [[ "$yt_count" -gt 0 ]] && entries+="\n󰉋  txt ($yt_count)"
+    fi
+
+    if [[ "$is_root" == "1" ]]; then
+        entries+="\n󰌁  Open URL"
     fi
 
     if [[ -n "$subdirs" ]]; then
@@ -374,6 +429,11 @@ _video_browse() {
         exit 0
     fi
 
+    if [[ "$is_root" == "1" && "$chosen" == "󰌁  Open URL" ]]; then
+        _video_open_url
+        exit 0
+    fi
+
     if [[ "$chosen" == 󰉋* ]]; then
         local folder
         folder=$(echo "$chosen" | sed 's/^󰉋  //' | sed 's/ ([0-9]\+)$//')
@@ -412,8 +472,10 @@ _video_browse() {
 
 run_video_picker() {
     if [[ ! -d "$VIDEO_DIR" ]]; then
-        notify-send -e -t 2000 "󰎁  Video" "Directory not found: $VIDEO_DIR"
-        exit 1
+        mkdir -p "$VIDEO_DIR" || {
+            hyprctl notify 3 3000 "rgb(f38ba8)" "󰎁  Video: Could not create $VIDEO_DIR"
+            exit 1
+        }
     fi
 
     mkdir -p "$HOME/.cache/scripts/video"

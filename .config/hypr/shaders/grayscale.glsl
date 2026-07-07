@@ -12,7 +12,7 @@ void main() {
 
     // sepia
     vec3  saturated = mix(vec3(luma), c.rgb, 1.0);
-    vec3  sepia    = vec3(1.0, 0.75, 0.45);
+    vec3  sepia    = vec3(1.0, 0.60, 0.25);
     vec3  tinted   = saturated * sepia;
-    fragColor      = vec4(tinted * 0.78, c.a);
+    fragColor      = vec4(tinted * 0.65, c.a);
 }

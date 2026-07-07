@@ -26,7 +26,15 @@ run_mpv() {
 }
 
 get_mtime() {
-    find "$1" -type d | xargs stat --format="%Y %n" 2>/dev/null | sort | md5sum
+    local dir_hash
+    dir_hash=$(find "$1" -type d | xargs stat --format="%Y %n" 2>/dev/null | sort | md5sum)
+    local file_count
+    file_count=$(find "$1" -type f \( \
+        -iname "*.mp3" -o -iname "*.flac" -o -iname "*.ogg" -o \
+        -iname "*.wav" -o -iname "*.aac" -o -iname "*.opus" -o \
+        -iname "*.m4a" -o -iname "*.wma" \
+    \) 2>/dev/null | wc -l)
+    echo "$dir_hash $file_count" | md5sum
 }
 
 build_cache() {
@@ -59,6 +67,17 @@ build_cache() {
         done < <(find "$artist_dir" -mindepth 1 -maxdepth 1 -type d | sort)
 
     done < <(find "$MUSIC_DIR" -mindepth 1 -maxdepth 1 -type d | sort)
+
+    local root_count
+    root_count=$(find "$MUSIC_DIR" -maxdepth 1 -type f \( \
+        -iname "*.mp3" -o -iname "*.flac" -o -iname "*.ogg" -o \
+        -iname "*.wav" -o -iname "*.aac" -o -iname "*.opus" -o \
+        -iname "*.m4a" -o -iname "*.wma" \
+    \) 2>/dev/null | wc -l)
+
+    if [[ "$root_count" -gt 0 ]]; then
+        printf 'artist\t%s\t%s\n' 'Various' "$root_count" >> "$tmp"
+    fi
 
     mv "$tmp" "$CACHE_FILE"
     get_mtime "$MUSIC_DIR" > "$CACHE_MTIME_FILE"
@@ -276,10 +295,19 @@ run_music_picker() {
     local artist
     artist=$(echo "$chosen_artist" | sed 's/^󰎈  //' | sed 's/ ([0-9]\+)$//')
 
-    [[ ! -d "$MUSIC_DIR/$artist" ]] && exit 0
+    local is_virtual=false
+    [[ "$artist" == "Various" ]] && is_virtual=true
+
+    if ! $is_virtual && [[ ! -d "$MUSIC_DIR/$artist" ]]; then
+        exit 0
+    fi
 
     if [[ "$artist_status" -eq 10 ]]; then
-        run_mpv --shuffle --no-video "$MUSIC_DIR/$artist"/**/* >/dev/null 2>&1 &
+        if $is_virtual; then
+            run_mpv --shuffle --no-video "$MUSIC_DIR"/* >/dev/null 2>&1 &
+        else
+            run_mpv --shuffle --no-video "$MUSIC_DIR/$artist"/**/* >/dev/null 2>&1 &
+        fi
         exit 0
     fi
 
@@ -300,10 +328,15 @@ run_music_picker() {
     )
 
     local album
-    album=$(printf '%s\n%s\n%s' "$ARTIST_ALL_OPTION" "$TRACKLIST_OPTION" "$album_entries" \
-        | sed '/^$/d' \
-        | rofi_custom_menu "󰀥  Album:")
-    local album_status=$?
+    local album_status=0
+    if $is_virtual; then
+        album="$TRACKLIST_OPTION"
+    else
+        album=$(printf '%s\n%s\n%s' "$ARTIST_ALL_OPTION" "$TRACKLIST_OPTION" "$album_entries" \
+            | sed '/^$/d' \
+            | rofi_custom_menu "󰀥  Album:")
+        album_status=$?
+    fi
 
     if [[ "$album_status" -eq 11 ]]; then
         play_random_no_repeat
@@ -312,7 +345,11 @@ run_music_picker() {
     [[ -z "$album" ]] && exit 0
 
     if [[ "$album" == "$ARTIST_ALL_OPTION" ]]; then
-        run_mpv --shuffle --no-video "$MUSIC_DIR/$artist"/**/* >/dev/null 2>&1 &
+        if $is_virtual; then
+            run_mpv --shuffle --no-video "$MUSIC_DIR"/* >/dev/null 2>&1 &
+        else
+            run_mpv --shuffle --no-video "$MUSIC_DIR/$artist"/**/* >/dev/null 2>&1 &
+        fi
         exit 0
     fi
 
@@ -320,13 +357,21 @@ run_music_picker() {
         sleep 0.1
 
         local all_tracks
-        all_tracks=$(list_tracks "$MUSIC_DIR/$artist" | sort)
+        if $is_virtual; then
+            all_tracks=$(list_tracks "$MUSIC_DIR" | sort)
+        else
+            all_tracks=$(list_tracks "$MUSIC_DIR/$artist" | sort)
+        fi
 
         local -a track_paths=()
         local -a track_display_list=()
 
         while IFS= read -r path; do
-            local rel="${path#$MUSIC_DIR/$artist/}"
+            if $is_virtual; then
+                local rel="${path#$MUSIC_DIR/}"
+            else
+                local rel="${path#$MUSIC_DIR/$artist/}"
+            fi
             if [[ "$rel" == */* ]]; then
                 local alb="${rel%%/*}"
                 local file="${rel#*/}"
@@ -364,7 +409,13 @@ run_music_picker() {
             printf '%s\n' "${track_paths[@]:$((sel_idx + 1))}" >> "$tmp_playlist"
         fi
 
-        list_tracks "$MUSIC_DIR" | grep -v "/$artist/" | shuf >> "$tmp_playlist"
+        if $is_virtual; then
+            list_tracks "$MUSIC_DIR" | while IFS= read -r f; do
+                [[ "${f#$MUSIC_DIR/}" == */* ]] && echo "$f"
+            done | shuf >> "$tmp_playlist"
+        else
+            list_tracks "$MUSIC_DIR" | grep -v "/$artist/" | shuf >> "$tmp_playlist"
+        fi
 
         run_mpv --no-video --playlist="$tmp_playlist" >/dev/null 2>&1 &
         exit 0

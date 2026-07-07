@@ -407,6 +407,8 @@ local function show_shortcuts()
     local text = table.concat({
         "Right/Next/Space: next",
         "Left/Prior/BackSpace: previous",
+        "A/<: previous",
+        "D/>: next",
         "c: copy image",
         "Ctrl-c: copy to wallpapers",
         "Ctrl-e: EXIF info",
@@ -514,6 +516,10 @@ swayimg.viewer.on_key("Next", function() swayimg.viewer.switch_image("next") end
 swayimg.viewer.on_key("Prior", function() swayimg.viewer.switch_image("prev") end)
 swayimg.viewer.on_key("Space", function() swayimg.viewer.switch_image("next") end)
 swayimg.viewer.on_key("BackSpace", function() swayimg.viewer.switch_image("prev") end)
+swayimg.viewer.on_key("A", function() swayimg.viewer.switch_image("prev") end)
+swayimg.viewer.on_key("D", function() swayimg.viewer.switch_image("next") end)
+swayimg.viewer.on_key("less", function() swayimg.viewer.switch_image("prev") end)
+swayimg.viewer.on_key("greater", function() swayimg.viewer.switch_image("next") end)
 
 -- ----- copy -----
 on_key_both(swayimg.viewer, "c", copy_viewer_image)
@@ -551,7 +557,6 @@ swayimg.viewer.on_key("KP_Subtract", function() zoom_viewer(0.9) end)
 swayimg.viewer.on_key("0", function() swayimg.viewer.reset() end)
 
 -- ----- single-case -----
-swayimg.viewer.on_key("D", trash_viewer_image)
 swayimg.viewer.on_key("N", open_all_images)
 swayimg.viewer.on_key("O", open_viewer_folder)
 swayimg.viewer.on_key("t", toggle_info)

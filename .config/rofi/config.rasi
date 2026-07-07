@@ -21,13 +21,13 @@ configuration {
 * {
     //font: "monofur 10.5";
     font: "JetBrainsMono Nerd Font Medium 10.5";
-    bg: rgba(12, 4, 8, 0.70);
-    bg-alt: rgba(255, 255, 255, 0.05);
-    bg-hover: rgba(200, 90, 120, 0.25);
-    fg: #ffe0ec;
-    muted: #b898a8;
-    accent: #f8b4c8;
-    glow: rgba(248, 180, 200, 0.5);
+    bg: #1e1e1e;
+    bg-alt: #2a2a2a;
+    bg-hover: #3a3a3a;
+    fg: #f0f0f0;
+    muted: #888888;
+    accent: #f0f0f0;
+    glow: rgba(255, 255, 255, 0.15);
 }
 
 window {

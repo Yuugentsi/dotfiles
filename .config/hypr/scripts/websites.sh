@@ -158,7 +158,7 @@ open_site_choice() {
         *Wallhaven) "$BROWSER" "https://wallhaven.cc/toplist" ;;
         *DeepL) "$BROWSER" "https://www.deepl.com/en" ;;
         *Gmail) "$BROWSER" "https://mail.google.com" ;;
-        *GitHub) "$BROWSER" "https://github.com/yuugentsi" ;;
+        *GitHub) "$BROWSER" "https://github.com/repos" ;;
         *Wikipedia) "$BROWSER" "https://wikipedia.org" ;;
         *Proton\ Mail) "$BROWSER" "https://mail.proton.me/u/0/inbox" ;;
         *Proton\ Pass) "$BROWSER" "https://pass.proton.me/u/0" ;;

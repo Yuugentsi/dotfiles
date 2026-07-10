@@ -105,6 +105,7 @@ hl.bind("ALT + K", hl.dsp.exec_cmd("playerctl next"),       { locked = true })
 hl.bind("ALT + J", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("ALT + H", hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
 
+hl.bind("F1",             hl.dsp.exec_cmd("playerctl next"),       { locked = true })
 hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -114,5 +115,5 @@ hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = tr
 local shot_region = "hyprshot -m region -z -t 500 -o $HOME/0/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
 local shot_output = "hyprshot -m output -m active -z -t 500 -o $HOME/0/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
 
-hl.bind("F1",     hl.dsp.exec_cmd(shot_region))
-hl.bind("ALT + F1", hl.dsp.exec_cmd(shot_output))
+hl.bind("F4",     hl.dsp.exec_cmd(shot_region))
+hl.bind("ALT + F4", hl.dsp.exec_cmd(shot_output))

@@ -1365,6 +1365,15 @@ function at -d "push folder/file to SD"
     end
 end
 
+# ─────────── chmod ───────────
+function chmod -d "chmod +x on .sh files"
+    if test (count $argv) -eq 0
+        command chmod +x (pwd)/*.sh
+    else
+        command chmod -R $argv (pwd)
+    end
+end
+
 function at_ -d "at help"
     set -l w (set_color white)
     set -l g (set_color green)

@@ -1,7 +1,7 @@
 -- ─── env ───
 local env_vars = {
     -- cursor
-    XCURSOR_THEME                       = "Adwaita",
+    XCURSOR_THEME                       = "Oxygen_Zion",
     XCURSOR_SIZE                        = "5",
     HYPRCURSOR_SIZE                     = "11",
 

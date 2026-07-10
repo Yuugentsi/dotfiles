@@ -3,14 +3,14 @@ local mainMod = "SUPER"
 -- ─── programs ───
 local terminal    = "kitty"
 local fileManager = "thunar"
-local browser     = "brave-origin"
+local browser     = "zen-browser"
 local menu        = "rofi -show drun -show-icons"
 
 -- apps
 hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(browser))
-hl.bind("ALT + F", hl.dsp.exec_cmd(browser .. " --incognito"))
+hl.bind("ALT + F", hl.dsp.exec_cmd(browser .. " -private-window"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("~/.config/hypr/scripts/websites.sh"))
 hl.bind(mainMod .. " + G", hl.dsp.exec_cmd("~/.config/hypr/scripts/music.sh"))

@@ -111,6 +111,8 @@ favorites_urls=(
     "https://pinterest.com"
     "https://fmhy.net/beginners-guide"
     "https://x.com"
+    "https://addons.mozilla.org"
+    "https://store.steampowered.com"
 )
 
 tech_urls=(
@@ -163,6 +165,8 @@ open_site_choice() {
         *CityWalks) "$BROWSER" "https://citywalks.live" ;;
         *Lofi\ Cafe) "$BROWSER" "https://www.lofi.cafe/" ;;
         *X.com) "$BROWSER" "https://x.com" ;;
+        *Extensions) "$BROWSER" "https://addons.mozilla.org" ;;
+        *Steam) "$BROWSER" "https://store.steampowered.com" ;;
         *HackerNoon) "$BROWSER" "https://hackernoon.com/" ;;
         *Reuters\ Tech) "$BROWSER" "https://www.reuters.com/technology/" ;;
         *WSJ\ Tech) "$BROWSER" "https://www.wsj.com/tech" ;;
@@ -271,7 +275,9 @@ favorites_entries='❀  Wallhaven
 ❀  Last.fm
 ❀  Pinterest
 ❀  FMHY
-❀  X.com'
+❀  X.com
+❀  Extensions
+❀  Steam'
 favorites_count=$(printf '%s\n' "$favorites_entries" | wc -l)
 
 config_entries='❀  aria2

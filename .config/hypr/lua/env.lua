@@ -1,7 +1,7 @@
 -- ─── env ───
 local env_vars = {
     -- cursor
-    XCURSOR_THEME                       = "Oxygen_Zion",
+    XCURSOR_THEME                       = "Adwaita",
     XCURSOR_SIZE                        = "5",
     HYPRCURSOR_SIZE                     = "11",
 
@@ -19,7 +19,6 @@ local env_vars = {
 
     -- browser
     MOZ_ENABLE_WAYLAND                  = "1",
-    BROWSER                             = "brave-origin",
 
     -- SDL / Electron
     SDL_VIDEODRIVER                     = "wayland,x11",
@@ -32,8 +31,8 @@ end
 
 -- ─── theme ───
 local themes = {
-    ["org.gnome.desktop.interface gtk-theme"]  = "Pop-dark",
-    ["org.gnome.desktop.interface icon-theme"] = "Sea",
+    ["org.gnome.desktop.interface gtk-theme"]  = "Materia-dark",
+    ["org.gnome.desktop.interface icon-theme"] = "Adwaita",
 }
 
 for key, val in pairs(themes) do

@@ -416,7 +416,7 @@ run_config_menu() {
     config_choice=$(printf '󰁯  Backup → dotfiles.zip\n❀  Open All\n%s' "$config_entries" | rofi_menu "❀  Cfg:" 14)
     [[ -z "$config_choice" ]] && exit 0
     if [[ "$config_choice" == *Backup* ]]; then
-        cd "$HOME/.config" && zip -rq /home/w/dotfiles.zip aria2 gallery-dl kitty waybar rofi hypr mpv swayimg yt-dlp swaync zathura fish \
+        cd "$HOME/.config" && zip -rq "$HOME/dotfiles.zip" aria2 gallery-dl kitty waybar rofi hypr mpv swayimg yt-dlp swaync zathura fish \
             && hyprctl notify 5 3000 "rgb(a6e3a1)" "󰁯  Backup saved → ~/dotfiles.zip" \
             || hyprctl notify 3 3000 "rgb(f38ba8)" "󰅗  Backup failed"
         exit 0

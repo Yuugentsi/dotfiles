@@ -214,9 +214,9 @@ install_packages() {
     sudo pacman -S --needed --noconfirm \
         brightnessctl   \
         cliphist        \
-        firefox         \
-        firefox-ublock-origin \
-        firefox-dark-reader \
+        # firefox         \
+        # firefox-ublock-origin \
+        # firefox-dark-reader \
         fish            \
         fd              \
         gvfs            \
@@ -243,13 +243,13 @@ install_packages() {
         ttf-jetbrains-mono \
         ttf-jetbrains-mono-nerd \
         noto-fonts      \
-        oxygen-cursors  \
-        mate-icon-theme   \
-        materia-gtk-theme    \
+        # oxygen-cursors  \
+        # mate-icon-theme   \
+        # materia-gtk-theme    \
         noto-fonts-cjk  \
         noto-fonts-emoji \
         noto-fonts-extra \
-        waybar          \
+        # waybar          \
         wl-clipboard    \
         yt-dlp          \
         zathura         \

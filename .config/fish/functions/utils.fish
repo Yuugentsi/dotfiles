@@ -28,6 +28,13 @@
 # │   ├── extract   extract archives
 # │   └── zips      zip directory
 # │
+# ├── venv     toggle ~/.venv
+# ├── venvr    venv + requirements
+# ├── venvl    toggle local .venv
+# ├── venvreq  generate requirements.txt
+# ├── venvall  list all venvs
+# ├── venvrmall remove all venvs
+# │
 # ├── clients   hyprctl clients
 # └── at        push to SD
 # ─────────── n ───────────
@@ -1395,4 +1402,352 @@ function at_ -d "at help"
     echo "    $c at install *.apk$r"
     echo "    $c at install base.apk split_config.arm64_v8a.apk$r"
     echo ""
+end
+
+# ─────────── venv ───────────
+function venvr -d "venv and install requirements"
+    set -l req "$PWD/requirements.txt"
+    if not test -f "$req"
+        echo "requirements.txt not found"
+        return 1
+    end
+    venv
+    pip install -r "$req"
+end
+
+function venvl -d "toggle local .venv and install requirements"
+    set -l env "$PWD/.venv"
+    set -l req "$PWD/requirements.txt"
+    set -l green (set_color green)
+    set -l red (set_color red)
+    set -l reset (set_color normal)
+
+    clear
+
+    if test "$VIRTUAL_ENV" = "$env"
+        deactivate
+        echo -s $red "󰄬 local venv off" $reset
+        return
+    end
+
+    if test -n "$VIRTUAL_ENV"
+        deactivate
+    end
+
+    if not test -d "$env"
+        python3 -m venv "$env"
+        echo -s $green "󰄬 .venv created" $reset
+    else
+        echo -s $green "󰄬 .venv already exists" $reset
+    end
+
+    source "$env/bin/activate.fish"
+    echo -s $green "󰄬 local venv on" $reset
+
+    if test -f "$req"
+        pip install -q -r "$req"
+        echo -s $green "󰄬 requirements installed" $reset
+    else
+        echo -s $red "󰅙 requirements.txt not found" $reset
+    end
+end
+
+function venvreq -d "generate requirements.txt from active venv"
+    set -l env "$VIRTUAL_ENV"
+
+    if test -z "$env"
+        set -l current "$PWD"
+        while test "$current" != /
+            if test -f "$current/bin/activate.fish"
+                set env "$current"
+                break
+            end
+            if test -f "$current/.venv/bin/activate.fish"
+                set env "$current/.venv"
+                break
+            end
+            set current (dirname "$current")
+        end
+    end
+
+    if test -z "$env"
+        echo "no active venv found"
+        return 1
+    end
+
+    source "$env/bin/activate.fish"
+    pip freeze > requirements.txt
+    echo "󰄬 requirements.txt saved"
+end
+
+function venvall -d "list all .venv and venv folders"
+    set -l found (find ~ -maxdepth 4 -type d \( -name ".venv" -o -name "venv" \) 2>/dev/null)
+    if test -z "$found"
+        echo "no .venv or venv folders found"
+        return 1
+    end
+    echo "found venvs:"
+    for v in $found
+        echo "  • $v"
+    end
+end
+
+function venvrmall -d "remove all .venv and venv folders"
+    set -l found (find ~ -maxdepth 4 -type d \( -name ".venv" -o -name "venv" \) 2>/dev/null)
+    if test -z "$found"
+        echo "no .venv or venv folders found"
+        return 1
+    end
+
+    echo "this will remove:"
+    for v in $found
+        echo "  • $v"
+    end
+
+    read -l -P "confirm? [y/N] " confirm
+    if test "$confirm" != y
+        echo "cancelled"
+        return 1
+    end
+
+    for v in $found
+        rm -rf "$v"
+        echo "󰄬 removed $v"
+    end
+end
+
+# ─────────── v ───────────
+function v -d "show venv commands help"
+    set -l N (set_color normal)
+    set -l cyan (set_color 89dceb)
+    set -l green (set_color a6e3a1)
+    set -l red (set_color red)
+    set -l gray (set_color 6c7086)
+
+    clear
+    echo ""
+    echo "  $cyan venv commands$N"
+    echo ""
+    printf "  $green󰄬 %-8s$N %s\n" "venv"    "toggle ~/.venv"
+    printf "  $green󰄬 %-8s$N %s\n" "venvr"   "toggle ~/.venv + requirements.txt"
+    printf "  $green󰄬 %-8s$N %s\n" "venvl"   "toggle ./.venv + requirements.txt"
+    printf "  $green󰄬 %-8s$N %s\n" "venvreq" "generate requirements.txt"
+    printf "  $green󰄬 %-8s$N %s\n" "venvall" "list all venv folders"
+    printf "  $red󰅙 %-8s$N %s\n"   "venvrmall" "remove all venv folders"
+    echo ""
+end
+
+# ─────────── l ───────────
+function h -d "list functions"
+    set -l N (set_color normal)
+    set -l colors \
+        (set_color cba6f7) \
+        (set_color a6e3a1) \
+        (set_color 89b4fa) \
+        (set_color f9e2af) \
+        (set_color f38ba8) \
+        (set_color 89dceb) \
+        (set_color f5c2e7) \
+        (set_color fab387)
+
+    set -l skip _config_backup fish_command_not_found __extra_cnf
+    set -l FS (printf '\x1f')
+
+    set -l cfg_sections
+    set -l cfg "$HOME/.config/fish/config.fish"
+    if test -f "$cfg"
+        set -l entries (grep -E "^function " "$cfg" 2>/dev/null)
+        set -l visible
+        for entry in $entries
+            set -l name (string match -rg '^function\s+(\S+)' -- "$entry")
+            if test -n "$name"; and contains -- "$name" $skip
+                continue
+            end
+            if test -n "$name"; and string match -qr '^_' -- "$name"
+                continue
+            end
+            set -a visible $entry
+        end
+        set -l count (count $visible)
+        if test $count -gt 0
+            set -a cfg_sections "$count$FS""config""$FS"(string join '§' $visible)
+        end
+    end
+
+    set -l sections
+    set -l dir "$HOME/.config/fish/functions"
+    set -l files
+    if test -d "$dir"
+        set files (find "$dir" -maxdepth 1 -type f -name '*.fish' 2>/dev/null)
+    end
+
+    for file in $files
+        set -l fname (basename "$file" .fish)
+        if test "$fname" = "config"
+            set fname "functions/config"
+        end
+        set -l entries (grep -E "^function " "$file" 2>/dev/null)
+
+        if test -z "$entries"
+            continue
+        end
+
+        set -l visible
+        for entry in $entries
+            set -l name (string match -rg '^function\s+(\S+)' -- "$entry")
+            if test -n "$name"; and contains -- "$name" $skip
+                continue
+            end
+            if test -n "$name"; and string match -qr '^_' -- "$name"
+                continue
+            end
+            set -a visible $entry
+        end
+
+        set -l count (count $visible)
+        if test $count -eq 0
+            continue
+        end
+
+        set -a sections "$count$FS$fname$FS"(string join '§' $visible)
+    end
+
+    set -l ordered $cfg_sections
+    if test (count $sections) -gt 0
+        set -a ordered (printf '%s\0' $sections | sort -t "$FS" -k1 -rn -z | string split0)
+    end
+
+    set -l total_files (count $ordered)
+    set -l total_funcs 0
+    for s in $ordered
+        set -l first (string split "$FS" $s)[1]
+        set total_funcs (math $total_funcs + $first)
+    end
+
+    if test $total_files -eq 0
+        echo "no functions found"
+        return 1
+    end
+
+    echo ""
+    echo "  Fish Functions"
+    echo ""
+
+    set -l idx 0
+    for section in $ordered
+        set -l parts (string split "$FS" $section)
+        set -l count $parts[1]
+        set -l fname $parts[2]
+        set -l entries_str $parts[3]
+        set -l visible (string split '§' $entries_str)
+        set idx (math $idx + 1)
+        set -l c $colors[(math $idx % 8 + 1)]
+
+        echo ""
+        echo "$c━━━ $fname.fish ━━━$N"
+
+        set -l i 0
+        for entry in $visible
+            set -l i (math $i + 1)
+            set -l name (string match -rg '^function\s+([^;\s]+)' -- "$entry")
+            set -l desc (string match -rg -- '^function\s+[^;\s]+\s+(?:-d|-description)\s+[\x27"]([^\x27"]+)[\x27"]' -- "$entry")
+            if test $i -eq $count
+                if test -n "$desc"
+                    printf "  $c└── %s$N → %s\n" "$name" "$desc"
+                else
+                    printf "  $c└── %s$N\n" "$name"
+                end
+            else
+                if test -n "$desc"
+                    printf "  $c├── %s$N → %s\n" "$name" "$desc"
+                else
+                    printf "  $c├── %s$N\n" "$name"
+                end
+            end
+        end
+    end
+
+    echo ""
+    printf "  · %s ·\n" (string repeat -n 40 '·')
+    printf "  %s · %s\n" "$total_funcs funcs" "$total_files files"
+    echo ""
+end
+
+function l -d "categorized ls"
+    set -e folders zip audio video images text lua other
+
+    for item in *
+        if test -d $item
+            set folders $folders " $item/"
+        else if test -f $item
+            switch $item
+                case "*.zip" "*.tar.gz" "*.tar.xz" "*.7z" "*.rar"
+                    set zip $zip " $item"
+                case "*.mp3" "*.wav" "*.flac" "*.m4a" "*.ogg"
+                    set audio $audio " $item"
+                case "*.mp4" "*.mkv" "*.avi" "*.webm" "*.mov"
+                    set video $video " $item"
+                case "*.txt" "*.md" "*.rst" "*.log"
+                    set text $text " $item"
+                case "*.lua"
+                    set lua $lua " $item"
+                case "*.png" "*.jpg" "*.jpeg" "*.gif" "*.svg" "*.webp" "*.bmp" "*.ico"
+                    set images $images " $item"
+                case "*"
+                    set other $other " $item"
+            end
+        end
+    end
+
+    _section brblue  " folders ($(count $folders))" $folders
+    _section yellow  " zip ($(count $zip))"         $zip
+    _section magenta " audio ($(count $audio))"     $audio
+    _section magenta " video ($(count $video))"     $video
+    _section yellow  " images ($(count $images))"   $images
+    _section brgreen " text ($(count $text))"       $text
+    _section cyan    " lua ($(count $lua))"         $lua
+    _section white   " other ($(count $other))"     $other
+end
+
+function _section
+    set -l color $argv[1]
+    set -l title $argv[2]
+    set -e argv[1]
+    set -e argv[1]
+    set -l items $argv
+
+    if test (count $items) -eq 0
+        return
+    end
+
+    set_color $color
+    echo "$title"
+    _grid $items
+    set_color normal
+    echo
+end
+
+function _grid
+    set -l items $argv
+    set -l i 1
+    set -l c (count $items)
+
+    while test $i -le $c
+        set -l a $items[$i]
+        set -l next (math $i + 1)
+
+        if test $next -le $c
+            set -l b $items[$next]
+            if test (string length $a) -gt 42; or test (string length $b) -gt 42
+                echo "  $a"
+                echo "  $b"
+            else
+                printf "  %-42s │ %s\n" $a $b
+            end
+        else
+            echo "  $a"
+        end
+
+        set i (math $i + 2)
+    end
 end

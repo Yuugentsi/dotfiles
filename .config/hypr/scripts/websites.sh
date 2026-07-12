@@ -894,6 +894,46 @@ _image_add_history() {
     mv "$tmp" "$IMAGE_HISTORY"
 }
 
+_image_recent() {
+    find "$HOME" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.avif" -o -iname "*.svg" \) \
+        -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/.cache/*" -not -path "*/.local/*" -not -path "*/.config/*" \
+        -printf '%T@\t%p\n' 2>/dev/null \
+    | sort -t$'\t' -k1,1nr \
+    | cut -f2- \
+    | head -n 20
+}
+
+_image_open_recent() {
+    local dir
+    dir=$(mktemp -d /tmp/images-recent.XXXXXX)
+
+    local count=0
+    while IFS=$'\t' read -r mtime filepath; do
+        [[ -z "$filepath" ]] && continue
+        ln -s "$filepath" "$dir/$(printf '%03d' $count)_$(basename "$filepath")" 2>/dev/null
+        ((count++))
+    done < <(
+        find "$HOME" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.avif" -o -iname "*.svg" \) \
+            -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/.cache/*" -not -path "*/.local/*" -not -path "*/.config/*" \
+            -printf '%T@\t%p\n' 2>/dev/null \
+        | sort -t$'\t' -k1,1nr \
+        | head -n 20
+    )
+
+    [[ $count -eq 0 ]] && rm -rf "$dir" && exit 0
+
+    local first
+    first=$(ls -1v "$dir" 2>/dev/null | head -1)
+
+    if command -v swayimg &>/dev/null; then
+        swayimg "$dir/$first" >/dev/null 2>&1 &
+    elif command -v imv &>/dev/null; then
+        imv "$dir/$first" >/dev/null 2>&1 &
+    else
+        xdg-open "$dir/$first" >/dev/null 2>&1 &
+    fi
+}
+
 run_image_menu() {
     pkill -x rofi 2>/dev/null
     sleep 0.1
@@ -909,6 +949,9 @@ run_image_menu() {
         MENU_ENTRIES+=("LAST")
         MENU_LABELS+=("➜ last")
     fi
+
+    MENU_ENTRIES+=("RECENT")
+    MENU_LABELS+=("➜ recent")
 
     while IFS=$'\t' read -r count folder; do
         [[ -z "$folder" ]] && continue
@@ -937,6 +980,11 @@ run_image_menu() {
         local last_file="$HOME/$LAST_OPENED"
         [[ -f "$last_file" ]] || exit 0
         _image_open "$last_file"
+        exit 0
+    fi
+
+    if [[ "$selected_folder" == "RECENT" ]]; then
+        _image_open_recent
         exit 0
     fi
 

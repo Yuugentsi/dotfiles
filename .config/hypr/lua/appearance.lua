@@ -17,6 +17,10 @@ hl.config({
         resize_on_border = false,
         allow_tearing    = false,
         layout           = "scrolling",
+        snap             = {
+            enabled    = true,
+            window_gap = 10,
+        },
     },
 })
 
@@ -67,13 +71,21 @@ hl.config({
 
         -- ----- blur -----
         blur             = {
-            enabled  = true,
+            enabled      = true,
             size     = 8,
             passes   = 1,
             noise    = 0.05,
             contrast = 1.2,
             vibrancy = 0.3,
             popups   = true,
+        },
+
+        -- ----- glow -----
+        glow             = {
+            enabled      = false,
+            range        = 10,
+            render_power = 3,
+            color        = 0xeea855f7,
         },
     },
 })

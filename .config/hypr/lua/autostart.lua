@@ -7,7 +7,7 @@ hl.on("hyprland.start", function()
     end
     -- -------------------- exec --------------------
     exec("waybar")
-    exec("hyprsunset -t 2000")
+    exec("hyprsunset -t 2800")
     exec("swaync")
     exec("hypridle")
     exec("spotify")

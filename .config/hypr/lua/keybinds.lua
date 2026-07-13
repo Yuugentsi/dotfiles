@@ -100,6 +100,10 @@ local sunset_up   = "bash -c 'pgrep -x hyprsunset >/dev/null || hyprsunset & v=$
 hl.bind("ALT + F2", hl.dsp.exec_cmd(sunset_down), { repeating = true })
 hl.bind("ALT + F3", hl.dsp.exec_cmd(sunset_up),   { repeating = true })
 
+-- toggle
+local sunset_toggle = "bash -c 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.7; brightnessctl set 60%; hyprctl dismissnotify 1; hyprctl notify -1 2000 0 \"fontsize:18 󰕾 70% 󰃟 60%\"; if pgrep -x hyprsunset >/dev/null; then pkill -x hyprsunset; else hyprsunset & sleep 0.2; hyprctl hyprsunset temperature 1600; fi; hyprctl dismissnotify 1; hyprctl notify -1 2000 0 \"fontsize:18 󰃛 1600K\"'"
+hl.bind("F9", hl.dsp.exec_cmd(sunset_toggle))
+
 -- playerctl
 hl.bind("ALT + K", hl.dsp.exec_cmd("playerctl next"),       { locked = true })
 hl.bind("ALT + J", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -117,3 +121,10 @@ local shot_output = "hyprshot -m output -m active -z -t 500 -o $HOME/0/pictures/
 
 hl.bind("F4",     hl.dsp.exec_cmd(shot_region))
 hl.bind("ALT + F4", hl.dsp.exec_cmd(shot_output))
+
+-- float small
+hl.bind("F10", function()
+    hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+    hl.dispatch(hl.dsp.window.resize({ x = 900, y = 600 }))
+    hl.dispatch(hl.dsp.window.center())
+end)

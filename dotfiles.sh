@@ -318,7 +318,7 @@ apply_nodisplay() {
         kitty-open.desktop thunar-bulk-rename.desktop thunar-settings.desktop
         org.gnupg.pinentry-qt5.desktop org.gnupg.pinentry-qt.desktop
         electron36.desktop electron37.desktop
-        rofi.desktop rofi-theme-selector.desktop
+        rofi.desktop rofi-theme-selector.desktop lstopo.desktop
     )
     for app in "${apps_nodisplay[@]}"; do
         file="/usr/share/applications/$app"

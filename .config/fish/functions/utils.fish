@@ -1211,6 +1211,11 @@ function zips -d "zip directory with progress"
         return 1
     end
 end
+# ─────────── bt ───────────
+function bt -d "bluetooth battery"
+    set -l pct (bluetoothctl info 2>/dev/null | grep "Battery" | sed 's/.*(\([0-9]*\)).*/\1/')
+    test -n "$pct"; and echo "󰋋 $pct%"
+end
 # ─────────── clients ───────────
 function clients -d "hyprctl clients"
     clear && hyprctl clients | python3 -c '

@@ -9,14 +9,14 @@ hl.bind("ALT + W",         hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/utils.sh
 hl.bind("ALT + T",         hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/utils.sh toggle"))
 hl.bind("ALT + E",         hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/utils.sh switcher"))
 
--- ─── clipboard ───
+-- ─── clipboard (clipboard.sh) ───
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("~/.config/hypr/scripts/clipboard.sh"), { locked = true })
 hl.bind("ALT + V",         hl.dsp.exec_cmd("~/.config/hypr/scripts/clipboard.sh images"), { locked = true })
 
--- ─── websites ───
+-- ─── websites (websites.sh) ───
 hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("~/.config/hypr/scripts/websites.sh"))
 
--- ─── music ───
+-- ─── music (music.py) ───
 hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/music.py"),      { locked = true })
 hl.bind(mainMod .. " + G",  hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/music.py menu"), { locked = true })
 hl.bind("ALT + F1",         hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/music.py stop"), { locked = true })
@@ -43,7 +43,7 @@ hl.bind(mainMod .. " + SUPER_L", function()
     hl.dispatch(hl.dsp.focus({ workspace = next_ws }))
 end, { release = true })
 
--- ─── workspace  ───
+-- ─── autostart workspace notify (replaces utils.sh workspace) ───
 local ws_icons = { [1] = "➊", [2] = "➋", [3] = "➌", [4] = "➍", [5] = "➎", [6] = "➏", [7] = "➐", [8] = "➑", [9] = "➒", [10] = "➓" }
 local class_names = {
     ["org.telegram.desktop"] = "telegram",

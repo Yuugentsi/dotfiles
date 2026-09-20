@@ -16,7 +16,8 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(menu))
 -- windows
 hl.bind(mainMod .. " + C", hl.dsp.window.close())
 hl.bind("ALT + C",         hl.dsp.window.kill())
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
+-- hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
+hl.bind(mainMod .. " + P", hl.dsp.window.pin())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
 hl.bind("F11",             hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + Tab", hl.dsp.window.cycle_next())
@@ -57,7 +58,7 @@ hl.bind(mainMod .. " + period",         hl.dsp.layout("move +col"))
 hl.bind(mainMod .. " + comma",          hl.dsp.layout("move -col"))
 hl.bind(mainMod .. " + SHIFT + period", hl.dsp.layout("swapcol r"))
 hl.bind(mainMod .. " + SHIFT + comma",  hl.dsp.layout("swapcol l"))
-hl.bind(mainMod .. " + p",              hl.dsp.layout("promote"))
+-- hl.bind(mainMod .. " + p",              hl.dsp.layout("promote"))
 
 -- workspaces
 for i = 1, 10 do

@@ -1,5 +1,9 @@
 # ─── cookies ───
-#--cookies-from-browser firefox
+--cookies-from-browser firefox
+#--cookies-from-browser brave:~/.config/BraveSoftware/Brave-Origin/Default
+
+# ─── extractor args ───
+#--extractor-args "youtube:player_client=tv,mweb"
 
 # ─── sponsorblock ───
 --sponsorblock-remove sponsor,selfpromo,interaction,preview,filler,intro,outro
@@ -23,3 +27,14 @@
 -o %(title)s.%(ext)s
 --paths ~/0/videos/
 --windows-filenames
+
+# ─── format ───
+-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+
+# ─── subtitles ───
+--embed-subs
+--sub-langs "en.*"
+
+# ─── downloader ───
+--downloader "aria2c"
+--downloader-args "aria2c:-s 16 -x 16 -k 1M"

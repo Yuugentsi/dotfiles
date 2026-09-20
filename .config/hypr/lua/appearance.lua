@@ -1,5 +1,5 @@
 -- ─── appearance ───
-hl.config({ xwayland = { force_zero_scaling = true } })
+hl.config({ xwayland = { force_zero_scaling = true, use_nearest_neighbor = true } })
 
 -- -------------------- general --------------------
 hl.config({
@@ -15,7 +15,7 @@ hl.config({
         },
 
         resize_on_border = false,
-        allow_tearing    = false,
+        allow_tearing    = true,
         layout           = "scrolling",
         snap             = {
             enabled    = true,
@@ -50,9 +50,22 @@ hl.config({
 -- -------------------- misc --------------------
 hl.config({
     misc = {
-        force_default_wallpaper  = -1,
-        disable_hyprland_logo    = false,
-        disable_splash_rendering = true,
+        vrr                           = 1,
+        force_default_wallpaper       = 0,
+        disable_hyprland_logo         = true,
+        disable_splash_rendering      = true,
+        render_unfocused_fps          = 15,
+        animate_manual_resizes        = false,
+        animate_mouse_windowdragging  = false,
+        always_follow_on_dnd          = true,
+    },
+    render = {
+        direct_scanout                = 2,
+        new_render_scheduling         = true,
+    },
+    cursor = {
+        no_hardware_cursors           = 2,
+        no_break_fs_vrr               = 2,
     },
 })
 
@@ -63,14 +76,15 @@ hl.config({
         rounding_power   = 2,
 
         active_opacity   = 1.0,
-        inactive_opacity = 0.94,
+        inactive_opacity = 1.0,
 
-        dim_inactive     = true,
+        dim_inactive     = false,
         dim_strength     = 0.12,
+        dim_around       = 0.45,
 
         -- ----- shadow -----
         shadow           = {
-            enabled      = true,
+            enabled      = false,
             range        = 4,
             render_power = 3,
             color        = 0xee1a1a1a,
@@ -78,10 +92,13 @@ hl.config({
 
         -- ----- blur -----
         blur             = {
-            enabled   = true,
-            size      = 3,
-            passes    = 1,
-            vibrancy  = 0.1696,
+            enabled           = false,
+            size              = 6,
+            passes            = 2,
+            vibrancy          = 0.1696,
+            new_optimizations = true,
+            ignore_opacity    = true,
+            popups            = true,
         },
 
         -- ----- glow -----
@@ -95,6 +112,12 @@ hl.config({
 })
 
 -- -------------------- animations --------------------
+hl.config({
+    animations = {
+        enabled = false,
+    },
+})
+
 -- ----- bezier -----
 hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
 hl.curve("easeInOutCubic", { type = "bezier", points = { { 0.65, 0.05 }, { 0.36, 1 } } })

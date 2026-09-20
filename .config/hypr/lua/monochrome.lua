@@ -1,6 +1,0 @@
--- ─── monochrome ───
--- hl.config({
--- decoration = {
--- screen_shader = os.getenv("HOME") .. "/.config/hypr/shaders/grayscale.glsl"
--- }
--- })

@@ -7,6 +7,31 @@ for b in zen-browser brave-origin librewolf firefox chromium; do
     fi
 done
 
+# ----- cache and history paths -----
+MANGA_DIR="${HOME}"
+MANGA_CACHE_DIR="$HOME/.cache/scripts/manga"
+MANGA_CACHE_FILE="$MANGA_CACHE_DIR/cache.txt"
+MANGA_CACHE_MTIME="$MANGA_CACHE_DIR/cache-mtime.txt"
+MANGA_HISTORY="$MANGA_CACHE_DIR/history.txt"
+
+VIDEO_DIR="${HOME}"
+VIDEO_CACHE_DIR="$HOME/.cache/scripts/video"
+VIDEO_CACHE_FILE="$VIDEO_CACHE_DIR/cache.txt"
+VIDEO_CACHE_MTIME="$VIDEO_CACHE_DIR/cache-mtime.txt"
+VIDEO_HISTORY="$VIDEO_CACHE_DIR/history.txt"
+
+IMAGE_DIR="${HOME}"
+IMAGE_CACHE_DIR="$HOME/.cache/scripts/image"
+IMAGE_CACHE_FILE="$IMAGE_CACHE_DIR/cache.txt"
+IMAGE_CACHE_MTIME="$IMAGE_CACHE_DIR/cache-mtime.txt"
+IMAGE_HISTORY="$IMAGE_CACHE_DIR/history.txt"
+
+FILES_CACHE_DIR="$HOME/.cache/scripts/files"
+FILES_CACHE_FILE="$FILES_CACHE_DIR/cache.txt"
+FILES_CACHE_MTIME="$FILES_CACHE_DIR/cache-mtime.txt"
+FILES_HISTORY="$FILES_CACHE_DIR/history.txt"
+FILES_LIMIT=5000
+
 rofi_menu() {
     local lines="${2:-10}"
     rofi -dmenu -i \
@@ -440,23 +465,18 @@ all_count=$(printf '%s\n' "$all_entries" | wc -l)
 
 websites_count=$((favorites_count + ai_count + anime_count + tech_count + web_count + streaming_count))
 config_count=$(printf '%s\n' "$config_entries" | wc -l)
-manga_count=$(wc -l < "$MANGA_CACHE_FILE" 2>/dev/null)
-video_count=$(wc -l < "$VIDEO_CACHE_FILE" 2>/dev/null)
-image_count=$(wc -l < "$IMAGE_CACHE_FILE" 2>/dev/null)
-
-if [[ -z "$manga_count" ]]; then
-    manga_count=$(find "$HOME" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f -iname "*.cbz" -print 2>/dev/null | wc -l)
-fi
-if [[ -z "$video_count" ]]; then
-    video_count=$(find "$HOME" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f \( -iname "*.mp4" -o -iname "*.mkv" -o -iname "*.webm" \) -print 2>/dev/null | wc -l)
-fi
-if [[ -z "$image_count" ]]; then
-    image_count=$(find "$HOME" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.avif" -o -iname "*.svg" \) -print 2>/dev/null | wc -l)
-fi
+manga_count=0
+video_count=0
+image_count=0
+[[ -f "$MANGA_CACHE_FILE" ]] && manga_count=$(wc -l < "$MANGA_CACHE_FILE" 2>/dev/null)
+[[ -f "$VIDEO_CACHE_FILE" ]] && video_count=$(wc -l < "$VIDEO_CACHE_FILE" 2>/dev/null)
+[[ -f "$IMAGE_CACHE_FILE" ]] && image_count=$(wc -l < "$IMAGE_CACHE_FILE" 2>/dev/null)
+manga_count=${manga_count:-0}
+video_count=${video_count:-0}
+image_count=${image_count:-0}
 
 run_search_all() {
     pkill -x rofi 2>/dev/null
-    sleep 0.1
 
     local all_choice
     all_choice=$(printf '%s\n' "$all_entries" | rofi_menu "❀  All:")
@@ -475,7 +495,6 @@ run_search_all() {
 
 run_websites_menu() {
     pkill -x rofi 2>/dev/null
-    sleep 0.1
 
     local ws_choice
     ws_choice=$(printf '❀  Favorites (%s)\n❀  Web (%s)\n❀  Tech (%s)\n❀  AI (%s)\n❀  Anime (%s)\n❀  Streaming (%s)' \
@@ -549,7 +568,6 @@ run_websites_menu() {
 
 run_config_menu() {
     pkill -x rofi 2>/dev/null
-    sleep 0.1
 
     local config_choice
     config_choice=$(printf '󰁯  Backup → dotfiles.zip\n❀  Open All\n%s' "$config_entries" | rofi_menu "❀  Cfg:" 14)
@@ -574,14 +592,12 @@ run_config_menu() {
 }
 
 # ----- manga -----
-MANGA_DIR="${HOME}"
-MANGA_CACHE_DIR="$HOME/.cache/scripts/manga"
-MANGA_CACHE_FILE="$MANGA_CACHE_DIR/cache.txt"
-MANGA_CACHE_MTIME="$MANGA_CACHE_DIR/cache-mtime.txt"
-MANGA_HISTORY="$MANGA_CACHE_DIR/history.txt"
-
 _manga_find() {
-    find "$MANGA_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f -iname "*.cbz" -print 2>/dev/null | sed "s|^$HOME/||"
+    if command -v fd &>/dev/null; then
+        fd -e cbz --exclude .cache --exclude .local --exclude .config --exclude node_modules --exclude '.*' --base-directory "$MANGA_DIR" 2>/dev/null
+    else
+        find "$MANGA_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f -iname "*.cbz" -print 2>/dev/null | sed "s|^$HOME/||"
+    fi
 }
 
 _manga_size() {
@@ -593,19 +609,32 @@ _manga_pages() {
 }
 
 _manga_get_mtime() {
-    find "$MANGA_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f -iname "*.cbz" -printf '%T@ %s %p\n' 2>/dev/null | sort | md5sum
+    if command -v fd &>/dev/null; then
+        fd -e cbz --exclude .cache --exclude .local --exclude .config --exclude node_modules --exclude '.*' -x stat --printf='%Y %s %n\n' . "$MANGA_DIR" 2>/dev/null | sort | md5sum
+    else
+        find "$MANGA_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f -iname "*.cbz" -printf '%T@ %s %p\n' 2>/dev/null | sort | md5sum
+    fi
 }
 
 _manga_build_cache() {
     local tmp
     tmp=$(mktemp)
     mkdir -p "$MANGA_CACHE_DIR"
+    local old_cache="$MANGA_CACHE_FILE"
     while IFS= read -r path; do
         [[ -z "$path" ]] && continue
-        local size pages
-        size=$(_manga_size "$HOME/$path")
-        pages=$(_manga_pages "$HOME/$path")
-        printf '%s\t%s\t%s\n' "$path" "$size" "$pages" >> "$tmp"
+        local cached_line=""
+        if [[ -f "$old_cache" ]]; then
+            cached_line=$(grep -F "$path	" "$old_cache" 2>/dev/null | head -1)
+        fi
+        if [[ -n "$cached_line" ]]; then
+            printf '%s\n' "$cached_line" >> "$tmp"
+        else
+            local size pages
+            size=$(_manga_size "$HOME/$path")
+            pages=$(_manga_pages "$HOME/$path")
+            printf '%s\t%s\t%s\n' "$path" "$size" "$pages" >> "$tmp"
+        fi
     done < <(_manga_find)
     mv "$tmp" "$MANGA_CACHE_FILE"
     _manga_get_mtime > "$MANGA_CACHE_MTIME"
@@ -648,7 +677,6 @@ _manga_add_history() {
 
 run_manga_menu() {
     pkill -x rofi 2>/dev/null
-    sleep 0.1
     _manga_refresh_cache
     [[ ! -f "$MANGA_CACHE_FILE" ]] && exit 0
 
@@ -696,7 +724,11 @@ VIDEO_HISTORY="$VIDEO_CACHE_DIR/history.txt"
 VIDEO_GROUP_BY_FOLDER=true
 
 _video_find() {
-    find "$VIDEO_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f \( -iname "*.mp4" -o -iname "*.mkv" -o -iname "*.webm" \) -print 2>/dev/null | sed "s|^$HOME/||"
+    if command -v fd &>/dev/null; then
+        fd -e mp4 -e mkv -e webm --exclude .cache --exclude .local --exclude .config --exclude node_modules --exclude '.*' --base-directory "$VIDEO_DIR" 2>/dev/null
+    else
+        find "$VIDEO_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f \( -iname "*.mp4" -o -iname "*.mkv" -o -iname "*.webm" \) -print 2>/dev/null | sed "s|^$HOME/||"
+    fi
 }
 
 _video_size() {
@@ -718,19 +750,32 @@ _video_duration() {
 }
 
 _video_get_mtime() {
-    find "$VIDEO_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f \( -iname "*.mp4" -o -iname "*.mkv" -o -iname "*.webm" \) -printf '%T@ %s %p\n' 2>/dev/null | sort | md5sum
+    if command -v fd &>/dev/null; then
+        fd -e mp4 -e mkv -e webm --exclude .cache --exclude .local --exclude .config --exclude node_modules --exclude '.*' -x stat --printf='%Y %s %n\n' . "$VIDEO_DIR" 2>/dev/null | sort | md5sum
+    else
+        find "$VIDEO_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f \( -iname "*.mp4" -o -iname "*.mkv" -o -iname "*.webm" \) -printf '%T@ %s %p\n' 2>/dev/null | sort | md5sum
+    fi
 }
 
 _video_build_cache() {
     local tmp
     tmp=$(mktemp)
     mkdir -p "$VIDEO_CACHE_DIR"
+    local old_cache="$VIDEO_CACHE_FILE"
     while IFS= read -r path; do
         [[ -z "$path" ]] && continue
-        local size duration
-        size=$(_video_size "$HOME/$path")
-        duration=$(_video_duration "$HOME/$path")
-        printf '%s\t%s\t%s\n' "$path" "$size" "$duration" >> "$tmp"
+        local cached_line=""
+        if [[ -f "$old_cache" ]]; then
+            cached_line=$(grep -F "$path	" "$old_cache" 2>/dev/null | head -1)
+        fi
+        if [[ -n "$cached_line" ]]; then
+            printf '%s\n' "$cached_line" >> "$tmp"
+        else
+            local size duration
+            size=$(_video_size "$HOME/$path")
+            duration=$(_video_duration "$HOME/$path")
+            printf '%s\t%s\t%s\n' "$path" "$size" "$duration" >> "$tmp"
+        fi
     done < <(_video_find)
     mv "$tmp" "$VIDEO_CACHE_FILE"
     _video_get_mtime > "$VIDEO_CACHE_MTIME"
@@ -758,6 +803,21 @@ _video_add_history() {
     grep -Fxv "$1" "$VIDEO_HISTORY" 2>/dev/null > "$tmp"
     printf '%s\n' "$1" >> "$tmp"
     mv "$tmp" "$VIDEO_HISTORY"
+}
+
+_video_recent() {
+    if command -v fd &>/dev/null; then
+        fd -e mp4 -e mkv -e webm --exclude .cache --exclude .local --exclude .config --exclude node_modules --exclude '.*' -x stat --printf='%Y\t%n\n' . "$VIDEO_DIR" 2>/dev/null \
+        | sort -t$'\t' -k1,1nr \
+        | cut -f2- \
+        | head -n 100
+    else
+        find "$VIDEO_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f \( -iname "*.mp4" -o -iname "*.mkv" -o -iname "*.webm" \) \
+            -printf '%T@\t%p\n' 2>/dev/null \
+        | sort -t$'\t' -k1,1nr \
+        | cut -f2- \
+        | head -n 100
+    fi
 }
 
 _run_video_menu_flat() {
@@ -803,6 +863,9 @@ _run_video_menu_by_folder() {
     declare -a MENU_ENTRIES MENU_LABELS
     local LAST_WATCHED
     LAST_WATCHED=$(tail -n 1 "$VIDEO_HISTORY" 2>/dev/null)
+    MENU_ENTRIES+=("NEW")
+    MENU_LABELS+=("➜ new")
+
     if [[ -n "$LAST_WATCHED" ]]; then
         MENU_ENTRIES+=("LAST")
         MENU_LABELS+=("➜ last")
@@ -837,6 +900,20 @@ _run_video_menu_by_folder() {
     local selected_entry
     selected_entry="${MENU_ENTRIES[$idx]}"
     [[ -z "$selected_entry" ]] && exit 0
+
+    if [[ "$selected_entry" == "NEW" ]]; then
+        local -a recent=()
+        local path rel
+        while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            rel="${path#$HOME/}"
+            [[ "$rel" == "$path" ]] && continue
+            recent+=("$HOME/$rel")
+        done < <(_video_recent)
+        [[ ${#recent[@]} -eq 0 ]] && exit 0
+        mpv --no-resume-playback "${recent[@]}" >/dev/null 2>&1 &
+        exit 0
+    fi
 
     if [[ "$selected_entry" == "LAST" ]]; then
         local file
@@ -926,7 +1003,6 @@ _run_video_menu_by_folder() {
 
 run_video_menu() {
     pkill -x rofi 2>/dev/null
-    sleep 0.1
     _video_refresh_cache
     [[ ! -f "$VIDEO_CACHE_FILE" ]] && exit 0
 
@@ -939,27 +1015,20 @@ run_video_menu() {
 }
 
 # ----- images -----
-IMAGE_DIR="${HOME}"
-IMAGE_CACHE_DIR="$HOME/.cache/scripts/image"
-IMAGE_CACHE_FILE="$IMAGE_CACHE_DIR/cache.txt"
-IMAGE_CACHE_MTIME="$IMAGE_CACHE_DIR/cache-mtime.txt"
-IMAGE_HISTORY="$IMAGE_CACHE_DIR/history.txt"
-
 _image_find() {
-    fd --type f --hidden --absolute-path \
-        --exclude .git --exclude node_modules --exclude .cache --exclude __pycache__ \
-        --exclude .venv --exclude venv --exclude target --exclude build --exclude dist \
-        --exclude .npm --exclude .cargo --exclude .rustup \
-        --exclude .local --exclude .var --exclude .flatpak --exclude .fonts --exclude .icons \
-        --exclude BraveSoftware --exclude librewolf --exclude go --exclude .go \
-        --exclude thumbnails --exclude thumb --exclude '.thumbs' \
-        . "$IMAGE_DIR" 2>/dev/null \
-        | grep -iE '\.(jpg|jpeg|png|webp|gif|bmp|avif|svg)$' \
-        | sed "s|^$HOME/||"
+    if command -v fd &>/dev/null; then
+        fd -e jpg -e jpeg -e png -e webp -e gif -e bmp -e avif -e svg --exclude .cache --exclude .local --exclude .config --exclude node_modules --exclude thumbnails --exclude thumb --exclude '.*' --base-directory "$IMAGE_DIR" 2>/dev/null
+    else
+        find "$IMAGE_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" -o -path "*/thumbnails" -o -path "*/thumb" \) -prune -o -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.avif" -o -iname "*.svg" \) -print 2>/dev/null | sed "s|^$HOME/||"
+    fi
 }
 
 _image_get_mtime() {
-    _image_find | md5sum
+    if command -v fd &>/dev/null; then
+        fd -e jpg -e jpeg -e png -e webp -e gif -e bmp -e avif -e svg --exclude .cache --exclude .local --exclude .config --exclude node_modules --exclude thumbnails --exclude thumb --exclude '.*' -x stat --printf='%Y %s %n\n' . "$IMAGE_DIR" 2>/dev/null | sort | md5sum
+    else
+        find "$IMAGE_DIR" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" -o -path "*/thumbnails" -o -path "*/thumb" \) -prune -o -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.avif" -o -iname "*.svg" \) -printf '%T@ %s %p\n' 2>/dev/null | sort | md5sum
+    fi
 }
 
 _image_build_cache() {
@@ -1034,12 +1103,18 @@ _image_add_history() {
 }
 
 _image_recent() {
-    find "$HOME" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.avif" -o -iname "*.svg" \) \
-        -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/.cache/*" -not -path "*/.local/*" -not -path "*/.config/*" \
-        -printf '%T@\t%p\n' 2>/dev/null \
-    | sort -t$'\t' -k1,1nr \
-    | cut -f2- \
-    | head -n 20
+    if command -v fd &>/dev/null; then
+        fd -e jpg -e jpeg -e png -e webp -e gif -e bmp -e avif -e svg --exclude .cache --exclude .local --exclude .config --exclude node_modules --exclude thumbnails --exclude thumb --exclude '.*' -x stat --printf='%Y\t%n\n' . "$HOME" 2>/dev/null \
+        | sort -t$'\t' -k1,1nr \
+        | cut -f2- \
+        | head -n 20
+    else
+        find "$HOME" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" \) -prune -o -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.avif" -o -iname "*.svg" \) \
+            -printf '%T@\t%p\n' 2>/dev/null \
+        | sort -t$'\t' -k1,1nr \
+        | cut -f2- \
+        | head -n 20
+    fi
 }
 
 _image_open_recent() {
@@ -1047,17 +1122,11 @@ _image_open_recent() {
     dir=$(mktemp -d /tmp/images-recent.XXXXXX)
 
     local count=0
-    while IFS=$'\t' read -r mtime filepath; do
+    while IFS= read -r filepath; do
         [[ -z "$filepath" ]] && continue
         ln -s "$filepath" "$dir/$(printf '%03d' $count)_$(basename "$filepath")" 2>/dev/null
         ((count++))
-    done < <(
-        find "$HOME" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.avif" -o -iname "*.svg" \) \
-            -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/.cache/*" -not -path "*/.local/*" -not -path "*/.config/*" \
-            -printf '%T@\t%p\n' 2>/dev/null \
-        | sort -t$'\t' -k1,1nr \
-        | head -n 20
-    )
+    done < <(_image_recent)
 
     [[ $count -eq 0 ]] && rm -rf "$dir" && exit 0
 
@@ -1075,7 +1144,6 @@ _image_open_recent() {
 
 run_image_menu() {
     pkill -x rofi 2>/dev/null
-    sleep 0.1
     _image_refresh_cache
     [[ ! -f "$IMAGE_CACHE_FILE" ]] && exit 0
 
@@ -1158,14 +1226,8 @@ run_image_menu() {
 }
 
 # ----- files -----
-FILES_CACHE_DIR="$HOME/.cache/scripts/files"
-FILES_CACHE_FILE="$FILES_CACHE_DIR/cache.txt"
-FILES_CACHE_MTIME="$FILES_CACHE_DIR/cache-mtime.txt"
-FILES_HISTORY="$FILES_CACHE_DIR/history.txt"
-FILES_LIMIT=5000
-
 _files_get_mtime() {
-    find "$HOME" -maxdepth 2 -type d ! -path "*/.local" ! -path "*/.cache" | xargs stat --format="%Y %n" 2>/dev/null | sort | md5sum
+    find "$HOME" -maxdepth 2 -type d ! -path "*/.local" ! -path "*/.cache" -printf '%T@ %p\n' 2>/dev/null | sort | md5sum
 }
 
 _files_build_cache() {
@@ -1173,32 +1235,14 @@ _files_build_cache() {
     tmp=$(mktemp)
     mkdir -p "$FILES_CACHE_DIR"
 
-    local fd_args=(
-        --type f --hidden --absolute-path
-        --exclude .git --exclude node_modules --exclude .cache --exclude __pycache__
-        --exclude .venv --exclude venv --exclude target --exclude build --exclude dist
-        --exclude .npm --exclude .cargo --exclude .rustup
-        --exclude .local --exclude .var --exclude .flatpak --exclude .fonts --exclude .icons
-        --exclude BraveSoftware --exclude librewolf --exclude go --exclude .go
-    )
-
-    local dir_args=(
-        --type d --hidden --absolute-path
-        --exclude .git --exclude node_modules --exclude .cache --exclude __pycache__
-        --exclude .venv --exclude venv --exclude target --exclude build --exclude dist
-        --exclude .npm --exclude .cargo --exclude .rustup
-        --exclude .local --exclude .var --exclude .flatpak --exclude .fonts --exclude .icons
-        --exclude BraveSoftware --exclude librewolf --exclude go --exclude .go
-    )
-
-    fd "${dir_args[@]}" . "$HOME" 2>/dev/null | sed "s|$HOME/||" | head -n $FILES_LIMIT | \
+    find "$HOME" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" -o -path "*/target" -o -path "*/build" -o -path "*/dist" \) -prune -o -type d -print 2>/dev/null | sed "s|$HOME/||" | head -n $FILES_LIMIT | \
         while IFS= read -r line; do
-            printf 'dir\t%s\n' "$line"
+            [[ -n "$line" ]] && printf 'dir\t%s\n' "$line"
         done >> "$tmp"
 
-    fd "${fd_args[@]}" . "$HOME" 2>/dev/null | sed "s|$HOME/||" | head -n $FILES_LIMIT | \
+    find "$HOME" -type d \( -path "*/\.*" -o -path "*/node_modules" -o -path "*/.cache" -o -path "*/.local" -o -path "*/.config" -o -path "*/target" -o -path "*/build" -o -path "*/dist" \) -prune -o -type f -print 2>/dev/null | sed "s|$HOME/||" | head -n $FILES_LIMIT | \
         while IFS= read -r line; do
-            printf 'file\t%s\n' "$line"
+            [[ -n "$line" ]] && printf 'file\t%s\n' "$line"
         done >> "$tmp"
 
     mv "$tmp" "$FILES_CACHE_FILE"
@@ -1251,7 +1295,6 @@ _files_save_history() {
 
 run_files_menu() {
     pkill -x rofi 2>/dev/null
-    sleep 0.1
     _files_refresh_cache
 
     local file_count=$(_files_get_count file)
@@ -1365,6 +1408,13 @@ run_power_menu() {
         *Logout) hyprctl dispatch exit 2>/dev/null || loginctl terminate-user "$USER" ;;
     esac
 }
+
+[[ -f "$MANGA_CACHE_FILE" ]] && manga_count=$(wc -l < "$MANGA_CACHE_FILE" 2>/dev/null)
+[[ -f "$VIDEO_CACHE_FILE" ]] && video_count=$(wc -l < "$VIDEO_CACHE_FILE" 2>/dev/null)
+[[ -f "$IMAGE_CACHE_FILE" ]] && image_count=$(wc -l < "$IMAGE_CACHE_FILE" 2>/dev/null)
+manga_count=${manga_count:-0}
+video_count=${video_count:-0}
+image_count=${image_count:-0}
 
 main_menu_items=()
 main_menu_items+=('❀  Search All ('"$all_count"')')

@@ -5,5 +5,6 @@ require("lua.autostart")
 require("lua.appearance")
 require("lua.input")
 require("lua.keybinds")
+require("lua.utils")
 require("lua.windowrules")
-require("lua.monochrome")
+

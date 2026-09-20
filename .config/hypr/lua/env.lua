@@ -23,19 +23,15 @@ local env_vars = {
     -- SDL / Electron
     SDL_VIDEODRIVER                     = "wayland,x11",
     ELECTRON_OZONE_PLATFORM_HINT        = "auto",
+
+    -- clutter / gtk
+    CLUTTER_BACKEND                     = "wayland",
+    GTK_THEME                           = "Adwaita:dark",
+    NO_AT_BRIDGE                        = "1",
+    __GL_VRR_ALLOWED                    = "1",
+    WLR_RENDERER_ALLOW_SOFTWARE         = "0",
 }
 
 for k, v in pairs(env_vars) do
     hl.env(k, v)
-end
-
--- ─── theme ───
-local themes = {
-    -- xcursor-vanilla-dmz | adapta-gtk-theme | obsidian-icon-theme
-    ["org.gnome.desktop.interface gtk-theme"]  = "Adapta-Nokto",
-    ["org.gnome.desktop.interface icon-theme"] = "Obsidian-Purple",
-}
-
-for key, val in pairs(themes) do
-    hl.exec_cmd("GSETTINGS_BACKEND=dconf gsettings set " .. key .. " '" .. val .. "'")
 end

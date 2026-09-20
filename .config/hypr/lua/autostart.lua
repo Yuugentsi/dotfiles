@@ -11,64 +11,43 @@ hl.on("hyprland.start", function()
     exec("swaync")
     exec("hypridle")
     exec("spotify")
-    --
-    exec("kitty opencode --continue")
-    exec("bash ~/.config/hypr/scripts/clipboard.sh daemon")
-    exec("bash ~/.config/hypr/scripts/wallpaper.sh daemon")
-    exec("bash ~/.config/hypr/scripts/utils.sh workspace")
-    exec("fish -c mp3")
+    exec("wl-clip-persist --clipboard regular")
+    exec("setsid -f wl-paste --type text --watch cliphist store")
+    exec("setsid -f wl-paste --type image --watch cliphist store")
+    exec("GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface icon-theme 'Obsidian' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface cursor-theme 'Vanilla-DMZ' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'")
 
-    -- ----- xdg desktop portal -----
-
-    -- ----- spotify-mpv -----
-    hl.timer(function()
-        local status = io.popen("playerctl -p spotify status 2>/dev/null"):read("*l")
-        if status == "Playing" then
-            exec("pkill -x mpv")
-        end
-    end, { timeout = 2000, type = "repeat" })
-
-    -- ----- spotify -----
-    hl.timer(function()
-        local status = io.popen("playerctl -p spotify status 2>/dev/null"):read("*l")
-        if status == "Paused" then
-            exec("playerctl -p spotify play")
-        end
-    end, { timeout = 1000, type = "repeat" })
+    -- ----- spotify-mpv event listener (async / no polling) -----
+    exec("bash -c 'while true; do playerctl -i mpv --follow status 2>/dev/null | while read -r s; do [ \"$s\" = \"Playing\" ] && pkill -x mpv 2>/dev/null; done; sleep 2; done &'")
 end)
 
--- ----- single instance apps -----
-local function limit_instance(class)
-    local count = tonumber(io.popen("pgrep -x " .. class .. " 2>/dev/null | wc -l"):read("*a")) or 0
-    if count > 1 then
-        hl.exec_cmd("pkill -x -o " .. class)
-    end
-end
+-- ----- single instance apps (mpv & zathura) -----
+local single_instance_classes = {
+    ["mpv"] = "mpv",
+    ["zathura"] = "zathura",
+    ["org.pwmt.zathura"] = "zathura",
+}
 
--- ----- mpv -----
-hl.on("window.open", function(w)
-    if w.class == "mpv" then
-        limit_instance("mpv")
-    end
-end)
+hl.on("window.open", function(opened_win)
+    local target = single_instance_classes[opened_win.class]
+    if not target then return end
 
--- ----- zathura -----
-hl.on("window.open", function(w)
-    if w.class == "org.pwmt.zathura" then
-        limit_instance("zathura")
+    local wins = {}
+    for _, w in ipairs(hl.get_windows()) do
+        if single_instance_classes[w.class] == target then
+            table.insert(wins, w)
+        end
+    end
+
+    if #wins > 1 then
+        for _, w in ipairs(wins) do
+            if w.address ~= opened_win.address then
+                hl.dispatch(hl.dsp.window.close({ window = w }))
+            end
+        end
     end
 end)
 
 -- ----- shutdown cleanup -----
 hl.on("hyprland.shutdown", function()
-    local function exec(cmd)
-        hl.exec_cmd(cmd)
-    end
-    exec("pkill -x kitty")
-    exec("pkill -x zen")
-    exec("pkill -x brave-origin")
-    exec("pkill -x hypridle")
-    exec("pkill -x hyprpaper")
-    exec("pkill -x swaync")
-    exec("pkill -x waybar")
+    hl.exec_cmd("pkill -x 'kitty|firefox|zen-browser|librewolf|brave-origin|hypridle|hyprpaper|swaync|waybar'")
 end)

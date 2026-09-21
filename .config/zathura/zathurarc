@@ -9,12 +9,17 @@ map [fullscreen] f toggle_fullscreen
 map [presentation] f toggle_fullscreen
 
 # ─── navigation ───
+map 1 navigate previous
+map 2 navigate next
+map 3 adjust_window best-fit
+map 4 zoom in
 map <Left> navigate previous
 map <Right> navigate next
 map [fullscreen] <Left> navigate previous
 map [fullscreen] <Right> navigate next
 
 # ─── zoom ───
+map w adjust_window best-fit
 map s adjust_window width
 map [fullscreen] s adjust_window width
 map a adjust_window best-fit

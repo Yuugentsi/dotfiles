@@ -324,7 +324,7 @@ def run_menu():
 def is_external_playing() -> bool:
     try:
         res = subprocess.run(
-            ["playerctl", "-i", "mpv", "-a", "status"],
+            ["playerctl", "-i", "mpv,playerctld", "-a", "status"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -337,12 +337,12 @@ def next_or_random():
     if is_external_playing():
         if is_mpv_running():
             kill_mpv()
-        subprocess.run(["playerctl", "-i", "mpv", "next"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["playerctl", "-i", "mpv,playerctld", "next"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         import time
         time.sleep(0.15)
         try:
             res = subprocess.run(
-                ["playerctl", "-i", "mpv", "metadata", "--format", "{{title}}"],
+                ["playerctl", "-i", "mpv,playerctld", "metadata", "--format", "{{title}}"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True

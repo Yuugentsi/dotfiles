@@ -98,7 +98,7 @@
     "return-type": "json",
     "exec": "sh -c 'if pgrep -x hyprsunset > /dev/null; then T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 3600); echo \"{\\\"text\\\":\\\"󰖔\\\",\\\"class\\\":\\\"on\\\",\\\"tooltip\\\":\\\"󰖔 ${T}K\\\"}\"; else echo \"{\\\"text\\\":\\\"\\\",\\\"class\\\":\\\"\\\"}\"; fi'",
     "tooltip": true,
-    "interval": 0.2,
+    "interval": 2,
     "on-click": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; else hyprsunset -t 2700 & fi'",
     "on-click-right": "sh -c 'pkill -x hyprsunset 2>/dev/null; sleep 0.3; echo 2700 > /tmp/hyprsunset_temp; hyprsunset -t 2700 &'",
     "on-scroll-up": "sh -c 'if pgrep -x hyprsunset > /dev/null; then pkill hyprsunset; sleep 0.2; T=$(cat /tmp/hyprsunset_temp 2>/dev/null || echo 2700); T=$((T+100)); [ $T -gt 2700 ] && T=2700; echo $T > /tmp/hyprsunset_temp; hyprsunset -t $T & fi'",
@@ -131,7 +131,7 @@
     "format-alt": "{:%m/%d/%Y}",
     "interval": 1,
     "on-click": "mode",
-    "on-click-right": "bash -c 'killall mpv 2>/dev/null; sleep 0.5; file=$(find ~/0/music/ -type f | shuf -n 1); [ -n \"$file\" ] && mpv --no-video \"$file\" &'",
+    "on-click-right": "bash $HOME/.config/hypr/scripts/play.sh",
     "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 120 ] && v=120; wpctl set-volume --limit 1.2 @DEFAULT_AUDIO_SINK@ ${v}%'",
     "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%'",
   },
@@ -139,7 +139,7 @@
   "memory": {
     "format": "󰍛",
     "tooltip-format": "󰍛 {percentage}% · {used:0.1f}G / {total:0.1f}G",
-    "on-click": "sh -c 'hyprctl notify 10 3000 \"rgb(a89cc8)\" \"󰍛 $(free -h | awk \"/^Mem:/{printf \\\"%s/%s\\\", \\$3, \\$2}\")\"'"
+    "on-click": "sh -c 'hyprctl notify 10 3000 \"rgb(f5c2e7)\" \"󰍛 $(free -h | awk \"/^Mem:/{printf \\\"%s/%s\\\", \\$3, \\$2}\")\"'"
   },
 
   "group/power": {

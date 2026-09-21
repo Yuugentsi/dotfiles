@@ -16,9 +16,11 @@
 --   copy→wallpapers  Ctrl-c
 --   EXIF           Ctrl-e
 --   rename all     Ctrl-r
---   wallpaper      W
---   wallpaper blur B
---   wallpaper dark Ctrl-b
+--   wallpaper      w
+--   wallpaper blur Shift-w (W)
+--   wallpaper dark Ctrl-w
+--   random wallpaper B
+--   random blur      Ctrl-b
 --   quit           q
 --
 -- ─── constants
@@ -54,17 +56,16 @@ end
 
 -- ─── global config
 
-swayimg.enable_decoration(false)
-swayimg.imagelist.enable_adjacent(true)
-swayimg.imagelist.enable_fsmon(false)
-swayimg.text.set_timeout(3)
-swayimg.imagelist.set_order("numeric")
-swayimg.viewer.set_default_scale("fit")
+swayimg.decoration = false
+swayimg.imagelist.adjacent = true
+swayimg.imagelist.fsmon = false
+swayimg.text.timeout = 3
+swayimg.imagelist.order = "numeric"
+swayimg.viewer.default_scale = "fit"
 swayimg.viewer.set_window_background("auto")
-swayimg.viewer.limit_preload(6)
-swayimg.viewer.limit_history(6)
+swayimg.viewer.preload = 6
+swayimg.viewer.history = 6
 
-local empty_text = {}
 
 local default_viewer_text = {
     "{list.index}/{list.total}",
@@ -102,7 +103,7 @@ end
 
 local function copy_image(path)
     if not path or path == "" then
-        swayimg.text.set_status("No image to copy")
+        swayimg.text.status = "No image to copy"
         return
     end
 
@@ -111,9 +112,9 @@ local function copy_image(path)
         .. " sh " .. shell_quote(path)
 
     if os.execute(command) then
-        swayimg.text.set_status("Copied image")
+        swayimg.text.status = "Copied image"
     else
-        swayimg.text.set_status("Failed to copy image")
+        swayimg.text.status = "Failed to copy image"
     end
 end
 
@@ -129,7 +130,7 @@ end
 
 local function copy_to_wallpapers(path)
     if not path or path == "" then
-        swayimg.text.set_status("No image to copy")
+        swayimg.text.status = "No image to copy"
         return
     end
 
@@ -137,9 +138,9 @@ local function copy_to_wallpapers(path)
         .. " && cp -n -- " .. shell_quote(path) .. " " .. shell_quote(WALLPAPERS_DIR .. "/")
 
     if os.execute(command) then
-        swayimg.text.set_status("Copied to wallpapers")
+        swayimg.text.status = "Copied to wallpapers"
     else
-        swayimg.text.set_status("Failed to copy to wallpapers")
+        swayimg.text.status = "Failed to copy to wallpapers"
     end
 end
 
@@ -155,7 +156,7 @@ end
 
 local function set_wallpaper(path)
     if not path or path == "" then
-        swayimg.text.set_status("No image to set as wallpaper")
+        swayimg.text.status = "No image to set as wallpaper"
         return
     end
 
@@ -181,15 +182,15 @@ local function set_wallpaper(path)
         .. "' sh " .. shell_quote(cached_path)
 
     if os.execute(command) then
-        swayimg.text.set_status("Wallpaper set")
+        swayimg.text.status = "Wallpaper set"
     else
-        swayimg.text.set_status("Failed to set wallpaper")
+        swayimg.text.status = "Failed to set wallpaper"
     end
 end
 
 local function set_wallpaper_blur(path)
     if not path or path == "" then
-        swayimg.text.set_status("No image to set as wallpaper")
+        swayimg.text.status = "No image to set as wallpaper"
         return
     end
 
@@ -208,7 +209,7 @@ local function set_wallpaper_blur(path)
         .. " -scale 1920x1080^ -gravity center -extent 1920x1080 -blur 0x15 -modulate 60 " .. bq .. "))"
 
     if not os.execute(blur_cmd) then
-        swayimg.text.set_status("Failed to blur (install imagemagick)")
+        swayimg.text.status = "Failed to blur (install imagemagick)"
         return
     end
 
@@ -235,7 +236,7 @@ end
 
 local function set_wallpaper_blur_dark(path)
     if not path or path == "" then
-        swayimg.text.set_status("No image to set as wallpaper")
+        swayimg.text.status = "No image to set as wallpaper"
         return
     end
 
@@ -254,7 +255,7 @@ local function set_wallpaper_blur_dark(path)
         .. " -scale 1920x1080^ -gravity center -extent 1920x1080 -blur 0x15 -modulate 30 " .. dq .. "))"
 
     if not os.execute(cmd) then
-        swayimg.text.set_status("Failed to blur (install imagemagick)")
+        swayimg.text.status = "Failed to blur (install imagemagick)"
         return
     end
 
@@ -269,6 +270,38 @@ local function set_gallery_wallpaper_blur_dark()
     set_wallpaper_blur_dark(gallery_path())
 end
 
+-- ─── random wallpaper
+
+local function random_wallpaper_path()
+    local p = io.popen("find " .. shell_quote(WALLPAPERS_DIR)
+        .. " -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \\)"
+        .. " 2>/dev/null | sort -R | head -n 1")
+    if not p then
+        return nil
+    end
+    local path = p:read("*l")
+    p:close()
+    return path
+end
+
+local function set_random_wallpaper()
+    local path = random_wallpaper_path()
+    if not path or path == "" then
+        swayimg.text.status = "No wallpapers found"
+        return
+    end
+    set_wallpaper(path)
+end
+
+local function set_random_wallpaper_blur()
+    local path = random_wallpaper_path()
+    if not path or path == "" then
+        swayimg.text.status = "No wallpapers found"
+        return
+    end
+    set_wallpaper_blur(path)
+end
+
 -- ─── zoom
 
 local function zoom_viewer(factor)
@@ -281,35 +314,36 @@ end
 local function trash_viewer_image()
     local original_path = viewer_path()
     if not original_path or original_path == "" then
-        swayimg.text.set_status("No image to trash")
+        swayimg.text.status = "No image to trash"
         return
     end
 
-    swayimg.viewer.switch_image("next")
+    swayimg.viewer.open("next")
 
     if os.execute("gio trash -- " .. shell_quote(original_path)) then
         swayimg.imagelist.remove(original_path)
-        swayimg.text.set_status("Moved to trash")
+        swayimg.text.status = "Moved to trash"
     else
-        swayimg.viewer.open(original_path)
-        swayimg.text.set_status("Failed to trash image")
+        swayimg.viewer.open_path(original_path)
+        swayimg.text.status = "Failed to trash image"
     end
 end
 
 local function trash_gallery_image()
     local path = gallery_path()
     if not path or path == "" then
-        swayimg.text.set_status("No image to trash")
+        swayimg.text.status = "No image to trash"
         return
     end
 
-    swayimg.gallery.switch_image("next")
+    swayimg.gallery.select("right")
 
     if os.execute("gio trash -- " .. shell_quote(path)) then
         swayimg.imagelist.remove(path)
-        swayimg.text.set_status("Moved to trash")
+        swayimg.text.status = "Moved to trash"
     else
-        swayimg.text.set_status("Failed to trash image")
+        swayimg.gallery.select_path(path)
+        swayimg.text.status = "Failed to trash image"
     end
 end
 
@@ -330,10 +364,10 @@ local function open_all_images()
     end
 
     if count > 0 then
-        swayimg.set_mode("gallery")
-        swayimg.text.set_status("Loaded " .. count .. " images")
+        swayimg.mode = "gallery"
+        swayimg.text.status = "Loaded " .. count .. " images"
     else
-        swayimg.text.set_status("No images found")
+        swayimg.text.status = "No images found"
     end
 end
 
@@ -342,7 +376,7 @@ end
 local function rename_all_random()
     local entries = swayimg.imagelist.get()
     if #entries == 0 then
-        swayimg.text.set_status("No images to rename")
+        swayimg.text.status = "No images to rename"
         return
     end
 
@@ -361,15 +395,15 @@ local function rename_all_random()
         end
     end
 
-    swayimg.text.set_status("Renamed " .. count .. " images")
+    swayimg.text.status = "Renamed " .. count .. " images"
 end
 
 -- ─── sort order
 
 local function cycle_order()
     order_idx = order_idx % #orders + 1
-    swayimg.imagelist.set_order(orders[order_idx])
-    swayimg.text.set_status("Order: " .. orders[order_idx])
+    swayimg.imagelist.order = orders[order_idx]
+    swayimg.text.status = "Order: " .. orders[order_idx]
 end
 
 -- ─── open folder
@@ -377,7 +411,7 @@ end
 local function open_viewer_folder()
     local dir = dirname(viewer_path())
     if not dir or dir == "" then
-        swayimg.text.set_status("No folder to open")
+        swayimg.text.status = "No folder to open"
         return
     end
 
@@ -415,8 +449,11 @@ local function show_shortcuts()
         "t: toggle info",
         "f: fullscreen",
         "g: gallery",
-        "W: set wallpaper",
-        "B: set wallpaper (blur)",
+        "w: set wallpaper",
+        "W (Shift-w): set wallpaper (blur)",
+        "Ctrl-w: set wallpaper (blur + dark)",
+        "B: random wallpaper",
+        "Ctrl-b: random wallpaper (blur)",
         "+/-: zoom",
         "0/r: reset",
         "s: cycle sort order",
@@ -432,27 +469,19 @@ end
 -- ─── info / exif toggle
 
 local function toggle_info()
-    if swayimg.text.visible() then
-        swayimg.text.hide()
-    else
-        swayimg.text.show()
-    end
+    swayimg.text.visible = not swayimg.text.visible
 end
 
 local function toggle_exif()
     exif_on = not exif_on
     if exif_on then
-        swayimg.viewer.set_text("bottomleft", empty_text)
-        swayimg.gallery.set_text("bottomleft", empty_text)
-        swayimg.viewer.set_text("topleft", exif_viewer_text)
-        swayimg.gallery.set_text("topleft", exif_viewer_text)
+        swayimg.viewer.text = { topleft = exif_viewer_text }
+        swayimg.gallery.text = { topleft = exif_viewer_text }
     else
-        swayimg.viewer.set_text("topleft", empty_text)
-        swayimg.gallery.set_text("topleft", empty_text)
-        swayimg.viewer.set_text("bottomleft", default_viewer_text)
-        swayimg.gallery.set_text("bottomleft", default_viewer_text)
+        swayimg.viewer.text = { bottomleft = default_viewer_text }
+        swayimg.gallery.text = { bottomleft = default_viewer_text }
     end
-    swayimg.text.show()
+    swayimg.text.visible = true
 end
 
 -- ─── save last image
@@ -474,15 +503,9 @@ end
 -- ─── event handlers
 
 swayimg.on_initialized(function()
-    swayimg.viewer.set_text("topleft", empty_text)
-    swayimg.viewer.set_text("topright", empty_text)
-    swayimg.viewer.set_text("bottomright", empty_text)
-    swayimg.viewer.set_text("bottomleft", default_viewer_text)
-    swayimg.gallery.set_text("topleft", empty_text)
-    swayimg.gallery.set_text("topright", empty_text)
-    swayimg.gallery.set_text("bottomright", empty_text)
-    swayimg.gallery.set_text("bottomleft", default_viewer_text)
-    swayimg.text.hide()
+    swayimg.viewer.text = { bottomleft = default_viewer_text }
+    swayimg.gallery.text = { bottomleft = default_viewer_text }
+    swayimg.text.visible = false
 end)
 
 swayimg.on_window_resize(function()
@@ -490,36 +513,34 @@ swayimg.on_window_resize(function()
 end)
 
 swayimg.viewer.on_image_change(function()
-    swayimg.viewer.set_text("topleft", empty_text)
-    swayimg.viewer.set_text("topright", empty_text)
-    swayimg.viewer.set_text("bottomright", empty_text)
-    swayimg.viewer.set_text("bottomleft", default_viewer_text)
+    swayimg.viewer.text = { bottomleft = default_viewer_text }
     exif_on = false
-    swayimg.text.show()
+    swayimg.text.visible = true
 end)
 
 swayimg.gallery.on_image_change(function()
-    swayimg.gallery.set_text("topleft", empty_text)
-    swayimg.gallery.set_text("topright", empty_text)
-    swayimg.gallery.set_text("bottomright", empty_text)
-    swayimg.gallery.set_text("bottomleft", default_viewer_text)
+    swayimg.gallery.text = { bottomleft = default_viewer_text }
     exif_on = false
-    swayimg.text.show()
+    swayimg.text.visible = true
 end)
 
 -- ─── viewer keybindings ───
 
 -- ----- navigation -----
-swayimg.viewer.on_key("Right", function() swayimg.viewer.switch_image("next") end)
-swayimg.viewer.on_key("Left", function() swayimg.viewer.switch_image("prev") end)
-swayimg.viewer.on_key("Next", function() swayimg.viewer.switch_image("next") end)
-swayimg.viewer.on_key("Prior", function() swayimg.viewer.switch_image("prev") end)
-swayimg.viewer.on_key("Space", function() swayimg.viewer.switch_image("next") end)
-swayimg.viewer.on_key("BackSpace", function() swayimg.viewer.switch_image("prev") end)
-swayimg.viewer.on_key("A", function() swayimg.viewer.switch_image("prev") end)
-swayimg.viewer.on_key("D", function() swayimg.viewer.switch_image("next") end)
-swayimg.viewer.on_key("less", function() swayimg.viewer.switch_image("prev") end)
-swayimg.viewer.on_key("greater", function() swayimg.viewer.switch_image("next") end)
+swayimg.viewer.on_key("1", function() swayimg.viewer.open("prev") end)
+swayimg.viewer.on_key("2", function() swayimg.viewer.open("next") end)
+swayimg.viewer.on_key("KP_1", function() swayimg.viewer.open("prev") end)
+swayimg.viewer.on_key("KP_2", function() swayimg.viewer.open("next") end)
+swayimg.viewer.on_key("Right", function() swayimg.viewer.open("next") end)
+swayimg.viewer.on_key("Left", function() swayimg.viewer.open("prev") end)
+swayimg.viewer.on_key("Next", function() swayimg.viewer.open("next") end)
+swayimg.viewer.on_key("Prior", function() swayimg.viewer.open("prev") end)
+swayimg.viewer.on_key("Space", function() swayimg.viewer.open("next") end)
+swayimg.viewer.on_key("BackSpace", function() swayimg.viewer.open("prev") end)
+swayimg.viewer.on_key("A", function() swayimg.viewer.open("prev") end)
+swayimg.viewer.on_key("D", function() swayimg.viewer.open("next") end)
+swayimg.viewer.on_key("less", function() swayimg.viewer.open("prev") end)
+swayimg.viewer.on_key("greater", function() swayimg.viewer.open("next") end)
 
 -- ----- copy -----
 on_key_both(swayimg.viewer, "c", copy_viewer_image)
@@ -527,15 +548,17 @@ on_key_both(swayimg.viewer, "Ctrl-e", toggle_exif)
 on_key_both(swayimg.viewer, "Ctrl-c", copy_viewer_to_wallpapers)
 
 -- ----- wallpaper -----
-swayimg.viewer.on_key("W", set_viewer_wallpaper)
-swayimg.viewer.on_key("B", set_viewer_wallpaper_blur)
-swayimg.viewer.on_key("Ctrl-b", set_viewer_wallpaper_blur_dark)
+swayimg.viewer.on_key("w", set_viewer_wallpaper)
+swayimg.viewer.on_key("Shift-w", set_viewer_wallpaper_blur)
+swayimg.viewer.on_key("Ctrl-w", set_viewer_wallpaper_blur_dark)
+swayimg.viewer.on_key("B", set_random_wallpaper)
+swayimg.viewer.on_key("Ctrl-b", set_random_wallpaper_blur)
 
 -- ----- help -----
 on_key_both(swayimg.viewer, "h", show_shortcuts)
 
 -- ----- fullscreen -----
-on_key_both(swayimg.viewer, "f", function() swayimg.toggle_fullscreen() end)
+on_key_both(swayimg.viewer, "f", function() swayimg.fullscreen = not swayimg.fullscreen end)
 
 -- ----- quit -----
 on_key_both(swayimg.viewer, "q", function()
@@ -544,9 +567,9 @@ end)
 
 -- ----- misc -----
 on_key_both(swayimg.viewer, "s", cycle_order)
-on_key_both(swayimg.viewer, "y", function() swayimg.viewer.switch_image("random") end)
+on_key_both(swayimg.viewer, "y", function() swayimg.viewer.open("random") end)
 on_key_both(swayimg.viewer, "r", function() swayimg.viewer.reset() end)
-on_key_both(swayimg.viewer, "g", function() swayimg.set_mode("gallery") end)
+on_key_both(swayimg.viewer, "g", function() swayimg.mode = "gallery" end)
 
 -- ----- zoom -----
 swayimg.viewer.on_key("plus", function() zoom_viewer(1.1) end)
@@ -564,22 +587,36 @@ swayimg.viewer.on_key("Ctrl-r", rename_all_random)
 
 -- ─── gallery keybindings ───
 
-swayimg.gallery.on_key("Return", function() swayimg.set_mode("viewer") end)
+swayimg.gallery.on_key("Return", function() swayimg.mode = "viewer" end)
+swayimg.gallery.on_key("1", function() swayimg.gallery.select("left") end)
+swayimg.gallery.on_key("2", function() swayimg.gallery.select("right") end)
+swayimg.gallery.on_key("KP_1", function() swayimg.gallery.select("left") end)
+swayimg.gallery.on_key("KP_2", function() swayimg.gallery.select("right") end)
 
 on_key_both(swayimg.gallery, "c", copy_gallery_image)
 on_key_both(swayimg.gallery, "Ctrl-e", toggle_exif)
 on_key_both(swayimg.gallery, "Ctrl-c", copy_gallery_to_wallpapers)
 on_key_both(swayimg.gallery, "s", cycle_order)
-on_key_both(swayimg.gallery, "y", function() swayimg.gallery.switch_image("random") end)
+on_key_both(swayimg.gallery, "y", function()
+    local entries = swayimg.imagelist.get()
+    if #entries > 0 then
+        local rand_entry = entries[math.random(#entries)]
+        if rand_entry and rand_entry.path then
+            swayimg.gallery.select_path(rand_entry.path)
+        end
+    end
+end)
 on_key_both(swayimg.gallery, "h", show_shortcuts)
-on_key_both(swayimg.gallery, "f", function() swayimg.toggle_fullscreen() end)
+on_key_both(swayimg.gallery, "f", function() swayimg.fullscreen = not swayimg.fullscreen end)
 on_key_both(swayimg.gallery, "q", function()
     save_last_image(); swayimg.exit()
 end)
 
-swayimg.gallery.on_key("W", set_gallery_wallpaper)
-swayimg.gallery.on_key("B", set_gallery_wallpaper_blur)
-swayimg.gallery.on_key("Ctrl-b", set_gallery_wallpaper_blur_dark)
+swayimg.gallery.on_key("w", set_gallery_wallpaper)
+swayimg.gallery.on_key("Shift-w", set_gallery_wallpaper_blur)
+swayimg.gallery.on_key("Ctrl-w", set_gallery_wallpaper_blur_dark)
+swayimg.gallery.on_key("B", set_random_wallpaper)
+swayimg.gallery.on_key("Ctrl-b", set_random_wallpaper_blur)
 swayimg.gallery.on_key("D", trash_gallery_image)
 swayimg.gallery.on_key("N", open_all_images)
 swayimg.gallery.on_key("Ctrl-r", rename_all_random)

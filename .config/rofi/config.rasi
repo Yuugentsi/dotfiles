@@ -3,31 +3,30 @@ configuration {
     show-icons: true;
     terminal: "kitty";
     drun-display-format: "{name}";
-    drun-match-fields: "name,generic,comment,exec,categories,keywords";
-    drun-use-desktop-cache: true;
-    drun-reload-desktop-cache: true;
+    drun-match-fields: "name,generic,exec";
+    drun-use-desktop-cache: false;
+    drun-reload-desktop-cache: false;
     matching: "normal";
     tokenize: true;
     auto-select: true;
     sort: true;
-    sorting-method: "fzf";
+    sorting-method: "normal";
     case-sensitive: false;
-    normalize-match: true;
+    normalize-match: false;
     cycle: true;
     click-to-exit: true;
     hover-select: true;
 }
 
 * {
-    //font: "monofur 10.5";
     font: "JetBrainsMono Nerd Font Medium 10.5";
-    bg: #1e1e1e;
-    bg-alt: #2a2a2a;
-    bg-hover: #3a3a3a;
-    fg: #f0f0f0;
-    muted: #888888;
-    accent: #f0f0f0;
-    glow: rgba(255, 255, 255, 0.15);
+    bg: #18121a;
+    bg-alt: #261522;
+    bg-hover: #3d2035;
+    fg: #f8e1ec;
+    muted: #8c6e80;
+    accent: #f5c2e7;
+    glow: rgba(245, 194, 231, 0.25);
 }
 
 window {
@@ -39,6 +38,7 @@ window {
     border: 2px;
     border-color: @glow;
     border-radius: 18px;
+    cursor: "default";
 }
 
 mainbox {
@@ -49,11 +49,11 @@ mainbox {
 }
 
 inputbar {
-    background-color: rgba(255, 255, 255, 0.07);
+    background-color: rgba(255, 255, 255, 0.06);
     padding: 8px 12px;
     border-radius: 12px;
     border: 1px;
-    border-color: rgba(248, 180, 200, 0.2);
+    border-color: rgba(245, 194, 231, 0.25);
     children: [ entry ];
 }
 
@@ -63,6 +63,7 @@ entry {
     placeholder: "Search apps...";
     placeholder-color: @muted;
     cursor-color: @accent;
+    cursor: text;
 }
 
 listview {
@@ -73,6 +74,7 @@ listview {
     scrollbar: false;
     fixed-height: false;
     dynamic: true;
+    fixed-columns: true;
 }
 
 element {
@@ -83,6 +85,7 @@ element {
     spacing: 10px;
     border: 1px;
     border-color: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
 }
 
 element normal.normal,
@@ -101,13 +104,15 @@ element selected.normal {
 element-icon {
     background-color: transparent;
     size: 28px;
+    cursor: inherit;
 }
 
 element-text {
     background-color: transparent;
     text-color: inherit;
     vertical-align: 0.5;
-    highlight: bold #ffffff;
+    highlight: bold #f5c2e7;
+    cursor: inherit;
 }
 
 mode-switcher {

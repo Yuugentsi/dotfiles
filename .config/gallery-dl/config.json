@@ -2,16 +2,13 @@
   "extractor": {
     "base-directory": "$HOME/0/videos/gallery-dl",
     "cookies-from-browser": "firefox",
-    //"download-archive": "$HOME/.cache/gallery-dl/archive.sqlite3",
+
     "retries": 6,
 
     "danbooru": {
       "filename": "{id}.{extension}"
     },
 
-    "erome": {
-      "filename": "{album_id}_{num}.{extension}"
-    },
 
     "pinterest": {
       "filename": "{id}.{extension}"
@@ -21,9 +18,6 @@
       "filename": "{title}_{id}.{extension}"
     },
 
-    "realbooru": {
-      "filename": "{id} - {uploader}.{extension}"
-    },
 
     "sakugabooru": {
       "filename": "{id}.{extension}"
@@ -40,7 +34,10 @@
   },
 
   "downloader": {
-    "rate": "15M",
-    "retries": 6
+    "retries": 5,
+    "part": true,
+    "chunk-size": "2M",
+    "consume-content": true,
+    "timeout": 30
   }
 }

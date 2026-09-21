@@ -17,7 +17,7 @@ hl.on("hyprland.start", function()
     exec("GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface icon-theme 'Obsidian' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface cursor-theme 'Vanilla-DMZ' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'")
 
     -- ----- spotify-mpv event listener (async / no polling) -----
-    exec("bash -c 'while true; do playerctl -i mpv --follow status 2>/dev/null | while read -r s; do [ \"$s\" = \"Playing\" ] && pkill -x mpv 2>/dev/null; done; sleep 2; done &'")
+    exec("bash -c 'while true; do playerctl --player=spotify --follow status 2>/dev/null | while read -r s; do [ \"$s\" = \"Playing\" ] && pkill -x mpv 2>/dev/null; done; sleep 2; done &'")
 end)
 
 -- ----- single instance apps (mpv & zathura) -----

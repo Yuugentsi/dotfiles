@@ -807,3 +807,29 @@ function search -d "find files"
             sleep 0.4
         end
     end
+
+function clip --description 'clip'
+    if test "$argv[1]" = "clear" -o "$argv[1]" = "-c"
+        read -l -P "Clear all clipboard history? [y/N] " confirm
+        if test "$confirm" = "y" -o "$confirm" = "Y"
+            cliphist wipe
+            command -q hyprctl; and hyprctl notify 0 2000 "rgb(f9e2af)" "Clipboard history wiped" > /dev/null 2>&1
+            echo (set_color yellow) "Clipboard history wiped." (set_color normal)
+        end
+        return
+    end
+
+    if test "$argv[1]" = "delete" -o "$argv[1]" = "-d"
+        set -l item (cliphist list | grep -v '\[\[ binary data' | fzf --prompt="🗑 Delete > " --height=40% --layout=reverse --border --preview 'echo {} | cliphist decode')
+        test -z "$item"; and return
+        echo "$item" | cliphist delete
+        command -q hyprctl; and hyprctl notify 0 2000 "rgb(f38ba8)" "Deleted from clipboard" > /dev/null 2>&1
+        return
+    end
+
+    set -l item (cliphist list | grep -v '\[\[ binary data' | fzf --prompt="📋 Clipboard > " --height=40% --layout=reverse --border --preview 'echo {} | cliphist decode')
+    test -z "$item"; and return
+
+    echo "$item" | cliphist decode | wl-copy
+    command -q hyprctl; and hyprctl notify 5 2000 "rgb(a6e3a1)" "Copied to clipboard" > /dev/null 2>&1
+end

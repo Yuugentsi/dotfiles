@@ -20,11 +20,11 @@ local env_vars = {
     -- browser
     MOZ_ENABLE_WAYLAND                  = "1",
 
-    -- SDL / Electron
+    --
     SDL_VIDEODRIVER                     = "wayland,x11",
     ELECTRON_OZONE_PLATFORM_HINT        = "auto",
 
-    -- clutter / gtk
+    -- gtk
     CLUTTER_BACKEND                     = "wayland",
     GTK_THEME                           = "Adwaita:dark",
     NO_AT_BRIDGE                        = "1",

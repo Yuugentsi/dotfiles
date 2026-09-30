@@ -1,18 +1,22 @@
 -- ─── workspaces ───
 hl.config({ binds = { workspace_back_and_forth = true, workspace_center_on = 1 } })
-hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
-hl.workspace_rule({ workspace = "f[1]", gaps_out = 0, gaps_in = 0 })
+hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = 0, gaps_in = 0 })
+hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = 0, gaps_in = 0 })
 --
 hl.workspace_rule({ workspace = "5", on_created_empty = "brave-origin" })
 -- hl.workspace_rule({ workspace = "6", on_created_empty = "kitty" })
 hl.workspace_rule({ workspace = "6", layout = "master" })
 hl.workspace_rule({ workspace = "7", layout = "master" })
 hl.workspace_rule({ workspace = "8", on_created_empty = "thunar" })
+hl.workspace_rule({ workspace = "special:thunar", on_created_empty = "thunar" })
+hl.workspace_rule({ workspace = "special:kitty", on_created_empty = "kitty --class kitty-float" })
+hl.workspace_rule({ workspace = "special:mpv", on_created_empty = "mpv --force-window --idle --fs" })
+hl.workspace_rule({ workspace = "special:telegram", on_created_empty = "Telegram" })
 -- hl.workspace_rule({ workspace = "8", on_created_empty = "zeditor aria2 gallery-dl kitty rofi swayimg mpv swaync fish yt-dlp zathura hypr waybar" })
 hl.workspace_rule({ workspace = "9", on_created_empty = "spotify" })
 
-hl.window_rule({ name = "no-gaps-wtv1", match = { float = false, workspace = "w[tv1]" }, border_size = 0, rounding = 0 })
-hl.window_rule({ name = "no-gaps-f1", match = { float = false, workspace = "f[1]" }, border_size = 0, rounding = 0 })
+hl.window_rule({ name = "no-gaps-wtv1", match = { float = false, workspace = "w[tv1]s[false]" }, border_size = 0, rounding = 0 })
+hl.window_rule({ name = "no-gaps-f1", match = { float = false, workspace = "f[1]s[false]" }, border_size = 0, rounding = 0 })
 
 -- ─── windowrules ───
 hl.window_rule({
@@ -36,17 +40,16 @@ hl.window_rule({
 
 -- opacity
 -- hl.window_rule({ name = "zed-opacity", match = { class = "dev.zed.Zed" }, opacity = "0.80 0.80" })
-hl.window_rule({ name = "firefox-opacity", match = { class = "firefox" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "brave-opacity", match = { class = "(?i)brave.*" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "chromium-opacity", match = { class = "chromium" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "zen-opacity", match = { class = "zen" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "spotify-opacity", match = { class = "Spotify" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "thunar-opacity", match = { class = "(?i)thunar" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.90 0.90" })
-hl.window_rule({ name = "kitty-opacity",     match = { class = "kitty" },              opacity = "0.90 0.90" })
-hl.window_rule({ name = "zathura-opacity", match = { class = "(zathura|org\\.pwmt\\.zathura)" }, opacity = "0.90 0.90" })
+hl.window_rule({ name = "firefox-opacity", match = { class = "firefox" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "brave-opacity", match = { class = "(?i)brave.*" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "chromium-opacity", match = { class = "chromium" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "zen-opacity", match = { class = "zen" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "thunar-opacity", match = { class = "(?i)thunar" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "kitty-opacity",     match = { class = "kitty" },              opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "zathura-opacity", match = { class = "(zathura|org\\.pwmt\\.zathura)" }, opacity = "0.90 0.90", no_blur = true })
 
 -- rofi
 hl.window_rule({ name = "rofi-animation", match = { class = "rofi" }, animation = "popin" })
@@ -60,6 +63,7 @@ hl.window_rule({
     size        = "820 560",
     opacity     = "0.95 override 0.95 override",
     border_size = 0,
+    no_blur     = true,
 })
 
 hl.window_rule({
@@ -85,7 +89,6 @@ hl.window_rule({
 hl.window_rule({
     name        = "thunar-float",
     match       = { class = "(?i)thunar" },
-    workspace   = "special:thunar silent",
     float       = true,
     center      = true,
     size        = "900 600",
@@ -100,6 +103,7 @@ hl.window_rule({
     size       = "(monitor_w*0.35) (monitor_h*0.3)",
     center     = true,
     opacity    = "0.92 override 0.92 override",
+    no_blur    = true,
 })
 
 -- telegram
@@ -209,11 +213,15 @@ hl.window_rule({
     -- size   = "(monitor_w*0.65) (monitor_h*0.75)",
 })
 
--- spotify
-hl.window_rule({ name = "spotify-workspace", match = { class = "Spotify" }, workspace = "9 silent" })
-hl.window_rule({ name = "spotify-fullscreen", match = { class = "spotify" }, fullscreen = true })
+hl.window_rule({
+    name       = "spotify",
+    match      = { class = "(?i)spotify" },
+    opacity    = "0.50 override 0.50 override 0.50 override",
+    workspace  = "9 silent",
+    fullscreen = true,
+})
 
--- hyprland-run
+-- hyprland
 hl.window_rule({
     name  = "move-hyprland-run",
     match = { class = "hyprland-run" },
@@ -225,11 +233,11 @@ hl.window_rule({
 hl.window_rule({
     name      = "kitty-float",
     match     = { class = "kitty-float" },
-    workspace = "special:kitty silent",
     float     = true,
     center    = true,
     size      = "(monitor_w*0.55) (monitor_h*0.60)",
     opacity   = "0.88 0.80",
+    no_blur   = true,
 })
 
 -- layer rules

@@ -1,135 +1,131 @@
 #!/usr/bin/env bash
 
 case "${1:-}" in
-    # ----- mpv (ALT + W) -----
-    mpv)
-        SPECIAL="mpv"
-        CLASS="mpv"
-        
-        DATA=$(hyprctl clients -j 2>/dev/null | jq -r --arg s "special:$SPECIAL" --arg c "$CLASS" '
-            (map(select(.workspace.name == $s)) | first | .address // empty),
-            (map(select(.class == $c)) | first | .address // empty)
-        ')
-        EXISTING_SPECIAL=$(echo "$DATA" | sed -n '1p')
-        ADDR=$(echo "$DATA" | sed -n '2p')
+    # brightness
+    brightness)
+        dev=$(ls -1 /sys/class/backlight 2>/dev/null | head -n 1)
+        [ -z "$dev" ] && exit 0
+        read -r cur < "/sys/class/backlight/$dev/actual_brightness"
+        read -r max < "/sys/class/backlight/$dev/max_brightness"
+        pct=$((cur * 100 / max))
 
-        if [ -n "$EXISTING_SPECIAL" ]; then
-            hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-            exit 0
-        fi
+        case "${2:-}" in
+            down)
+                new_pct=$((pct - 5))
+                [ "$new_pct" -lt 30 ] && new_pct=30
+                ;;
+            up)
+                new_pct=$((pct + 5))
+                [ "$new_pct" -gt 90 ] && new_pct=90
+                ;;
+            *)
+                new_pct="$pct"
+                ;;
+        esac
 
-        if [ -n "$ADDR" ]; then
-            hyprctl dispatch "hl.dsp.window.move({ workspace = 'special:$SPECIAL', window = 'address:${ADDR}' })" >/dev/null 2>&1
-            hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-            exit 0
-        fi
-
-        mpv --force-window --idle --fs >/dev/null 2>&1 &
-        hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-        ;;
-
-    # ----- kitty (ALT + Q) -----
-    kitty)
-        SPECIAL="kitty"
-        DATA=$(hyprctl clients -j 2>/dev/null | jq -r --arg s "special:$SPECIAL" '
-            map(select(.class == "kitty-float")) | first | "\(.address // "") \(.workspace.name // "")"
-        ')
-        ADDR="${DATA%% *}"
-        WS="${DATA#* }"
-
-        if [ -n "$ADDR" ]; then
-            if [ "$WS" = "special:$SPECIAL" ]; then
-                hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-            else
-                hyprctl dispatch "hl.dsp.window.move({ workspace = 'special:$SPECIAL', window = 'address:${ADDR}' })" >/dev/null 2>&1
-                hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-            fi
-            exit 0
-        fi
-
-        kitty --class kitty-float >/dev/null 2>&1 &
-        hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-        ;;
-
-    # ----- thunar (SUPER + T) -----
-    thunar)
-        SPECIAL="thunar"
-        DATA=$(hyprctl clients -j 2>/dev/null | jq -r --arg s "special:$SPECIAL" '
-            map(select(.class == "thunar" or .class == "Thunar")) | first | "\(.address // "") \(.workspace.name // "")"
-        ')
-        ADDR="${DATA%% *}"
-        WS="${DATA#* }"
-
-        if [ -n "$ADDR" ]; then
-            if [ "$WS" = "special:$SPECIAL" ]; then
-                hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-            else
-                hyprctl dispatch "hl.dsp.window.move({ workspace = 'special:$SPECIAL', window = 'address:${ADDR}' })" >/dev/null 2>&1
-                hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-            fi
-            exit 0
-        fi
-
-        thunar >/dev/null 2>&1 &
-        hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
-        ;;
-
-    # ----- telegram (ALT + T) -----
-    toggle)
-        SPECIAL="telegram"
-        CLASS="org.telegram.desktop"
-        EXEC="Telegram"
-
-        DATA=$(hyprctl clients -j 2>/dev/null | jq -r --arg c "$CLASS" '
-            map(select(.class == $c)) | first | "\(.address // "") \(.workspace.name // "")"
-        ')
-        ADDR="${DATA%% *}"
-        WS="${DATA#* }"
-
-        if [ -z "$ADDR" ]; then
-            "$EXEC" >/dev/null 2>&1 &
-            exit 0
-        fi
-
-        if [[ "$WS" == special* ]]; then
-            hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
+        if command -v brightnessctl >/dev/null 2>&1; then
+            brightnessctl set "${new_pct}%" >/dev/null 2>&1
         else
-            hyprctl dispatch "hl.dsp.window.move({ workspace = 'special:$SPECIAL', window = 'address:${ADDR}' })" >/dev/null 2>&1
-            hyprctl dispatch "hl.dsp.workspace.toggle_special('$SPECIAL')" >/dev/null 2>&1
+            val=$((new_pct * max / 100))
+            busctl call org.freedesktop.login1 /org/freedesktop/login1/session/auto org.freedesktop.login1.Session SetBrightness ssu "backlight" "$dev" "$val" >/dev/null 2>&1
+        fi
+
+        [ "$new_pct" -le 30 ] && icon="󰃞" || { [ "$new_pct" -le 70 ] && icon="󰃟" || icon="󰃠"; }
+        hyprctl dismissnotify -1 >/dev/null 2>&1
+        hyprctl notify -1 2000 0 "fontsize:18 $icon ${new_pct}%" >/dev/null 2>&1
+        ;;
+
+    # volume
+    volume)
+        if [ "${2:-}" = "mute" ]; then
+            wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+            read -r _ vol status < <(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+            hyprctl dismissnotify -1 >/dev/null 2>&1
+            if [ "$status" = "[MUTED]" ]; then
+                hyprctl notify -1 1500 "rgb(ff3333)" "fontsize:18 󰖁" >/dev/null 2>&1
+            else
+                hyprctl notify -1 1500 "rgb(33ff33)" "fontsize:18 " >/dev/null 2>&1
+            fi
+            exit 0
+        fi
+
+        read -r _ vol status < <(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+        [ -z "$vol" ] && exit 0
+        pct=$(awk -v v="$vol" 'BEGIN { printf "%d", (v * 100) + 0.5 }')
+
+        case "${2:-}" in
+            up)
+                new_pct=$((pct + 5))
+                color="rgb(33ff33)"
+                icon="󰕾"
+                ;;
+            down)
+                new_pct=$((pct - 5))
+                color="rgb(ffaa00)"
+                icon=""
+                ;;
+            *)
+                exit 0
+                ;;
+        esac
+
+        [ "$new_pct" -lt 30 ] && new_pct=30
+        [ "$new_pct" -gt 90 ] && new_pct=90
+
+        wpctl set-volume @DEFAULT_AUDIO_SINK@ "${new_pct}%"
+        hyprctl dismissnotify -1 >/dev/null 2>&1
+        if [ "$status" = "[MUTED]" ]; then
+            hyprctl notify -1 1500 "rgb(ff3333)" "fontsize:18 󰖁" >/dev/null 2>&1
+        else
+            hyprctl notify -1 1500 "$color" "fontsize:18 $icon ${new_pct}%" >/dev/null 2>&1
         fi
         ;;
 
-    # ----- workspace notify (Daemon) -----
-    workspace)
-        ICONS=("" ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ ➓)
-        socat -U - "UNIX-CONNECT:$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock" 2>/dev/null | while read -r line; do
-            case "$line" in
-                workspace\>\>*)
-                    ws="${line#workspace>>}"
-                    if [[ "$ws" =~ ^[0-9]+$ ]] && [ "$ws" -le 10 ]; then
-                        msg="${ICONS[$ws]}"
-                    else
-                        msg="󰣇  $ws"
-                    fi
-                    class=$(hyprctl activewindow -j 2>/dev/null | jq -r '.class // empty' | tr '[:upper:]' '[:lower:]')
-                    case "$class" in
-                        org.telegram.desktop) class="telegram" ;;
-                        dev.zed.zed) class="zed" ;;
-                        org.pwmt.zathura|zathura) class="zathura" ;;
-                        brave-browser) class="brave" ;;
-                        code-oss) class="code" ;;
-                        kitty|kitty-float) class="kitty" ;;
-                        firefox|librewolf) class="firefox" ;;
-                    esac
-                    [ -n "$class" ] && msg="$msg  ·  $class"
-                    hyprctl dismissnotify 1 >/dev/null 2>&1
-                    hyprctl notify 1 1800 "rgb(cba6f7)" "fontsize:16 $msg" >/dev/null 2>&1
-                    ;;
-            esac
-        done
+    # sunset
+    sunset)
+        pgrep -x hyprsunset >/dev/null || hyprsunset &
+        v=$(hyprctl hyprsunset temperature 2>/dev/null)
+        [ -z "$v" ] && v=2000
+
+        case "${2:-}" in
+            down)
+                v=$((v - 300))
+                [ "$v" -lt 1200 ] && v=1200
+                ;;
+            up)
+                v=$((v + 300))
+                [ "$v" -gt 2700 ] && v=2700
+                ;;
+        esac
+
+        hyprctl hyprsunset temperature "$v"
+        [ "$v" -le 2000 ] && icon="󰃛" || icon="󰃜"
+        hyprctl dismissnotify -1 >/dev/null 2>&1
+        hyprctl notify -1 2000 0 "fontsize:18 $icon ${v}K" >/dev/null 2>&1
         ;;
 
-    # ----- window switcher (ALT + E) -----
+    # toggle
+    toggle)
+        wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.7
+        command -v brightnessctl >/dev/null 2>&1 && brightnessctl set 60% >/dev/null 2>&1
+        s=""
+        if pgrep -x hyprsunset >/dev/null; then
+            pkill -x hyprsunset >/dev/null 2>&1
+        else
+            hyprsunset >/dev/null 2>&1 &
+            sleep 0.2
+            hyprctl hyprsunset temperature 2600 >/dev/null 2>&1
+            s=" 󰃛 2600K"
+        fi
+        ram=""
+        if [ -r /proc/meminfo ]; then
+            ram=$(awk '/MemTotal:/ {t=$2} /MemAvailable:/ {a=$2} END {printf "%.2f GB", (t-a)/(1024*1024)}' /proc/meminfo)
+        fi
+        hyprctl dismissnotify -1 >/dev/null 2>&1
+        hyprctl notify 0 2000 0 "fontsize:18 󰕾 70% 󰃟 60%${s} 󰘚 ${ram}" >/dev/null 2>&1
+        ;;
+
+    # switcher
     switcher)
         python3 -B -c '
 import sys
@@ -190,30 +186,7 @@ except Exception:
 '
         ;;
 
-    # ----- cycle non-empty workspaces (SUPER) -----
-    cycle_ws)
-        python3 -B -c '
-import sys
-sys.dont_write_bytecode = True
-import json, subprocess
-
-try:
-    active = json.loads(subprocess.check_output(["hyprctl", "activeworkspace", "-j"], text=True)).get("id", 1)
-    workspaces = json.loads(subprocess.check_output(["hyprctl", "workspaces", "-j"], text=True))
-    valid = sorted([w["id"] for w in workspaces if w.get("id", 0) > 0 and w.get("windows", 0) > 0])
-    if len(valid) <= 1:
-        sys.exit(0)
-    if active in valid:
-        next_ws = valid[(valid.index(active) + 1) % len(valid)]
-    else:
-        next_ws = valid[0]
-    subprocess.run(["hyprctl", "dispatch", f"hl.dsp.focus({{ workspace = {next_ws} }})"], stdout=subprocess.DEVNULL)
-except Exception:
-    pass
-'
-        ;;
-
-    # ----- latest video (SUPER + H) -----
+    # video
     video)
         python3 -B -c '
 import sys
@@ -251,8 +224,20 @@ subprocess.Popen(["mpv"] + sorted_paths, stdout=subprocess.DEVNULL, stderr=subpr
 '
         ;;
 
+    # spotify
+    spotify-listener)
+        exec 200>/tmp/spotify_listener.lock
+        flock -n 200 || exit 0
+
+        playerctl --follow status -f '{{playerName}} {{status}}' 2>/dev/null | while read -r player status; do
+            if [ "$player" = "spotify" ] && [ "$status" = "Playing" ]; then
+                pkill -x mpv 2>/dev/null
+            fi
+        done
+        ;;
+
     *)
-        echo "Usage: $0 {mpv|video|kitty|thunar|toggle|workspace|switcher|cycle_ws}"
+        echo "Usage: $0 {brightness [up|down]|volume [up|down|mute]|sunset [up|down]|toggle|switcher|video|spotify-listener}"
         exit 1
         ;;
 esac

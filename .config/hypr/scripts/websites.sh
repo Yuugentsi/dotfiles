@@ -7,7 +7,7 @@ for b in zen-browser brave-origin librewolf firefox chromium; do
     fi
 done
 
-# ----- cache and history paths -----
+# ----- cache -----
 MANGA_DIR="${HOME}"
 MANGA_CACHE_DIR="$HOME/.cache/scripts/manga"
 MANGA_CACHE_FILE="$MANGA_CACHE_DIR/cache.txt"
@@ -204,8 +204,8 @@ open_site_choice() {
         *FMHY) "$BROWSER" "https://fmhy.net/beginners-guide" ;;
         *IzzyOnDroid) "$BROWSER" "https://apt.izzysoft.de/fdroid/" ;;
         *FDroid) "$BROWSER" "https://f-droid.org/" ;;
-        *YouTube) "$BROWSER" "https://youtube.com" ;;
-        *YouTube\ Music) "$BROWSER" "https://music.youtube.com" ;;
+        *YouTube|*yt) "$BROWSER" "https://youtube.com" ;;
+        *YouTube\ Music|*music) "$BROWSER" "https://music.youtube.com" ;;
         *Danbooru) "$BROWSER" "https://danbooru.donmai.us/" ;;
         *Wallhaven) "$BROWSER" "https://wallhaven.cc/toplist" ;;
         *DeepL) "$BROWSER" "https://www.deepl.com/en" ;;
@@ -308,6 +308,13 @@ handle_bang() {
                 "$BROWSER" "https://www.google.com/search?q=$encoded"
             else
                 "$BROWSER" "https://google.com"
+            fi
+            ;;
+        .d|.ddg)
+            if [ -n "$query" ]; then
+                "$BROWSER" "https://duckduckgo.com/?q=$encoded"
+            else
+                "$BROWSER" "https://duckduckgo.com"
             fi
             ;;
         .p) open_private "$query" ;;
@@ -437,8 +444,8 @@ tech_entries='❀  HackerNoon
 tech_count=$(printf '%s\n' "$tech_entries" | wc -l)
 
 favorites_entries='❀  Wallhaven
-❀  YouTube
-❀  YouTube Music
+❀  yt
+❀  music
 ❀  Last.fm
 ❀  Pinterest
 ❀  FMHY

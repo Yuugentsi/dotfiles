@@ -9,7 +9,6 @@ RESUME_IMAGE="${CLIPBOARD_RESUME_IMAGE:-true}"
 
 run_clipboard_manager() {
     pkill -x rofi 2>/dev/null
-    sleep 0.1
 
     rofi_menu() {
         rofi -dmenu -i \
@@ -38,8 +37,8 @@ run_clipboard_manager() {
     while IFS=$'\t' read -r id content; do
         [[ -z "$id" ]] && continue
         [[ "$content" =~ "[[ binary data" ]] && continue
-        local clean_content
-        clean_content=$(printf '%s\n' "$content" | head -n 2 | cut -c 1-100)
+        local clean_content="${content:0:100}"
+        clean_content="${clean_content//$'\n'/ }"
         formatted_list+="$id   $clean_content"$'\x1f'
         ((count++))
     done <<< "$(cliphist list 2>/dev/null | grep -av $'\t<meta' | head -n "$HISTORY_LIMIT")"

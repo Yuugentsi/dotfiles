@@ -6,6 +6,9 @@ hl.on("hyprland.start", function()
         hl.exec_cmd(cmd)
     end
     -- -------------------- exec --------------------
+    exec("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+    exec("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+
     exec("waybar")
     exec("hyprsunset -t 3000")
     exec("swaync")
@@ -14,13 +17,12 @@ hl.on("hyprland.start", function()
     exec("wl-clip-persist --clipboard regular")
     exec("setsid -f wl-paste --type text --watch cliphist store")
     exec("setsid -f wl-paste --type image --watch cliphist store")
-    exec("GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface icon-theme 'Obsidian' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface cursor-theme 'Vanilla-DMZ' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'")
+    exec("GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface icon-theme 'Obsidian' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface cursor-theme 'Vanilla-DMZ' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' && command -v xfconf-query >/dev/null 2>&1 && xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita:dark' --create -t string")
 
-    -- ----- spotify-mpv event listener (async / no polling) -----
-    exec("bash -c 'while true; do playerctl --player=spotify --follow status 2>/dev/null | while read -r s; do [ \"$s\" = \"Playing\" ] && pkill -x mpv 2>/dev/null; done; sleep 2; done &'")
+    exec("bash ~/.config/hypr/scripts/utils.sh spotify-listener")
 end)
 
--- ----- single instance apps (mpv & zathura) -----
+-- ----- mpv & zathura -----
 local single_instance_classes = {
     ["mpv"] = "mpv",
     ["zathura"] = "zathura",
@@ -47,7 +49,7 @@ hl.on("window.open", function(opened_win)
     end
 end)
 
--- ----- shutdown cleanup -----
+-- ----- shutdown -----
 hl.on("hyprland.shutdown", function()
-    hl.exec_cmd("pkill -x 'kitty|firefox|zen-browser|librewolf|brave-origin|hypridle|hyprpaper|swaync|waybar'")
+    hl.exec_cmd("pkill -x 'kitty|firefox|zen-browser|librewolf|brave-origin|hypridle|hyprpaper|swaync|waybar'; pkill -f 'utils.sh spotify-listener'")
 end)

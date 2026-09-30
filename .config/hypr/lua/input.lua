@@ -1,6 +1,5 @@
 -- ─── input ───
 -- gestures
---hl.gesture({ fingers = 2, direction = "pinch", action = "cursorZoom", zoom_level = "1", mode = "live" })
 hl.gesture({ fingers = 3, direction = "swipe", action = "scroll_move" })
 hl.gesture({
     fingers   = 4,
@@ -8,7 +7,7 @@ hl.gesture({
     action    = "workspace",
 })
 
--- keyboard / mouse / touchpad
+--
 local input_cfg = {
     kb_layout    = "br",
     kb_variant   = "",
@@ -25,13 +24,8 @@ local input_cfg = {
     touchpad            = {
         natural_scroll = false,
         scroll_factor  = 1.2,
+        tap_to_click   = true,
     },
 }
 
 hl.config({ input = input_cfg })
-
--- device override
-hl.device({
-    name        = "epic-mouse-v1",
-    sensitivity = 1,
-})

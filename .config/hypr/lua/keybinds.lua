@@ -3,13 +3,14 @@ local mainMod = "SUPER"
 
 -- ─── programs ───
 local terminal    = "kitty"
-local browser     = "librewolf"
+local browser     = "zen-browser"
 local menu        = "rofi -show drun -show-icons"
 
 -- apps
 hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("bash -c 'pkill -x zed-editor 2>/dev/null; zeditor'"))
-hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(browser))
+hl.bind(mainMod .. " + SHIFT + Return", hl.dsp.exec_cmd("kitty", { float = true, size = { 850, 500 }, center = true }))
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("pkill -x zed-editor 2>/dev/null; zeditor"))
+hl.bind(mainMod .. " + F",         hl.dsp.exec_cmd(browser))
 hl.bind("ALT + F",         hl.dsp.exec_cmd(browser .. " --private-window"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(menu))
 
@@ -23,7 +24,7 @@ hl.bind("F11",             hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + Tab", hl.dsp.window.cycle_next())
 hl.bind(mainMod .. " + B",   hl.dsp.window.center())
 
--- float small
+-- float
 hl.bind("F10", function()
     hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
     hl.dispatch(hl.dsp.window.resize({ x = 900, y = 600 }))
@@ -34,9 +35,7 @@ end)
 hl.bind("ALT + down", hl.dsp.window.close())
 hl.bind("ALT + up",   hl.dsp.group.toggle())
 
--- special workspace
-hl.bind(mainMod .. " + D",         hl.dsp.workspace.toggle_special("magic"))
-hl.bind("ALT + D",                 hl.dsp.window.move({ workspace = "special:magic" }))
+-- workspace
 hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
 
@@ -51,7 +50,7 @@ hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mainMod .. " + mouse:272",  hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273",  hl.dsp.window.resize(), { mouse = true })
 
--- scrolling layout
+-- scrolling
 hl.bind(mainMod .. " + left",           hl.dsp.layout("move -col"))
 hl.bind(mainMod .. " + right",          hl.dsp.layout("move +col"))
 hl.bind(mainMod .. " + period",         hl.dsp.layout("move +col"))
@@ -68,23 +67,41 @@ for i = 1, 10 do
 end
 
 -- system
-hl.bind(mainMod .. " + L",         hl.dsp.exec_cmd("hyprlock --config $HOME/.config/hypr/conf/hyprlock.conf"))
+hl.bind(mainMod .. " + L",         hl.dsp.exec_cmd("hyprlock --config ~/.config/hypr/conf/hyprlock.conf"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"))
 hl.bind(mainMod .. " + M",         hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 hl.bind(mainMod .. " + N",         hl.dsp.exec_cmd("swaync-client -t"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd("swaync-client -C && hyprctl notify -1 2000 0 '🔔 Notifications cleared'"))
+hl.bind(mainMod .. " + U", function()
+    hl.notification.create({
+        text = "Timer started (waiting 2s)...",
+        font_size = 16,
+        timeout = 2000,
+        color = "rgb(cba6f7)",
+        icon = "info",
+    })
+    hl.timer(function()
+        hl.notification.create({
+            text = "Timer completed (2s elapsed)!",
+            font_size = 16,
+            timeout = 3000,
+            color = "rgb(80ff80)",
+            icon = "ok",
+        })
+    end, { timeout = 2000, type = "oneshot" })
+end)
 
 -- screenshots
-local shot_region = "hyprshot -m region -z -t 500 -o $HOME/0/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
-local shot_output = "hyprshot -m output -m active -z -t 500 -o $HOME/0/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
+local shot_region = "hyprshot -m region -z -t 500 -o ~/0/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
+local shot_output = "hyprshot -m output -m active -z -t 500 -o ~/0/pictures/screenshots -f $(date +'%H-%M-%S_%m-%d-%Y').png"
 
 hl.bind("Print",       hl.dsp.exec_cmd(shot_region))
 hl.bind("ALT + Print", hl.dsp.exec_cmd(shot_output))
 
 -- audio
-local vol_mute = "bash -c 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; state=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q MUTED && echo \"󰖁\" || echo \"\"); hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(ff3333)\" \"fontsize:18 $state\"'"
-local vol_down = "bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); [ $v -le 15 ] && v=15 || v=$((v-5)); wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(ffaa00)\" \"fontsize:18  ${v}%\"'"
-local vol_up   = "bash -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 100 ] && v=100; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%; hyprctl dismissnotify 1; hyprctl notify -1 2000 \"rgb(33ff33)\" \"fontsize:18 󰕾 ${v}%\"'"
+local vol_mute = "~/.config/hypr/scripts/utils.sh volume mute"
+local vol_down = "~/.config/hypr/scripts/utils.sh volume down"
+local vol_up   = "~/.config/hypr/scripts/utils.sh volume up"
 
 hl.bind("F6",               hl.dsp.exec_cmd(vol_mute),                                         { repeating = true })
 hl.bind("F7",               hl.dsp.exec_cmd(vol_down),                                         { repeating = true })
@@ -102,19 +119,19 @@ hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
 
 -- brightness
-local brightness_down = "bash -c 'v=$(brightnessctl get); max=$(brightnessctl max); current=$((v * 100 / max)); [ $current -le 30 ] && current=30 || current=$((current-5)); brightnessctl set ${current}%; hyprctl dismissnotify 1; [ $current -le 30 ] && icon=\"󰃞\" || { [ $current -le 70 ] && icon=\"󰃟\" || icon=\"󰃠\"; }; hyprctl notify -1 2000 0 \"fontsize:18 $icon ${current}%\"'"
-local brightness_up   = "bash -c 'v=$(brightnessctl get); max=$(brightnessctl max); current=$((v * 100 / max)); [ $current -ge 90 ] && current=90 || current=$((current+5)); brightnessctl set ${current}%; hyprctl dismissnotify 1; [ $current -le 30 ] && icon=\"󰃞\" || { [ $current -le 70 ] && icon=\"󰃟\" || icon=\"󰃠\"; }; hyprctl notify -1 2000 0 \"fontsize:18 $icon ${current}%\"'"
+local brightness_down = "~/.config/hypr/scripts/utils.sh brightness down"
+local brightness_up   = "~/.config/hypr/scripts/utils.sh brightness up"
 
 hl.bind("F2", hl.dsp.exec_cmd(brightness_down), { repeating = true })
 hl.bind("F3", hl.dsp.exec_cmd(brightness_up),   { repeating = true })
 
 -- hyprsunset
-local sunset_down = "bash -c 'pgrep -x hyprsunset >/dev/null || hyprsunset & v=$(hyprctl hyprsunset temperature); v=$((v-300)); [ $v -lt 1200 ] && v=1200; hyprctl hyprsunset temperature $v; hyprctl dismissnotify 1; [ $v -le 2000 ] && icon=\"󰃛\" || icon=\"󰃜\"; hyprctl notify -1 2000 0 \"fontsize:18 $icon ${v}K\"'"
-local sunset_up   = "bash -c 'pgrep -x hyprsunset >/dev/null || hyprsunset & v=$(hyprctl hyprsunset temperature); v=$((v+300)); [ $v -gt 2700 ] && v=2700; hyprctl hyprsunset temperature $v; hyprctl dismissnotify 1; [ $v -le 2000 ] && icon=\"󰃛\" || icon=\"󰃜\"; hyprctl notify -1 2000 0 \"fontsize:18 $icon ${v}K\"'"
+local sunset_down = "~/.config/hypr/scripts/utils.sh sunset down"
+local sunset_up   = "~/.config/hypr/scripts/utils.sh sunset up"
 
 hl.bind("ALT + F2", hl.dsp.exec_cmd(sunset_down), { repeating = true })
 hl.bind("ALT + F3", hl.dsp.exec_cmd(sunset_up),   { repeating = true })
 
 -- toggle
-local sunset_toggle = "bash -c 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.7; brightnessctl set 60%; hyprctl dismissnotify 1; hyprctl notify -1 2000 0 \"fontsize:18 󰕾 70% 󰃟 60%\"; if pgrep -x hyprsunset >/dev/null; then pkill -x hyprsunset; else hyprsunset & sleep 0.2; hyprctl hyprsunset temperature 2600; fi; hyprctl dismissnotify 1; hyprctl notify -1 2000 0 \"fontsize:18 󰃛 2600K\"'"
-hl.bind("F9", hl.dsp.exec_cmd(sunset_toggle))
+local toggle_cmd = "~/.config/hypr/scripts/utils.sh toggle"
+hl.bind("F9", hl.dsp.exec_cmd(toggle_cmd))

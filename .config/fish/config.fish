@@ -50,3 +50,19 @@ function fish_prompt
     echo -s "$DIM●$N $DIR$pwd$N"
     echo -n -s "$DIM╰─$N " (set_color $status_color --bold) "❯ " (set_color normal)
 end
+
+#
+function __hypr_notify_cmd --on-event fish_postexec
+    set -l last_status $status
+    set -l cmd (string trim "$argv[1]")
+    test -z "$cmd"; and return
+
+    if test $last_status -eq 0
+        hyprctl notify 5 2500 "rgb(a6e3a1)" "OK: $cmd" > /dev/null 2>&1
+    else
+        hyprctl notify 3 3500 "rgb(f38ba8)" "Failed ($last_status): $cmd" > /dev/null 2>&1
+    end
+    if test -f "$HOME/.local/share/sounds/notify.wav"
+        pw-play "$HOME/.local/share/sounds/notify.wav" > /dev/null 2>&1 &
+    end
+end

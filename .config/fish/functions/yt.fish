@@ -1,4 +1,8 @@
 # ─────────── yt ───────────
+# yt
+# mp3
+# mp3l
+# ytp
 
 function yt --description 'download media'
     function __yt_target_dir -a url
@@ -462,11 +466,11 @@ function __mp3_run --no-scope-shadowing
             mkdir -p "$state_dir"
             touch "$queue_file"
 
-            echo -s $yellow "󱎫 Lendo faixas da playlist..." $reset
+            echo -s $yellow "󱎫 Reading playlist tracks..." $reset
             yt-dlp (__yt_mp3_cookie_flags) --flat-playlist --no-warnings --print "%(url)s	%(playlist_title)s" "$input_url" 2>/dev/null >> "$queue_file"
 
             set -l total_items (wc -l < "$queue_file" | string trim)
-            echo -s $green "󱐋 Baixando $total_items músicas..." $reset
+            echo -s $green "󱐋 Downloading $total_items tracks..." $reset
 
             while test -s "$queue_file" -o (count (jobs -p)) -gt 0
                 set -l active_count (count (jobs -p))
@@ -620,4 +624,45 @@ end
 # ─── mp3l
 function mp3l
     __mp3_run 1 $argv
+end
+
+# ─── ytp
+function ytp --description 'download youtube playlist in order'
+    if not command -v yt-dlp >/dev/null 2>&1
+        echo -s (set_color red) "yt-dlp not found" (set_color normal)
+        return 1
+    end
+
+    set -l urls
+    set -l extra_args
+
+    for arg in $argv
+        if string match -qr '^https?://' -- "$arg"
+            set -a urls "$arg"
+        else
+            set -a extra_args "$arg"
+        end
+    end
+
+    if test (count $urls) -eq 0
+        if command -v wl-paste >/dev/null 2>&1
+            set -l clip (wl-paste -n 2>/dev/null | string trim)
+            if string match -qr '^https?://' -- "$clip"
+                set urls "$clip"
+            end
+        end
+    end
+
+    if test (count $urls) -eq 0
+        echo -s (set_color yellow) "Usage: ytp <playlist_url>" (set_color normal)
+        return 1
+    end
+
+    for u in $urls
+        yt-dlp \
+            --yes-playlist \
+            -o "%(playlist_uploader,playlist_channel,uploader,channel)s - %(playlist_title)s/%(playlist_index)02d. %(title)s.%(ext)s" \
+            $extra_args \
+            "$u"
+    end
 end

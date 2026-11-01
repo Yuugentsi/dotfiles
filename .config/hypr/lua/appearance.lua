@@ -85,8 +85,9 @@ hl.config({
         rounding         = 10,
         rounding_power   = 2,
 
-        active_opacity   = 1.0,
-        inactive_opacity = 1.0,
+        active_opacity   = 0.85,
+        inactive_opacity = 0.85,
+        fullscreen_opacity = 0.85,
 
         dim_inactive     = false,
         dim_strength     = 0.12,
@@ -125,6 +126,6 @@ hl.config({
 -- -------------------- animations --------------------
 hl.config({
     animations = {
-        enabled = false,
+        enabled = true,
     },
 })

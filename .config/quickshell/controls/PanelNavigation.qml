@@ -1,3 +1,4 @@
+import "PanelTheme.js" as Theme
 import "PanelOptions.js" as NavigationOrder
 import QtQuick
 import QtQuick.Window
@@ -44,9 +45,22 @@ Item {
         width: Math.min(root.width, buttons.width + 16)
         height: root.height
         radius: 14
-        color: "#17121f"
+        gradient: Gradient {
+            GradientStop {
+                position: 0
+                color: Theme.gradientTop
+            }
+            GradientStop {
+                position: 0.45
+                color: Theme.gradientMiddle
+            }
+            GradientStop {
+                position: 1
+                color: Theme.gradientBottom
+            }
+        }
         border.width: 1
-        border.color: "#513b64"
+        border.color: Theme.border
         Flickable {
             x: 8
             y: 5
@@ -69,10 +83,14 @@ Item {
                         width: caption.implicitWidth + 28
                         height: 32
                         radius: 10
-                        color: active ? "#3d2854" : hit.containsMouse || activeFocus ? "#2a1e36" : "transparent"
-                        Behavior on color { ColorAnimation { duration: 140 } }
+                        color: active ? Theme.selected : hit.containsMouse || activeFocus ? Theme.hover : "transparent"
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 140
+                            }
+                        }
                         border.width: active || activeFocus ? 1 : 0
-                        border.color: "#8b64ad"
+                        border.color: Theme.border
                         activeFocusOnTab: true
                         Accessible.role: Accessible.Button
                         Accessible.name: modelData.label
@@ -81,8 +99,10 @@ Item {
                         Rectangle {
                             anchors.bottom: parent.bottom
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: 16; height: 2; radius: 1
-                            color: "#ff995f"
+                            width: 16
+                            height: 2
+                            radius: 1
+                            color: Theme.accent
                             visible: button.active
                         }
                         Row {
@@ -91,14 +111,14 @@ Item {
                             spacing: 7
                             Text {
                                 text: button.modelData.icon
-                                color: button.active ? "#d1a9ff" : "#a18bae"
+                                color: button.active ? Theme.accent : Theme.accent
                                 font.family: "JetBrainsMono Nerd Font"
                                 font.pixelSize: 15
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                             Text {
                                 text: button.modelData.label
-                                color: button.active ? "#f5eaff" : "#b9a9c4"
+                                color: button.active ? Theme.foreground : Theme.accent
                                 font.family: "sans-serif"
                                 font.pixelSize: 11
                                 font.weight: button.active ? Font.DemiBold : Font.Normal

@@ -9,6 +9,7 @@ PanelWindow {
     id: popup
     property bool opened: false
     property bool suppressNotifications: false
+    property bool suppressAutomaticNotifications: false
     onSuppressNotificationsChanged: if (suppressNotifications) opened = false
     property string trackTitle: ""
     property string artist: ""
@@ -40,19 +41,28 @@ PanelWindow {
     WlrLayershell.namespace: "music-notification"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    IpcHandler {
-        target: "musicNotify"
-        function show(title: string, artist: string, mode: string): void {
-            if (popup.suppressNotifications) return
-            popup.trackTitle = title
-            popup.artist = artist
-            popup.mode = mode
-            popup.cover = ""
+    function showTrack(title, artist, mode, coverUrl) {
+        if (popup.suppressNotifications) return
+        popup.trackTitle = title
+        popup.artist = artist
+        popup.mode = mode
+        popup.cover = coverUrl
+        if (!popup.cover) {
             var player = Mpris.players.values.find(function(value) { return value.trackTitle === title && value.trackArtUrl })
             if (player) popup.cover = player.trackArtUrl
             else if (!coverQuery.running) coverQuery.running = true
-            popup.opened = true
-            hideTimer.restart()
+        }
+        popup.opened = true
+        hideTimer.restart()
+    }
+    IpcHandler {
+        target: "musicNotify"
+        function show(title: string, artist: string, mode: string): void {
+            if (popup.suppressAutomaticNotifications) return
+            popup.showTrack(title, artist, mode, "")
+        }
+        function showWithCover(title: string, artist: string, mode: string, coverUrl: string): void {
+            popup.showTrack(title, artist, mode, coverUrl)
         }
     }
     Process {

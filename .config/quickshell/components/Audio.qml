@@ -1,3 +1,4 @@
+import "../controls/PanelTheme.js" as Theme
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -239,7 +240,7 @@ Item {
         }
         Rectangle {
             anchors.fill: parent
-            color: "#ac080e16"
+            color: Theme.scrim
         }
         MouseArea {
             anchors.fill: parent
@@ -260,10 +261,10 @@ Item {
             width: Math.min(400, panel.width - 32)
             height: Math.min(view.implicitHeight, panel.height - 112)
             radius: 20
-            color: "#1d1b22"
+            gradient: PanelGradient {}
             clip: true
             border.width: 1
-            border.color: "#3c3545"
+            border.color: Theme.border
             focus: true
             Keys.onEscapePressed: root.close()
             Keys.onPressed: function (event) {
@@ -298,7 +299,7 @@ Item {
         height: 30
         radius: 8
         opacity: enabled ? 1 : 0.3
-        color: primary ? "#c3b7ff" : audioPlaybackPlaybackButtonHit.containsMouse || activeFocus ? "#383044" : "#222128"
+        color: primary ? Theme.accent : audioPlaybackPlaybackButtonHit.containsMouse || activeFocus ? Theme.hover : Theme.surface
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: label
@@ -307,7 +308,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: audioPlaybackPlaybackButtonButton.glyph
-            color: audioPlaybackPlaybackButtonButton.primary ? "#19171c" : audioPlaybackPlaybackButtonButton.danger ? "#e28b9b" : "#c3b7ff"
+            color: audioPlaybackPlaybackButtonButton.primary ? Theme.background : audioPlaybackPlaybackButtonButton.danger ? "#e28b9b" : Theme.accent
             font.family: "Symbols Nerd Font Mono"
             font.pixelSize: 12
         }
@@ -345,7 +346,7 @@ Item {
                     width: parent.width
                     text: audioPlaybackRoot.player ? audioPlaybackRoot.player.trackTitle || "Unknown track" : ""
                     textFormat: Text.PlainText
-                    color: "#eef3f8"
+                    color: Theme.foreground
                     font.family: "sans-serif"
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
@@ -357,7 +358,7 @@ Item {
                     width: parent.width
                     text: audioPlaybackRoot.player ? audioPlaybackRoot.player.trackArtist || audioPlaybackRoot.player.identity || "" : ""
                     textFormat: Text.PlainText
-                    color: "#aaa6b5"
+                    color: Theme.muted
                     font.family: "sans-serif"
                     font.pixelSize: 10
                     elide: Text.ElideRight
@@ -412,7 +413,7 @@ Item {
         width: glyph ? 28 : audioViewSettingsButtonCaption.implicitWidth + 16
         height: 28
         radius: 7
-        color: selected ? "#383044" : audioViewSettingsButtonHit.containsMouse || activeFocus ? "#2a2630" : "transparent"
+        color: selected ? Theme.hover : audioViewSettingsButtonHit.containsMouse || activeFocus ? Theme.surface : "transparent"
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: label
@@ -431,7 +432,7 @@ Item {
             id: audioViewSettingsButtonCaption
             anchors.centerIn: parent
             text: audioViewSettingsButtonButton.glyph || audioViewSettingsButtonButton.label
-            color: audioViewSettingsButtonButton.selected ? "#d8caff" : "#aaa6b5"
+            color: audioViewSettingsButtonButton.selected ? Theme.accent : Theme.muted
             font.family: audioViewSettingsButtonButton.glyph ? "Symbols Nerd Font Mono" : "sans-serif"
             font.pixelSize: audioViewSettingsButtonButton.glyph ? 14 : 10
         }
@@ -462,7 +463,7 @@ Item {
 
     component AudioViewCaption: Text {
 
-        color: "#928b96"
+        color: Theme.dim
         font.family: "sans-serif"
         font.pixelSize: 11
         textFormat: Text.PlainText
@@ -479,7 +480,7 @@ Item {
         height: 26
         radius: width / 2
         opacity: enabled ? 1 : 0.25
-        color: primary ? audioViewIconButtonHit.containsMouse ? "#ded4ff" : "#c3b7ff" : audioViewIconButtonHit.containsMouse || activeFocus ? "#302938" : "transparent"
+        color: primary ? audioViewIconButtonHit.containsMouse ? Theme.accent : Theme.accent : audioViewIconButtonHit.containsMouse || activeFocus ? Theme.surface : "transparent"
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: label
@@ -488,7 +489,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: audioViewIconButtonButton.glyph
-            color: audioViewIconButtonButton.primary ? "#19171c" : "#aaa6b5"
+            color: audioViewIconButtonButton.primary ? Theme.background : Theme.muted
             font.family: "Symbols Nerd Font Mono"
             font.pixelSize: audioViewIconButtonButton.primary ? 13 : 11
         }
@@ -541,8 +542,8 @@ Item {
                     }
                     ctx.stroke();
                 }
-                draw("#51465f", 0, width);
-                draw("#c3b7ff", 0, end);
+                draw(Theme.track, 0, width);
+                draw(Theme.accent, 0, end);
             }
         }
         handle: Rectangle {
@@ -551,7 +552,7 @@ Item {
             width: 7
             height: 7
             radius: 4
-            color: "#e2d8ff"
+            color: Theme.accent
             opacity: audioViewProgressSliderSlider.hovered || audioViewProgressSliderSlider.pressed || audioViewProgressSliderSlider.activeFocus ? 1 : 0
         }
     }
@@ -570,12 +571,12 @@ Item {
             width: audioViewVolumeSliderSlider.availableWidth
             height: 3
             radius: 2
-            color: "#3d3745"
+            color: Theme.track
             Rectangle {
                 width: audioViewVolumeSliderSlider.visualPosition * parent.width
                 height: parent.height
                 radius: 2
-                color: "#c3b7ff"
+                color: Theme.accent
             }
         }
         handle: Rectangle {
@@ -584,7 +585,7 @@ Item {
             width: 10
             height: 10
             radius: 5
-            color: "#d8caff"
+            color: Theme.accent
         }
     }
 
@@ -596,7 +597,7 @@ Item {
         signal clicked
         height: 32
         radius: 7
-        color: selected ? "#383044" : audioViewDeviceButtonHit.containsMouse || activeFocus ? "#2a2630" : "transparent"
+        color: selected ? Theme.hover : audioViewDeviceButtonHit.containsMouse || activeFocus ? Theme.surface : "transparent"
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: label
@@ -606,7 +607,7 @@ Item {
             x: 10
             anchors.verticalCenter: parent.verticalCenter
             text: audioViewDeviceButtonButton.glyph
-            color: "#c3b7ff"
+            color: Theme.accent
             font.family: "Symbols Nerd Font Mono"
             font.pixelSize: 12
         }
@@ -615,7 +616,7 @@ Item {
             width: parent.width - 64
             anchors.verticalCenter: parent.verticalCenter
             text: audioViewDeviceButtonButton.label
-            color: "#aaa6b5"
+            color: Theme.muted
             font.family: "sans-serif"
             font.pixelSize: 11
             elide: Text.ElideRight
@@ -626,7 +627,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: "✓"
             visible: audioViewDeviceButtonButton.selected
-            color: "#c3b7ff"
+            color: Theme.accent
             font.pixelSize: 12
         }
         MouseArea {
@@ -731,7 +732,7 @@ Item {
                     width: parent.width
                     height: audioViewCover.status === Image.Ready ? Math.min(300, width * 0.8) : 180
                     radius: 20
-                    color: "#302938"
+                    color: Theme.surface
                     TrackSwipe {
                         player: audioViewRoot.backend.opened ? audioViewRoot.player : null
                         volumeEnabled: audioViewRoot.backend.opened
@@ -765,7 +766,7 @@ Item {
                         anchors.centerIn: parent
                         visible: audioViewCover.status !== Image.Ready
                         text: "♫"
-                        color: "#c3b7ff"
+                        color: Theme.accent
                         font.pixelSize: 46
                     }
                     Rectangle {
@@ -942,14 +943,14 @@ Item {
                                 Text {
                                     anchors.left: parent.left
                                     text: audioViewRoot.formatTime(audioViewProgress.pressed ? audioViewProgress.value : Math.min(audioViewRoot.playbackPosition, audioViewRoot.duration || audioViewRoot.playbackPosition))
-                                    color: "#928b96"
+                                    color: Theme.dim
                                     font.family: "sans-serif"
                                     font.pixelSize: 10
                                 }
                                 Text {
                                     anchors.right: parent.right
                                     text: audioViewRoot.duration > 0 ? audioViewRoot.formatTime(audioViewRoot.duration) : "--:--"
-                                    color: "#928b96"
+                                    color: Theme.dim
                                     font.family: "sans-serif"
                                     font.pixelSize: 10
                                 }
@@ -1057,7 +1058,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 30
                                     text: Math.round((audioViewOutputSlider.pressed ? audioViewOutputSlider.value : audioViewRoot.backend.outputVolume) * 100) + "%"
-                                    color: "#aaa6b5"
+                                    color: Theme.muted
                                     font.family: "sans-serif"
                                     font.pixelSize: 10
                                     horizontalAlignment: Text.AlignRight
@@ -1070,7 +1071,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     visible: !audioViewVolumeControl.expanded
                                     text: audioViewRoot.backend.sink ? audioViewRoot.backend.nodeLabel(audioViewRoot.backend.sink) : "No output"
-                                    color: "#716c76"
+                                    color: Theme.dim
                                     font.family: "sans-serif"
                                     font.pixelSize: 10
                                     elide: Text.ElideRight

@@ -68,8 +68,8 @@
       "default": ["", "", ""],
     },
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 120 ] && v=120; wpctl set-volume --limit 1.2 @DEFAULT_AUDIO_SINK@ ${v}%'",
-    "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%'",
+    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 95 ] && v=95; wpctl set-volume --limit 0.95 @DEFAULT_AUDIO_SINK@ ${v}%'",
+    "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume --limit 0.95 @DEFAULT_AUDIO_SINK@ ${v}%'",
   },
 
   "backlight": {
@@ -117,10 +117,9 @@
     "format": "{title}",
     "format-paused": "\u23f8 {title}",
     "max-length": 80,
-    "tooltip-format": "",
+    "tooltip-format": "{artist}\n{title}\n{album}\n{length}",
     "tooltip": true,
     "interval": 1,
-    "on-click": "sh -c 'playerctl play-pause && sleep 0.15 && len=$(playerctl metadata mpris:length 2>/dev/null) && len=${len:-0} && len=$((len / 1000000)) && time_str=$(printf \"%02d:%02d\" $((len / 60)) $((len % 60))) && artist=$(playerctl metadata --format \"{{artist}}\" 2>/dev/null || echo \"?\") && title=$(playerctl metadata --format \"{{title}}\" 2>/dev/null || echo \"?\") && msg=$(printf \"fontsize:18 %s\\n%s\\n[%s]\" \"$artist\" \"$title\" \"$time_str\") && hyprctl dismissnotify 1 && hyprctl notify -1 2500 \"rgb(ff88cc)\" \"$msg\"'",
     "on-scroll-up": "sh -c 'now=$(date +%s%N); lock=/tmp/.waybar_mpris_scroll; [ -f $lock ] && old=$(cat $lock) || old=0; delta=$((now-old)); [ $delta -gt 360000000 ] && echo $now > $lock && playerctl previous'",
     "on-scroll-down": "sh -c 'now=$(date +%s%N); lock=/tmp/.waybar_mpris_scroll; [ -f $lock ] && old=$(cat $lock) || old=0; delta=$((now-old)); [ $delta -gt 360000000 ] && echo $now > $lock && playerctl next'",
     "smooth-scrolling-threshold": 10,
@@ -132,14 +131,25 @@
     "interval": 1,
     "on-click": "mode",
     "on-click-right": "bash $HOME/.config/hypr/scripts/play.sh",
-    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 120 ] && v=120; wpctl set-volume --limit 1.2 @DEFAULT_AUDIO_SINK@ ${v}%'",
-    "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume @DEFAULT_AUDIO_SINK@ ${v}%'",
+    "on-scroll-up": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v+5)); [ $v -gt 95 ] && v=95; wpctl set-volume --limit 0.95 @DEFAULT_AUDIO_SINK@ ${v}%'",
+    "on-scroll-down": "sh -c 'v=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk \"{print int(\\$2*100)}\"); v=$((v-5)); [ $v -lt 30 ] && v=30; wpctl set-volume --limit 0.95 @DEFAULT_AUDIO_SINK@ ${v}%'",
   },
 
   "memory": {
     "format": "󰍛",
     "tooltip-format": "󰍛 {percentage}% · {used:0.1f}G / {total:0.1f}G",
     "on-click": "sh -c 'hyprctl notify 10 3000 \"rgb(f5c2e7)\" \"󰍛 $(free -h | awk \"/^Mem:/{printf \\\"%s/%s\\\", \\$3, \\$2}\")\"'"
+  },
+
+  "power-profiles-daemon": {
+    "format": "{icon}",
+    "tooltip-format": "Power profile: {profile}\nClick to switch profile",
+    "format-icons": {
+      "default": "",
+      "power-saver": "",
+      "balanced": "",
+      "performance": ""
+    }
   },
 
   "group/power": {
@@ -149,7 +159,7 @@
       "children-class": "not-power",
       "transition-left-to-right": false,
     },
-    "modules": ["custom/power", "battery", "network", "memory", "custom/reboot", "custom/logout"],
+    "modules": ["custom/power", "battery", "power-profiles-daemon", "network", "memory", "custom/reboot", "custom/logout"],
   },
 
   "custom/logout": {

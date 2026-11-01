@@ -23,6 +23,7 @@ window#waybar {
 #tray,
 #network,
 #battery,
+#power-profiles-daemon,
 #mpris,
 #backlight,
 #custom-hyprsunset,
@@ -164,6 +165,25 @@ window#waybar {
 
 #battery {
   font-size: 12px;
+}
+
+#power-profiles-daemon {
+  font-size: 12px;
+}
+
+#power-profiles-daemon.power-saver {
+  color: #6ee7b7;
+  text-shadow: 0 0 4px rgba(110, 231, 183, 0.4);
+}
+
+#power-profiles-daemon.balanced {
+  color: #60a5fa;
+  text-shadow: 0 0 4px rgba(96, 165, 250, 0.4);
+}
+
+#power-profiles-daemon.performance {
+  color: #fdba74;
+  text-shadow: 0 0 4px rgba(253, 186, 116, 0.4);
 }
 
 #backlight {

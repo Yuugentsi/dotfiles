@@ -1,3 +1,4 @@
+import "../controls/PanelTheme.js" as Theme
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -261,7 +262,7 @@ Item {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         Rectangle {
             anchors.fill: parent
-            color: "#ac080e16"
+            color: Theme.scrim
         }
         MouseArea {
             anchors.fill: parent
@@ -283,9 +284,9 @@ Item {
             width: Math.min(440, panel.width - 32)
             height: Math.min(view.implicitHeight + 40, panel.height - 112)
             radius: 20
-            color: "#1d1b22"
+            gradient: PanelGradient {}
             border.width: 1
-            border.color: "#3c3545"
+            border.color: Theme.border
             focus: true
             Keys.onEscapePressed: {
                 if (root.passwordNetwork)
@@ -391,7 +392,7 @@ Item {
                 }
                 GradientStop {
                     position: 1
-                    color: "#17141e"
+                    color: Theme.background
                 }
             }
             border.width: 1
@@ -432,7 +433,7 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         text: "\uf233"
-                        color: "#c3b7ff"
+                        color: Theme.accent
                         font.family: "Symbols Nerd Font Mono"
                         font.pixelSize: 15
                     }
@@ -451,7 +452,7 @@ Item {
                     }
                     Text {
                         text: dnsPickerRoot.busy ? "Applying…" : dnsPickerRoot.modeLabel
-                        color: "#eee6fa"
+                        color: Theme.foreground
                         font.family: "sans-serif"
                         font.pixelSize: 14
                         font.weight: Font.Medium
@@ -467,7 +468,7 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         text: dnsPickerRoot.expanded ? "\uf106" : "\uf107"
-                        color: "#c3b7ff"
+                        color: Theme.accent
                         font.family: "Symbols Nerd Font Mono"
                         font.pixelSize: 11
                     }
@@ -515,7 +516,7 @@ Item {
                                 }
                             }
                             border.width: 1
-                            border.color: active ? "#b49ae9" : dnsPickerCardHit.containsMouse || activeFocus ? "#6b527f" : "#3c3048"
+                            border.color: active ? Theme.accent : dnsPickerCardHit.containsMouse || activeFocus ? "#6b527f" : Theme.hover
                             Accessible.role: Accessible.Button
                             Accessible.name: modelData.label
                             Keys.onReturnPressed: dnsPickerRoot.selected(modelData.key)
@@ -535,15 +536,15 @@ Item {
                                 width: 6
                                 height: 6
                                 radius: 3
-                                color: dnsPickerCard.active ? "#d2bcff" : "transparent"
+                                color: dnsPickerCard.active ? Theme.accent : "transparent"
                                 border.width: 1
-                                border.color: dnsPickerCard.active ? "#d2bcff" : "#675274"
+                                border.color: dnsPickerCard.active ? Theme.accent : "#675274"
                             }
                             Text {
                                 x: 12
                                 y: 34
                                 text: dnsPickerCard.modelData.label
-                                color: "#eee6fa"
+                                color: Theme.foreground
                                 font.family: "sans-serif"
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
@@ -561,7 +562,7 @@ Item {
                                 y: parent.height - 1
                                 width: parent.width - 24
                                 height: 1
-                                color: "#b49ae9"
+                                color: Theme.accent
                                 visible: dnsPickerCard.active
                             }
                             MouseArea {
@@ -586,7 +587,7 @@ Item {
                     activeFocusOnTab: true
                     color: active ? "#30243e" : dnsPickerAutoHit.containsMouse || activeFocus ? "#2b2234" : "#1c1723"
                     border.width: 1
-                    border.color: active ? "#8d70ae" : "#3c3048"
+                    border.color: active ? "#8d70ae" : Theme.hover
                     Accessible.role: Accessible.Button
                     Accessible.name: "Automatic DNS"
                     Keys.onReturnPressed: dnsPickerRoot.selected("automatic")
@@ -612,7 +613,7 @@ Item {
                         anchors.rightMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
                         text: dnsPickerAutomatic.active ? "✓" : ""
-                        color: "#c3b7ff"
+                        color: Theme.accent
                         font.family: "sans-serif"
                         font.pixelSize: 12
                     }
@@ -637,7 +638,7 @@ Item {
         height: 28
         radius: 8
         opacity: enabled ? 1 : 0.3
-        color: wifiViewActionHit.containsMouse || activeFocus ? "#383044" : "transparent"
+        color: wifiViewActionHit.containsMouse || activeFocus ? Theme.hover : "transparent"
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: label
@@ -646,7 +647,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: wifiViewActionButton.glyph
-            color: "#aaa6b5"
+            color: Theme.muted
             font.family: "Symbols Nerd Font Mono"
             font.pixelSize: 12
         }
@@ -672,7 +673,7 @@ Item {
         height: 30
         radius: 8
         opacity: enabled ? 1 : 0.3
-        color: primary ? "#c3b7ff" : wifiViewTextButtonHit.containsMouse || activeFocus ? "#383044" : "#29252f"
+        color: primary ? Theme.accent : wifiViewTextButtonHit.containsMouse || activeFocus ? Theme.hover : Theme.surface
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: label
@@ -682,7 +683,7 @@ Item {
             id: wifiViewTextButtonCaption
             anchors.centerIn: parent
             text: wifiViewTextButtonButton.label
-            color: wifiViewTextButtonButton.primary ? "#19171c" : "#aaa6b5"
+            color: wifiViewTextButtonButton.primary ? Theme.background : Theme.muted
             font.family: "sans-serif"
             font.pixelSize: 11
         }
@@ -769,11 +770,11 @@ Item {
                         height: 42
                         radius: 14
                         anchors.verticalCenter: parent.verticalCenter
-                        color: wifiViewRoot.powerEnabled ? "#c3b7ff" : "#302938"
+                        color: wifiViewRoot.powerEnabled ? Theme.accent : Theme.surface
                         Text {
                             anchors.centerIn: parent
                             text: "\uf1eb"
-                            color: wifiViewRoot.powerEnabled ? "#19171c" : "#928b96"
+                            color: wifiViewRoot.powerEnabled ? Theme.background : Theme.dim
                             font.family: "Symbols Nerd Font Mono"
                             font.pixelSize: 19
                         }
@@ -787,7 +788,7 @@ Item {
                         spacing: 4
                         Text {
                             text: "Wi-Fi"
-                            color: "#eef3f8"
+                            color: Theme.foreground
                             font.family: "sans-serif"
                             font.pixelSize: 20
                             font.weight: Font.DemiBold
@@ -796,7 +797,7 @@ Item {
                             width: parent.width
                             text: wifiViewRoot.backend.powerPending ? wifiViewRoot.backend.requestedPower ? "Turning on…" : "Turning off…" : !wifiViewRoot.backend.state.available ? "No adapter" : wifiViewRoot.backend.state.blocked ? "Blocked" : !wifiViewRoot.backend.state.enabled ? "Off" : wifiViewRoot.backend.state.connected || "Disconnected"
                             textFormat: Text.PlainText
-                            color: "#928b96"
+                            color: Theme.dim
                             font.family: "sans-serif"
                             font.pixelSize: 11
                             elide: Text.ElideRight
@@ -836,7 +837,7 @@ Item {
                 Text {
                     visible: wifiViewRoot.backend.busy || wifiViewRoot.backend.refreshing
                     text: wifiViewRoot.backend.busy ? wifiViewRoot.backend.lastAction === "scan" ? "Scanning…" : wifiViewRoot.backend.lastAction === "connect" ? "Connecting…" : wifiViewRoot.backend.lastAction === "band" ? "Switching…" : wifiViewRoot.backend.lastAction === "dns" ? "DNS…" : "Updating…" : "Updating…"
-                    color: "#c3b7ff"
+                    color: Theme.accent
                     font.family: "sans-serif"
                     font.pixelSize: 11
                 }
@@ -850,14 +851,14 @@ Item {
                         Text {
                             anchors.left: parent.left
                             text: "Band"
-                            color: "#aaa6b5"
+                            color: Theme.muted
                             font.family: "sans-serif"
                             font.pixelSize: 11
                         }
                         Text {
                             anchors.right: parent.right
                             text: wifiViewRoot.backend.state.actualBand === "bg" ? "2.4 GHz" : wifiViewRoot.backend.state.actualBand === "a" ? "5 GHz" : wifiViewRoot.backend.state.actualBand === "6" ? "6 GHz" : ""
-                            color: "#716c76"
+                            color: Theme.dim
                             font.family: "sans-serif"
                             font.pixelSize: 10
                         }
@@ -890,7 +891,7 @@ Item {
                                 radius: 8
                                 enabled: !!wifiViewRoot.backend.state.connected && wifiViewRoot.backend.state.enabled && !wifiViewRoot.backend.busy && (!modelData.mode || (wifiViewRoot.backend.state.availableBands || []).indexOf(modelData.mode) >= 0)
                                 opacity: enabled || selected ? 1 : 0.3
-                                color: selected ? "#383044" : wifiViewBandHit.containsMouse || activeFocus ? "#29252f" : "#151319"
+                                color: selected ? Theme.hover : wifiViewBandHit.containsMouse || activeFocus ? Theme.surface : Theme.background
                                 border.width: selected ? 1 : 0
                                 border.color: "#625471"
                                 activeFocusOnTab: true
@@ -901,7 +902,7 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: wifiViewBand.modelData.label
-                                    color: wifiViewBand.selected ? "#d8caff" : "#aaa6b5"
+                                    color: wifiViewBand.selected ? Theme.accent : Theme.muted
                                     font.family: "sans-serif"
                                     font.pixelSize: 11
                                 }
@@ -938,7 +939,7 @@ Item {
                         width: parent.width
                         text: wifiViewRoot.backend.passwordNetwork ? "Join “" + wifiViewRoot.backend.passwordNetwork.ssid + "”" : ""
                         textFormat: Text.PlainText
-                        color: "#eef3f8"
+                        color: Theme.foreground
                         font.family: "sans-serif"
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
@@ -952,17 +953,17 @@ Item {
                         echoMode: TextInput.Password
                         maximumLength: 256
                         placeholderText: "Network password"
-                        color: "#eef3f8"
-                        placeholderTextColor: "#716c76"
+                        color: Theme.foreground
+                        placeholderTextColor: Theme.dim
                         font.family: "sans-serif"
                         font.pixelSize: 12
                         enabled: !wifiViewRoot.backend.busy
                         Accessible.name: "Network password"
                         background: Rectangle {
                             radius: 9
-                            color: "#151319"
+                            color: Theme.background
                             border.width: 1
-                            border.color: wifiViewPassword.activeFocus ? "#625471" : "#37343f"
+                            border.color: wifiViewPassword.activeFocus ? "#625471" : Theme.border
                         }
                         onAccepted: wifiViewRoot.connectSelected()
                     }
@@ -1022,7 +1023,7 @@ Item {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: wifiViewRoot.networksExpanded ? "Networks" : "Nearby"
-                            color: "#aaa6b5"
+                            color: Theme.muted
                             font.family: "sans-serif"
                             font.pixelSize: 12
                             font.weight: Font.Medium
@@ -1042,16 +1043,16 @@ Item {
                         height: 34
                         visible: wifiViewRoot.networksExpanded && ((wifiViewRoot.backend.state.networks || []).length > 5 || !!wifiViewRoot.search)
                         placeholderText: "Search networks"
-                        color: "#eef3f8"
-                        placeholderTextColor: "#716c76"
+                        color: Theme.foreground
+                        placeholderTextColor: Theme.dim
                         font.family: "sans-serif"
                         font.pixelSize: 11
                         Accessible.name: "Search networks"
                         background: Rectangle {
                             radius: 8
-                            color: "#151319"
+                            color: Theme.background
                             border.width: 1
-                            border.color: "#37343f"
+                            border.color: Theme.border
                         }
                         onTextEdited: wifiViewRoot.search = text
                     }
@@ -1067,7 +1068,7 @@ Item {
                                 width: parent.width
                                 height: 58
                                 radius: 11
-                                color: modelData.active ? "#383044" : wifiViewHit.containsMouse || activeFocus ? "#29252f" : "transparent"
+                                color: modelData.active ? Theme.hover : wifiViewHit.containsMouse || activeFocus ? Theme.surface : "transparent"
                                 activeFocusOnTab: true
                                 Accessible.role: Accessible.Button
                                 Accessible.name: modelData.ssid + (modelData.active ? ", connected" : "")
@@ -1093,7 +1094,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "\uf1eb"
                                     opacity: 0.3 + wifiViewNetwork.modelData.signal / 100 * 0.7
-                                    color: wifiViewNetwork.modelData.active ? "#c3b7ff" : "#aaa6b5"
+                                    color: wifiViewNetwork.modelData.active ? Theme.accent : Theme.muted
                                     font.family: "Symbols Nerd Font Mono"
                                     font.pixelSize: 16
                                 }
@@ -1106,7 +1107,7 @@ Item {
                                         width: parent.width
                                         text: wifiViewNetwork.modelData.ssid
                                         textFormat: Text.PlainText
-                                        color: "#eef3f8"
+                                        color: Theme.foreground
                                         font.family: "sans-serif"
                                         font.pixelSize: 12
                                         font.weight: wifiViewNetwork.modelData.active ? Font.DemiBold : Font.Normal
@@ -1115,7 +1116,7 @@ Item {
                                     Text {
                                         width: parent.width
                                         text: wifiViewNetwork.modelData.security + " · " + wifiViewNetwork.modelData.signal + "%"
-                                        color: "#928b96"
+                                        color: Theme.dim
                                         font.family: "sans-serif"
                                         font.pixelSize: 10
                                         elide: Text.ElideRight
@@ -1127,7 +1128,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     visible: !wifiViewNetwork.modelData.active
                                     text: wifiViewNetwork.modelData.secured ? "\uf023" : "\uf105"
-                                    color: "#716c76"
+                                    color: Theme.dim
                                     font.family: "Symbols Nerd Font Mono"
                                     font.pixelSize: 11
                                 }
@@ -1149,7 +1150,7 @@ Item {
                         width: parent.width
                         visible: wifiViewRoot.networksExpanded && wifiViewRoot.networks.length === 0 && !wifiViewRoot.backend.refreshing && !wifiViewRoot.backend.busy
                         text: wifiViewRoot.search ? "No matching networks" : "No networks found. Try refreshing."
-                        color: "#928b96"
+                        color: Theme.dim
                         font.family: "sans-serif"
                         font.pixelSize: 12
                         wrapMode: Text.Wrap
@@ -1159,7 +1160,7 @@ Item {
                     width: parent.width
                     visible: !wifiViewRoot.backend.state.enabled || !wifiViewRoot.backend.state.available || wifiViewRoot.backend.state.blocked
                     text: !wifiViewRoot.backend.state.available ? "No Wi-Fi adapter was detected." : wifiViewRoot.backend.state.blocked ? "Enable wireless using your computer’s hardware switch." : "Turn on Wi-Fi to see nearby networks."
-                    color: "#928b96"
+                    color: Theme.dim
                     font.family: "sans-serif"
                     font.pixelSize: 12
                     wrapMode: Text.Wrap

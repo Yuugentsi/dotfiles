@@ -5,8 +5,8 @@ hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = 0, gaps_in = 0 })
 --
 hl.workspace_rule({ workspace = "5", on_created_empty = "brave-origin" })
 -- hl.workspace_rule({ workspace = "6", on_created_empty = "kitty" })
-hl.workspace_rule({ workspace = "6", layout = "master" })
-hl.workspace_rule({ workspace = "7", layout = "master" })
+--hl.workspace_rule({ workspace = "6", layout = "master" })
+--hl.workspace_rule({ workspace = "7", layout = "master" })
 hl.workspace_rule({ workspace = "8", on_created_empty = "thunar" })
 hl.workspace_rule({ workspace = "special:thunar", on_created_empty = "thunar" })
 hl.workspace_rule({ workspace = "special:kitty", on_created_empty = "kitty --class kitty-float" })
@@ -39,17 +39,16 @@ hl.window_rule({
 })
 
 -- opacity
--- hl.window_rule({ name = "zed-opacity", match = { class = "dev.zed.Zed" }, opacity = "0.80 0.80" })
-hl.window_rule({ name = "firefox-opacity", match = { class = "firefox" }, opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "brave-opacity", match = { class = "(?i)brave.*" }, opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "chromium-opacity", match = { class = "chromium" }, opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "zen-opacity", match = { class = "zen" }, opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "thunar-opacity", match = { class = "(?i)thunar" }, opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "telegram-opacity", match = { class = "org.telegram.desktop" }, opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "kitty-opacity",     match = { class = "kitty" },              opacity = "0.90 0.90", no_blur = true })
-hl.window_rule({ name = "zathura-opacity", match = { class = "(zathura|org\\.pwmt\\.zathura)" }, opacity = "0.90 0.90", no_blur = true })
+hl.window_rule({ name = "librewolf-opacity", match = { class = "(?i)librewolf.*" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = false })
+hl.window_rule({ name = "firefox-opacity", match = { class = "firefox" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = true })
+hl.window_rule({ name = "brave-opacity", match = { class = "(?i)brave.*" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = true })
+hl.window_rule({ name = "chromium-opacity", match = { class = "chromium" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = true })
+hl.window_rule({ name = "zen-opacity", match = { class = "zen" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = true })
+hl.window_rule({ name = "thunar-opacity", match = { class = "(?i)thunar" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = false })
+hl.window_rule({ name = "code-oss-opacity", match = { class = "code-oss" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = true })
+hl.window_rule({ name = "bitwarden-opacity", match = { class = "Bitwarden" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = true })
+hl.window_rule({ name = "kitty-opacity",     match = { class = "kitty" },              opacity = "0.85 override 0.85 override 0.85 override", no_blur = false })
+hl.window_rule({ name = "zathura-opacity", match = { class = "(zathura|org\\.pwmt\\.zathura)" }, opacity = "0.85 override 0.85 override 0.85 override", no_blur = true })
 
 -- rofi
 hl.window_rule({ name = "rofi-animation", match = { class = "rofi" }, animation = "popin" })
@@ -61,7 +60,7 @@ hl.window_rule({
     center      = true,
     dim_around  = true,
     size        = "820 560",
-    opacity     = "0.95 override 0.95 override",
+    opacity     = "0.85 override 0.85 override 0.85 override",
     border_size = 0,
     no_blur     = true,
 })
@@ -70,7 +69,7 @@ hl.window_rule({
     name        = "browser-dialogs",
     match       = {
         class = "(?i)(zen.*|firefox.*|librewolf.*|brave.*|chromium.*|google-chrome.*)",
-        title = "(?i).*(save|salvar|open|abrir|upload|enviar|file|arquivo|picker|wants to save|escolher|choose|enter name).*",
+        title = "(?i).*(save|open|upload|send|file|picker|wants to save|choose|enter name).*",
     },
     float       = true,
     center      = true,
@@ -91,7 +90,7 @@ hl.window_rule({
     match       = { class = "(?i)thunar" },
     float       = true,
     center      = true,
-    size        = "900 600",
+    size        = "750 500",
     border_size = 0,
 })
 
@@ -102,42 +101,8 @@ hl.window_rule({
     dim_around = true,
     size       = "(monitor_w*0.35) (monitor_h*0.3)",
     center     = true,
-    opacity    = "0.92 override 0.92 override",
-    no_blur    = true,
-})
-
--- telegram
-hl.window_rule({
-    name        = "telegram-save-dialog",
-    match       = {
-        class = "^Telegram$",
-        title = "^Save.*",
-    },
-    size        = "820 560",
-    center      = true,
-    dim_around  = true,
-    border_size = 0,
-    opacity     = "1.0 override 1.0 override",
-})
-
-hl.window_rule({
-    name        = "telegram-float",
-    match       = { class = "org.telegram.desktop", title = "^(?!Media viewer$).*" },
-    workspace   = "6 silent",
-    float       = true,
-    size        = "1050 650",
-    center      = true,
-    border_size = 0,
-})
-
-hl.window_rule({
-    name        = "telegram-media-viewer",
-    match       = { class = "org.telegram.desktop", title = "Media viewer" },
-    float       = true,
-    center      = true,
-    opacity     = "1.0 1.0",
-    size        = "720 540",
-    border_size = 0,
+    opacity    = "0.85 override 0.85 override 0.85 override",
+    no_blur    = false,
 })
 
 -- blueman
@@ -157,7 +122,7 @@ hl.window_rule({
     match   = { class = "(librewolf|firefox|zen)", title = "(Picture-in-Picture|Picture-in-picture)" },
     float   = true,
     pin     = true,
-    opacity = "1.0 1.0",
+    opacity = "0.85 override 0.85 override 0.85 override",
     size    = "245 136",
     move    = "865 103",
 })
@@ -167,7 +132,7 @@ hl.window_rule({
     match   = { title = "Picture in picture" },
     float   = true,
     pin     = true,
-    opacity = "1.0 1.0",
+    opacity = "0.85 override 0.85 override 0.85 override",
     size    = "245 136",
     move    = "865 103",
 })
@@ -179,7 +144,7 @@ hl.window_rule({
     float             = true,
     size              = "280 158",
     move              = "monitor_w-300 20",
-    opacity           = "1.0 1.0",
+    opacity           = "0.85 override 0.85 override 0.85 override",
     keep_aspect_ratio = true,
     border_size       = 0,
 })
@@ -201,6 +166,8 @@ hl.window_rule({
     size        = "960 580",
     center      = true,
     border_size = 0,
+    opacity     = "0.85 override 0.85 override 0.85 override",
+    no_blur     = false,
 })
 
 -- zathura
@@ -216,7 +183,8 @@ hl.window_rule({
 hl.window_rule({
     name       = "spotify",
     match      = { class = "(?i)spotify" },
-    opacity    = "0.50 override 0.50 override 0.50 override",
+    opacity    = "0.85 override 0.85 override 0.85 override",
+    no_blur    = true,
     workspace  = "9 silent",
     fullscreen = true,
 })
@@ -236,15 +204,16 @@ hl.window_rule({
     float     = true,
     center    = true,
     size      = "(monitor_w*0.55) (monitor_h*0.60)",
-    opacity   = "0.88 0.80",
-    no_blur   = true,
+    opacity   = "0.85 override 0.85 override 0.85 override",
+    no_blur   = false,
 })
 
 -- layer rules
-hl.layer_rule({ match = { namespace = "rofi" }, blur = true, ignore_alpha = 0.5 })
+hl.layer_rule({ match = { namespace = "rofi" }, blur = true, ignore_alpha = 0.08 })
 hl.layer_rule({ match = { namespace = "waybar" }, blur = true })
+hl.layer_rule({ match = { namespace = "^dynamic-island$" }, blur = true, ignore_alpha = 0.08 })
 
-hl.window_rule({ name = "steam-opaque", match = { class = "(steam|steam_app_.*)" }, opaque = true })
+hl.window_rule({ name = "steam-opacity", match = { class = "(steam|steam_app_.*)" }, opacity = "0.85 override 0.85 override 0.85 override" })
 hl.window_rule({
     name  = "steam-popups",
     match = { class = "steam", title = "(Friends List|Steam - News|Settings|Music Player|Screenshot Uploader|Steam Guard)" },
@@ -257,6 +226,8 @@ hl.window_rule({
     confine_pointer = true,
     immediate       = true,
 })
+
+hl.window_rule({ name = "telegram-opacity", match = { class = "(?i)(telegram.*|org\\.telegram\\..*)" }, opacity = "0.95 override 0.95 override 0.95 override", no_blur = true })
 
 hl.on("window.fullscreen", function(win)
     if win and win.class == "mpv" and not win.fullscreen then

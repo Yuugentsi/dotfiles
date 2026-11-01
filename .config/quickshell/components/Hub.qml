@@ -1,3 +1,4 @@
+import "../controls/PanelTheme.js" as Theme
 import "../controls"
 import QtQuick
 import QtQuick.Controls
@@ -85,7 +86,7 @@ Item {
             logQuery.running = true;
     }
     function logColor(kind) {
-        return kind === "error" ? "#bf616a" : kind === "downloaded" ? "#a3be8c" : kind === "skipped" ? "#aaa6b5" : kind === "warning" ? "#ebcb8b" : "#aaa6b5";
+        return kind === "error" ? "#bf616a" : kind === "downloaded" ? "#a3be8c" : kind === "skipped" ? Theme.muted : kind === "warning" ? "#ebcb8b" : Theme.muted;
     }
     readonly property string script: backendFor(section)
     function open(payloadJson) {
@@ -179,9 +180,9 @@ Item {
     }
 
     property string botSignature: ""
-    readonly property color ink: "#eef3f8"
-    readonly property color muted: "#aaa6b5"
-    readonly property color mint: "#c3b7ff"
+    readonly property color ink: Theme.foreground
+    readonly property color muted: Theme.muted
+    readonly property color mint: Theme.accent
     readonly property int activeCount: bots.filter(function (bot) {
         return bot.running;
     }).length
@@ -247,7 +248,7 @@ Item {
         exclusionMode: ExclusionMode.Ignore
         Rectangle {
             anchors.fill: parent
-            color: "#ac080e16"
+            color: Theme.scrim
         }
         MouseArea {
             anchors.fill: parent
@@ -259,21 +260,25 @@ Item {
             width: Math.max(0, Math.min(root.section === "ytdlp" ? 660 : root.section === "nyaa" ? 560 : 440, panel.width - 32))
             height: Math.max(0, Math.min(panel.height - 112, root.logView ? 490 : 148 + (root.section === "ytdlp" ? downloadsView.implicitHeight : root.section === "nyaa" ? Math.min(520, nyaaView.implicitHeight) : homeContent.implicitHeight)))
             radius: root.section === "nyaa" || root.section === "ytdlp" ? 20 : 14
-            color: "#14111b"
-            gradient: root.section === "nyaa" || root.section === "ytdlp" ? musicGradient : null
+            color: Theme.background
+            gradient: musicGradient
             Gradient {
                 id: musicGradient
                 GradientStop {
                     position: 0
-                    color: "#211728"
+                    color: Theme.gradientTop
+                }
+                GradientStop {
+                    position: 0.45
+                    color: Theme.gradientMiddle
                 }
                 GradientStop {
                     position: 1
-                    color: "#100d18"
+                    color: Theme.gradientBottom
                 }
             }
             border.width: 1
-            border.color: root.section === "nyaa" ? "#67477c" : "#66517c"
+            border.color: Theme.border
             Rectangle {
                 visible: root.section !== "nyaa" && root.section !== "ytdlp"
                 anchors.fill: parent
@@ -342,9 +347,9 @@ Item {
                     width: 40
                     height: 40
                     radius: 9
-                    color: "#292038"
+                    color: Theme.selected
                     border.width: 1
-                    border.color: "#a28bdb"
+                    border.color: Theme.border
                     Caption {
                         contextRoot: root
                         anchors.centerIn: parent
@@ -400,24 +405,24 @@ Item {
                 width: parent.width - 40
                 height: 36
                 radius: 8
-                color: "#0e0c13"
+                color: Theme.background
                 border.width: 1
-                border.color: "#30243e"
+                border.color: Theme.border
                 Rectangle {
                     x: 3 + (root.section === "bots" ? 1 : root.section === "ytdlp" ? 2 : root.section === "nyaa" ? 3 : 0) * (sections.width - 3) / 4
                     y: 3
                     width: (sections.width - 15) / 4
                     height: 30
                     radius: 6
-                    color: "#332440"
+                    color: Theme.selected
                     border.width: 1
-                    border.color: "#9b80ca"
+                    border.color: Theme.border
                     Rectangle {
                         anchors.bottom: parent.bottom
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: parent.width * 0.35
                         height: 2
-                        color: "#c3b7ff"
+                        color: Theme.accent
                     }
                     Behavior on x {
                         NumberAnimation {
@@ -457,7 +462,7 @@ Item {
                             width: (sections.width - 15) / 4
                             height: 30
                             radius: 6
-                            color: !selected && sectionHit.containsMouse ? "#29252f" : "transparent"
+                            color: !selected && sectionHit.containsMouse ? Theme.hover : "transparent"
                             Behavior on color {
                                 ColorAnimation {
                                     duration: 120
@@ -474,7 +479,7 @@ Item {
                                 contextRoot: root
                                 anchors.centerIn: parent
                                 text: sectionButton.modelData.label
-                                color: sectionButton.selected ? "#d8caff" : "#aaa6b5"
+                                color: sectionButton.selected ? Theme.foreground : Theme.accent
                                 font.pixelSize: 11
                                 font.weight: sectionButton.selected ? Font.DemiBold : Font.Normal
                             }
@@ -575,9 +580,9 @@ Item {
                         width: parent.width
                         height: root.space(36)
                         radius: root.space(4)
-                        color: "#18181d"
+                        color: Theme.background
                         border.width: 1
-                        border.color: logSearch.activeFocus ? "#c3b7ff" : "#37343f"
+                        border.color: logSearch.activeFocus ? Theme.accent : Theme.border
                         Caption {
                             contextRoot: root
                             x: root.space(14)
@@ -592,7 +597,7 @@ Item {
                             width: parent.width - x - root.space(14)
                             anchors.verticalCenter: parent.verticalCenter
                             color: root.ink
-                            selectionColor: "#383044"
+                            selectionColor: Theme.hover
                             selectedTextColor: root.ink
                             font.family: "sans-serif"
                             font.pixelSize: root.space(11)
@@ -657,7 +662,7 @@ Item {
                                 radius: root.space(4)
                                 color: selected ? Qt.rgba(tint.r, tint.g, tint.b, 0.13) : "transparent"
                                 border.width: 1
-                                border.color: selected ? Qt.rgba(tint.r, tint.g, tint.b, 0.32) : "#37343f"
+                                border.color: selected ? Qt.rgba(tint.r, tint.g, tint.b, 0.32) : Theme.border
                                 activeFocusOnTab: true
                                 function choose() {
                                     root.logFilter = modelData.key;
@@ -698,9 +703,9 @@ Item {
                             width: logList.width
                             height: Math.max(root.space(70), eventText.implicitHeight + root.space(28))
                             radius: root.space(5)
-                            color: "#222128"
+                            color: Theme.surface
                             border.width: 1
-                            border.color: "#37343f"
+                            border.color: Theme.border
                             Rectangle {
                                 x: 0
                                 y: root.space(18)
@@ -791,12 +796,12 @@ Item {
         Rectangle {
             width: 10
             height: 1
-            color: "#c3b7ff"
+            color: Theme.accent
         }
         Rectangle {
             width: 1
             height: 10
-            color: "#c3b7ff"
+            color: Theme.accent
         }
     }
 
@@ -821,7 +826,7 @@ Item {
         height: width
         radius: width / 2
         activeFocusOnTab: true
-        color: iconActionIconHit.containsMouse || activeFocus ? Qt.rgba(tint.r, tint.g, tint.b, 0.12) : quiet ? "transparent" : "#342b3e"
+        color: iconActionIconHit.containsMouse || activeFocus ? Qt.rgba(tint.r, tint.g, tint.b, 0.12) : quiet ? "transparent" : Theme.hover
         opacity: enabled ? 1 : 0.3
         scale: iconActionIconHit.pressed ? 0.92 : 1
         Behavior on scale {
@@ -859,9 +864,9 @@ Item {
         width: parent.width
         height: 72 + (serviceCardBotPreview.visible ? serviceCardBotPreview.height + 12 : 0) + (hasTransfers ? serviceCardTransferDetails.implicitHeight + 12 : 0)
         radius: 10
-        color: bot.running ? "#21182d" : "#1a1521"
+        color: Qt.tint(Theme.background, Qt.rgba(1, 1, 1, bot.running ? 0.035 : 0.015))
         border.width: 1
-        border.color: bot.running ? "#70518b" : "#35283f"
+        border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, bot.running ? 0.12 : 0.06)
         Rectangle {
             x: 0
             y: 19
@@ -877,7 +882,7 @@ Item {
             y: 0
             width: 25
             height: 1
-            color: "#c3b7ff"
+            color: Theme.accent
             visible: !!serviceCardService.bot.running
         }
         Behavior on color {
@@ -891,9 +896,9 @@ Item {
             width: 38
             height: 38
             radius: 8
-            color: serviceCardService.bot.running ? "#382547" : "#27202f"
+            color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, serviceCardService.bot.running ? 0.08 : 0.035)
             border.width: 1
-            border.color: serviceCardService.bot.running ? "#765497" : "#3b2e49"
+            border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.08)
             Caption {
                 contextRoot: serviceCardService.contextRoot
                 anchors.centerIn: parent
@@ -930,7 +935,7 @@ Item {
             width: parent.width - x - 94
             visible: !!serviceCardService.bot.running
             text: serviceCardService.downloads.length ? "Downloading" : contextRoot.section === "bots" ? "Running" : "Listening"
-            color: serviceCardService.bot.running ? contextRoot.mint : "#928b96"
+            color: serviceCardService.bot.running ? contextRoot.mint : Theme.dim
             font.pixelSize: 10
         }
         Row {
@@ -982,9 +987,9 @@ Item {
             height: serviceCardLatestMessage.implicitHeight + 20
             visible: contextRoot.section === "bots" && !!serviceCardService.bot.last_log
             radius: 6
-            color: "#100c17"
+            color: Theme.background
             border.width: 1
-            border.color: "#3c294e"
+            border.color: Theme.border
             Rectangle {
                 x: 0
                 y: 8
@@ -1088,9 +1093,9 @@ Item {
         width: nyaaActionButtonButtonText.implicitWidth + 24
         height: 36
         radius: 11
-        color: nyaaActionButtonHit.containsMouse || activeFocus ? "#5b3e70" : "#45304f"
+        color: nyaaActionButtonHit.containsMouse || activeFocus ? Theme.selected : Theme.selected
         border.width: 1
-        border.color: "#80608e"
+        border.color: Theme.border
         scale: nyaaActionButtonHit.pressed ? 0.94 : 1
         Behavior on scale {
             NumberAnimation {
@@ -1272,7 +1277,7 @@ Item {
                 spacing: 16
                 Text {
                     text: String(nyaaViewRoot.releaseGroups.length).padStart(2, "0")
-                    color: "#f3eaff"
+                    color: Theme.foreground
                     font.pixelSize: 32
                     font.weight: Font.Light
                     font.letterSpacing: -1
@@ -1282,7 +1287,7 @@ Item {
                     spacing: 4
                     Text {
                         text: "TITLES"
-                        color: "#aa91bd"
+                        color: Theme.muted
                         font.pixelSize: 9
                         font.letterSpacing: 2
                     }
@@ -1298,7 +1303,7 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 text: nyaaViewRoot.results.length + " releases"
-                color: "#aa91bd"
+                color: Theme.muted
                 font.pixelSize: 11
             }
         }
@@ -1309,13 +1314,13 @@ Item {
                 width: parent.width - nyaaViewSearchButton.width - 8
                 height: 44
                 radius: 9
-                color: "#251b30"
-                border.color: nyaaViewSearchInput.activeFocus ? "#80608e" : "#3b2b49"
+                color: Theme.surface
+                border.color: nyaaViewSearchInput.activeFocus ? Theme.border : Theme.border
                 TextInput {
                     id: nyaaViewSearchInput
                     anchors.fill: parent
                     anchors.margins: 13
-                    color: "#f3eaff"
+                    color: Theme.foreground
                     font.pixelSize: 12
                     verticalAlignment: TextInput.AlignVCenter
                     selectByMouse: true
@@ -1340,7 +1345,7 @@ Item {
             visible: !!nyaaViewRoot.message && (nyaaViewRoot.failed || nyaaViewLookup.running || !nyaaViewRoot.results.length)
             width: parent.width
             text: nyaaViewRoot.message
-            color: nyaaViewRoot.failed ? "#f38b92" : "#bba6ca"
+            color: nyaaViewRoot.failed ? "#f38b92" : Theme.muted
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
             font.pixelSize: 11
@@ -1350,8 +1355,8 @@ Item {
             width: parent.width
             height: nyaaViewTransferContent.implicitHeight + 32
             radius: 18
-            color: "#1f1729"
-            border.color: "#3b2b49"
+            color: Theme.background
+            border.color: Theme.border
             Column {
                 id: nyaaViewTransferContent
                 x: 16
@@ -1360,7 +1365,7 @@ Item {
                 spacing: 12
                 Text {
                     text: nyaaViewDownload.running ? "ACTIVE TRANSFER" : "TRANSFER"
-                    color: "#c3a0ff"
+                    color: Theme.accent
                     font.pixelSize: 9
                     font.letterSpacing: 1.5
                     font.bold: true
@@ -1368,7 +1373,7 @@ Item {
                 Text {
                     width: parent.width
                     text: nyaaViewRoot.transferTitle
-                    color: "#f3eaff"
+                    color: Theme.foreground
                     font.pixelSize: 12
                     wrapMode: Text.Wrap
                     textFormat: Text.PlainText
@@ -1394,7 +1399,7 @@ Item {
                             }
                             GradientStop {
                                 position: 1
-                                color: "#c3a0ff"
+                                color: Theme.accent
                             }
                         }
                         Behavior on width {
@@ -1430,7 +1435,7 @@ Item {
                     width: parent.width
                     height: 170
                     radius: 6
-                    color: "#100d18"
+                    color: Theme.background
                     Flickable {
                         id: nyaaViewLogScroll
                         anchors.fill: parent
@@ -1464,7 +1469,7 @@ Item {
             spacing: 8
             Text {
                 text: "UP NEXT · " + nyaaViewRoot.downloadQueue.length + " queued"
-                color: "#c3a0ff"
+                color: Theme.accent
                 font.pixelSize: 10
                 font.bold: true
             }
@@ -1475,7 +1480,7 @@ Item {
                     required property int index
                     width: nyaaViewRoot.width
                     text: (index + 1) + ". " + modelData.title
-                    color: "#bba6ca"
+                    color: Theme.muted
                     font.pixelSize: 11
                     wrapMode: Text.Wrap
                     textFormat: Text.PlainText
@@ -1492,7 +1497,7 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: nyaaViewRoot.visibleResults.length + " releases · episode order"
-                color: "#bba6ca"
+                color: Theme.muted
                 font.pixelSize: 10
             }
         }
@@ -1504,9 +1509,9 @@ Item {
                 width: nyaaViewRoot.width
                 height: Math.max(104, nyaaViewGroupContent.implicitHeight + 40)
                 radius: 18
-                color: nyaaViewGroupHit.containsMouse || activeFocus ? "#302338" : "#211a29"
+                color: nyaaViewGroupHit.containsMouse || activeFocus ? Theme.hover : Theme.hover
                 border.width: 1
-                border.color: nyaaViewGroupHit.containsMouse || activeFocus ? "#9775ac" : "#3b2b49"
+                border.color: nyaaViewGroupHit.containsMouse || activeFocus ? Theme.border : Theme.border
                 Behavior on color {
                     ColorAnimation {
                         duration: 110
@@ -1537,7 +1542,7 @@ Item {
                         }
                         GradientStop {
                             position: 1
-                            color: "#c3a0ff"
+                            color: Theme.accent
                         }
                     }
                 }
@@ -1557,7 +1562,7 @@ Item {
                     Text {
                         anchors.right: parent.right
                         text: "EPISODES"
-                        color: "#aa91bd"
+                        color: Theme.muted
                         font.pixelSize: 8
                         font.letterSpacing: 1.2
                     }
@@ -1571,7 +1576,7 @@ Item {
                     Text {
                         width: parent.width
                         text: nyaaViewGroupButton.modelData.series
-                        color: "#f3eaff"
+                        color: Theme.foreground
                         font.pixelSize: 18
                         font.weight: Font.Medium
                         font.letterSpacing: -0.4
@@ -1581,7 +1586,7 @@ Item {
                     Text {
                         width: parent.width
                         text: nyaaViewGroupButton.modelData.group + " · " + nyaaViewGroupButton.modelData.count + " releases"
-                        color: "#c3a0ff"
+                        color: Theme.accent
                         font.pixelSize: 11
                         wrapMode: Text.Wrap
                         textFormat: Text.PlainText
@@ -1660,9 +1665,9 @@ Item {
                 }
                 background: Rectangle {
                     radius: 17
-                    color: Math.abs(nyaaViewResultRow.swipe.position) > 0 ? "#45304f" : nyaaViewResultRow.current ? "#45304f" : nyaaViewResultRow.hovered || nyaaViewResultRow.activeFocus ? "#302039" : "#251b30"
+                    color: Math.abs(nyaaViewResultRow.swipe.position) > 0 ? Theme.selected : nyaaViewResultRow.current ? Theme.selected : nyaaViewResultRow.hovered || nyaaViewResultRow.activeFocus ? Theme.hover : Theme.surface
                     border.width: 1
-                    border.color: "#80608e"
+                    border.color: Theme.border
                     Behavior on color {
                         ColorAnimation {
                             duration: 110
@@ -1680,7 +1685,7 @@ Item {
                             visible: nyaaViewResultRow.index === 0
                             width: parent.width
                             text: nyaaViewResultRow.modelData.series + " / " + nyaaViewResultRow.modelData.group
-                            color: "#c3a0ff"
+                            color: Theme.accent
                             font.pixelSize: 11
                             font.bold: true
                             wrapMode: Text.Wrap
@@ -1689,7 +1694,7 @@ Item {
                         Text {
                             visible: !!nyaaViewResultRow.modelData.episode
                             text: "EPISODE " + nyaaViewResultRow.modelData.episode
-                            color: "#bba6ca"
+                            color: Theme.muted
                             font.pixelSize: 9
                             font.letterSpacing: 1
                         }
@@ -1697,7 +1702,7 @@ Item {
                             width: parent.width
                             text: nyaaViewResultRow.modelData.title
                             textFormat: Text.PlainText
-                            color: nyaaViewResultRow.current ? "#c3a0ff" : "#f3eaff"
+                            color: nyaaViewResultRow.current ? Theme.accent : Theme.foreground
                             wrapMode: Text.Wrap
                             font.pixelSize: 12
                             font.weight: Font.Medium
@@ -1708,7 +1713,7 @@ Item {
                             Text {
                                 width: parent.width - nyaaViewTransferLabel.implicitWidth - 10
                                 text: "↑ " + nyaaViewResultRow.modelData.seeds + " seeds   ·   " + nyaaViewResultRow.modelData.size
-                                color: nyaaViewResultRow.modelData.seeds > 0 ? "#a3be8c" : "#bba6ca"
+                                color: nyaaViewResultRow.modelData.seeds > 0 ? "#a3be8c" : Theme.muted
                                 font.pixelSize: 10
                                 elide: Text.ElideRight
                             }
@@ -1716,7 +1721,7 @@ Item {
                                 id: nyaaViewTransferLabel
                                 visible: nyaaViewResultRow.current || nyaaViewResultRow.queued
                                 text: nyaaViewResultRow.current ? "Downloading…" : "Queued"
-                                color: nyaaViewResultRow.current || nyaaViewResultRow.queued ? "#c3a0ff" : "#aa91bd"
+                                color: nyaaViewResultRow.current || nyaaViewResultRow.queued ? Theme.accent : Theme.muted
                                 font.pixelSize: 10
                             }
                         }
@@ -1810,15 +1815,15 @@ Item {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: youtubeResultRoot.playlist ? "All · MP4" : "720p"
-                    color: "#f3eaff"
+                    color: Theme.foreground
                     font.pixelSize: 12
                 }
             }
         }
         background: Rectangle {
             radius: 16
-            color: youtubeResultRoot.hovered || youtubeResultRoot.activeFocus ? "#2a2632" : "#201d27"
-            border.color: youtubeResultRoot.activeFocus ? "#b4a0d5" : youtubeResultRoot.hovered ? "#54465f" : "#302a39"
+            color: youtubeResultRoot.hovered || youtubeResultRoot.activeFocus ? Theme.hover : Theme.hover
+            border.color: youtubeResultRoot.activeFocus ? "#b4a0d5" : youtubeResultRoot.hovered ? Theme.border : Theme.border
             Behavior on color {
                 ColorAnimation {
                     duration: 140
@@ -2054,8 +2059,8 @@ Item {
             width: parent.width
             height: 52
             radius: 16
-            color: "#18151e"
-            border.color: ytdlpViewUrlInput.activeFocus ? "#8d75a7" : "#3b3145"
+            color: Theme.background
+            border.color: ytdlpViewUrlInput.activeFocus ? Theme.border : Theme.border
             Behavior on border.color {
                 ColorAnimation {
                     duration: 150
@@ -2136,7 +2141,7 @@ Item {
                 width: 82
                 height: 30
                 radius: 11
-                color: "#18151e"
+                color: Theme.background
                 Rectangle {
                     x: ytdlpViewRoot.playlistMode ? 42 : 3
                     y: 3
@@ -2230,7 +2235,7 @@ Item {
                 }
                 background: Rectangle {
                     radius: 10
-                    color: parent.hovered ? "#35283e" : "transparent"
+                    color: parent.hovered ? Theme.hover : "transparent"
                 }
             }
             Text {
@@ -2264,7 +2269,7 @@ Item {
                     }
                     background: Rectangle {
                         radius: 9
-                        color: parent.hovered ? "#35283e" : "transparent"
+                        color: parent.hovered ? Theme.hover : "transparent"
                     }
                 }
                 Text {
@@ -2288,7 +2293,7 @@ Item {
                     }
                     background: Rectangle {
                         radius: 9
-                        color: parent.hovered ? "#35283e" : "transparent"
+                        color: parent.hovered ? Theme.hover : "transparent"
                     }
                 }
             }

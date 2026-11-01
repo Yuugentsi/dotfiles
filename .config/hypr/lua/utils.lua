@@ -2,7 +2,43 @@
 local mainMod = "SUPER"
 
 -- ─── utils.sh ───
+hl.on("hyprland.start", function()
+    hl.exec_cmd("bash ~/.config/hypr/scripts/utils.sh spotify-listener")
+end)
+
+hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd("~/.config/hypr/scripts/utils.sh record"), { dont_inhibit = true, allow_input_capture = true })
+
+local vol_mute = "~/.config/hypr/scripts/utils.sh volume mute"
+local vol_down = "~/.config/hypr/scripts/utils.sh volume down"
+local vol_up   = "~/.config/hypr/scripts/utils.sh volume up"
+
+-- hl.bind("F6",               hl.dsp.exec_cmd(vol_mute),                                         { repeating = true })
+-- hl.bind("F7",               hl.dsp.exec_cmd(vol_down),                                         { repeating = true })
+-- hl.bind("F8",               hl.dsp.exec_cmd(vol_up),                                           { repeating = true })
+hl.bind("XF86AudioMute",    hl.dsp.exec_cmd(vol_mute),                                         { repeating = true })
+
+local brightness_down = "~/.config/hypr/scripts/utils.sh brightness down"
+local brightness_up   = "~/.config/hypr/scripts/utils.sh brightness up"
+
+hl.bind("F2", hl.dsp.exec_cmd(brightness_down), { repeating = true })
+hl.bind("F3", hl.dsp.exec_cmd(brightness_up),   { repeating = true })
+
+local sunset_down = "~/.config/hypr/scripts/utils.sh sunset down"
+local sunset_up   = "~/.config/hypr/scripts/utils.sh sunset up"
+
+hl.bind("ALT + F2", hl.dsp.exec_cmd(sunset_down), { repeating = true })
+hl.bind("ALT + F3", hl.dsp.exec_cmd(sunset_up),   { repeating = true })
+
+local toggle_cmd = "~/.config/hypr/scripts/utils.sh toggle"
+hl.bind("F9", hl.dsp.exec_cmd(toggle_cmd))
+
 hl.bind(mainMod .. " + T", hl.dsp.workspace.toggle_special("thunar"))
+hl.on("workspace.active", function()
+    local special = hl.get_active_special_workspace()
+    if special and (special.name == "special:thunar" or special.name == "special:kitty" or special.name == "special:telegram") then
+        hl.dispatch(hl.dsp.workspace.toggle_special(special.name:sub(9)))
+    end
+end)
 hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/utils.sh video"))
 hl.bind("ALT + Q",         hl.dsp.workspace.toggle_special("kitty"))
 hl.bind(mainMod .. " + W", function()
@@ -85,7 +121,6 @@ hl.bind("ALT + W", function()
     end
 end)
 hl.bind("ALT + T",         hl.dsp.workspace.toggle_special("telegram"))
-hl.bind("ALT + E",         hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/utils.sh switcher"))
 -- hl.bind(mainMod .. " + F", function()
 --     local ff_win = nil
 --     for _, w in ipairs(hl.get_windows()) do
@@ -106,12 +141,28 @@ hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("~/.config/hypr/scripts/clipboard.sh"
 hl.bind("ALT + V",         hl.dsp.exec_cmd("~/.config/hypr/scripts/clipboard.sh images"), { locked = true })
 
 -- ─── websites.sh ───
-hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("~/.config/hypr/scripts/websites.sh"))
+local useIntegratedMangaReader = true
+local mangaAction = useIntegratedMangaReader and "manga-reader" or "manga"
 
--- ─── music.py ───
-hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/music.py"),      { locked = true })
-hl.bind(mainMod .. " + G",  hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/music.py menu"), { locked = true })
-hl.bind("ALT + F1",         hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/music.py stop"), { locked = true })
+hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("~/.config/hypr/scripts/websites.sh"))
+hl.bind("ALT + M",         hl.dsp.exec_cmd("~/.config/hypr/scripts/websites.sh " .. mangaAction))
+
+-- ─── media.py ───
+hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/media.py"),      { locked = true })
+hl.bind(mainMod .. " + G",  hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/media.py music"), { locked = true })
+hl.bind("ALT + F1",         hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/media.py stop"), { locked = true })
+hl.bind("ALT + G",          hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/media.py video"))
+
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true, repeating = true })
+
+hl.bind("F1",              hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/player-next.py"), { locked = true })
+hl.bind("ALT + K",         hl.dsp.exec_cmd("playerctl next"),       { locked = true })
+hl.bind("ALT + J",         hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("ALT + H",         hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
+hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
 
 -- ─── cycle   ───
 hl.bind(mainMod .. " + SUPER_L", function()
@@ -134,6 +185,33 @@ hl.bind(mainMod .. " + SUPER_L", function()
     end
     hl.dispatch(hl.dsp.focus({ workspace = next_ws }))
 end, { release = true })
+
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh ipc panels toggle"), { description = "Open Hub" })
+
+hl.bind("F6", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh volume mute"), { repeating = true })
+hl.bind("F7", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh volume down"), { repeating = true })
+hl.bind("F8", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh volume up"), { repeating = true })
+
+hl.bind(mainMod .. " + N",         hl.dsp.exec_cmd("swaync-client -t"))
+hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd("swaync-client -C && ~/.config/hypr/scripts/quickshell.sh notify -1 2000 0 '🔔 Notifications cleared'"))
+hl.bind(mainMod .. " + U", function()
+    hl.exec_cmd("~/.config/hypr/scripts/quickshell.sh notify 0 2000 'rgb(cba6f7)' '󰔟 Timer started (waiting 2s)...'")
+    hl.timer(function()
+        hl.exec_cmd("~/.config/hypr/scripts/quickshell.sh notify 5 3000 'rgb(80ff80)' '󰄬 Timer completed (2s elapsed)!'")
+    end, { timeout = 2000, type = "oneshot" })
+end)
+
+local switcherHeld = false
+hl.bind("ALT + Escape", function()
+    switcherHeld = true
+    hl.exec_cmd("~/.config/hypr/scripts/quickshell.sh ipc windowSwitcher next")
+end, { repeating = true, description = "Window switcher: next window" })
+hl.bind("ALT_L", function()
+    if switcherHeld then
+        switcherHeld = false
+        hl.exec_cmd("~/.config/hypr/scripts/quickshell.sh ipc windowSwitcher acceptHeld")
+    end
+end, { release = true, non_consuming = true, ignore_mods = true, description = "Window switcher: confirm on Alt release" })
 
 -- ───  workspace notify  ───
 local ws_icons = { [1] = "➊", [2] = "➋", [3] = "➌", [4] = "➍", [5] = "➎", [6] = "➏", [7] = "➐", [8] = "➑", [9] = "➒", [10] = "➓" }
@@ -199,10 +277,14 @@ hl.on("workspace.active", function(ws)
 
     local ws_label = ws_icons[ws.id] or ("󰣇  " .. tostring(ws.name or ws.id))
     local text = ws_label
+    local heading = ws_label
+    local app_class = ""
     local w = hl.get_active_window()
     if w and w.class and w.class ~= "" then
         local raw = string.lower(w.class)
         local cls = class_names[raw] or raw
+        app_class = w.class
+        heading = ws_label .. "  " .. cls
         local icon = class_icons[cls] or class_icons[raw] or ""
         text = ws_label .. " " .. icon .. "  " .. cls
         if show_workspace_mem then
@@ -212,14 +294,9 @@ hl.on("workspace.active", function(ws)
             end
         end
     end
-    for _, n in ipairs(hl.notification.get()) do
-        n:dismiss()
-    end
-    hl.notification.create({
-        text = text,
-        font_size = 15,
-        timeout = 1200,
-        color = "rgb(cba6f7)",
-        icon = "none",
-    })
+    text = text .. "\n" .. os.date("%H:%M:%S")
+    local quoted_text = "'" .. text:gsub("'", "'\\''") .. "'"
+    local quoted_class = "'" .. app_class:gsub("'", "'\\''") .. "'"
+    local quoted_heading = "'" .. heading:gsub("'", "'\\''") .. "'"
+    hl.exec_cmd("~/.config/hypr/scripts/quickshell.sh workspace " .. quoted_text .. " " .. quoted_class .. " " .. quoted_heading)
 end)

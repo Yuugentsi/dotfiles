@@ -12,15 +12,19 @@ Scope {
     readonly property real volume: audioBackend.outputVolume
     readonly property bool muted: audioBackend.outputMuted
 
-    function dismissPopups() {
+    function dismissPopups(keep) {
         volumeVisible = false;
-        workspaceNotice.opened = false;
+        if (keep !== "workspace")
+            workspaceNotice.opened = false;
         helpNotice.opened = false;
-        systemNotice.opened = false;
+        if (keep !== "system")
+            systemNotice.opened = false;
     }
 
     function showVolume() {
-        dismissPopups();
+        workspaceNotice.opened = false;
+        helpNotice.opened = false;
+        systemNotice.opened = false;
         const monitor = Hyprland.focusedMonitor;
         const screen = Quickshell.screens.find(candidate => monitor && candidate.name === monitor.name);
         if (screen)
@@ -67,7 +71,7 @@ Scope {
 
     Timer {
         id: volumeTimeout
-        interval: 1500
+        interval: 1000
         onTriggered: root.volumeVisible = false
     }
 
@@ -82,8 +86,8 @@ Scope {
             top: 16
             right: 16
         }
-        implicitWidth: Math.min(312, screen.width - 32)
-        implicitHeight: 108
+        implicitWidth: Math.min(Math.ceil(volumeContent.implicitWidth) + 24, screen.width - 32)
+        implicitHeight: 34
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
@@ -91,104 +95,17 @@ Scope {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        Rectangle {
+        HyprNoticeSurface {
             anchors.fill: parent
-            radius: 20
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: "#2c2435"
-                }
-                GradientStop {
-                    position: 1
-                    color: "#1b1822"
-                }
-            }
-            border.width: 1
-            border.color: root.muted ? "#807b4b53" : "#70695782"
-            opacity: root.volumeVisible ? 1 : 0
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 130
-                }
-            }
-
-            Rectangle {
-                x: 18
-                y: 18
-                width: 48
-                height: 48
-                radius: 15
-                color: root.muted ? "#30ff9c80" : "#25c6abff"
-                border.width: 1
-                border.color: root.muted ? "#35ff9c80" : "#35c6abff"
-                Text {
-                    anchors.centerIn: parent
-                    text: root.muted ? "󰖁" : root.volume < 0.4 ? "󰖀" : "󰕾"
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 26
-                    color: root.muted ? "#ffac94" : "#d4bfff"
-                }
-            }
-
-            Text {
-                x: 80
-                y: 22
-                text: root.muted ? "Sound muted" : "Volume"
-                font.family: "sans-serif"
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-                color: "#f4eefa"
-            }
-            Text {
-                x: 80
-                y: 44
-                text: "SYSTEM AUDIO"
-                font.family: "sans-serif"
-                font.pixelSize: 8
-                font.letterSpacing: 1.5
-                color: "#a699b4"
-            }
-            Row {
-                anchors.right: parent.right
-                anchors.rightMargin: 18
-                y: 22
-                spacing: 2
-                Text {
-                    text: Math.round(root.volume * 100)
-                    font.family: "sans-serif"
-                    font.pixelSize: 28
-                    font.weight: Font.DemiBold
-                    color: root.muted ? "#ffac94" : "#f4eefa"
-                }
-                Text {
-                    y: 12
-                    text: "%"
-                    font.family: "sans-serif"
-                    font.pixelSize: 12
-                    color: "#a699b4"
-                }
-            }
-            Row {
-                x: 18
-                y: 84
-                width: parent.width - 36
-                spacing: 4
-                Repeater {
-                    model: 24
-                    Rectangle {
-                        required property int index
-                        width: (parent.width - 23 * 4) / 24
-                        height: 5
-                        radius: 2.5
-                        color: index < Math.round(Math.max(0, Math.min(1, root.volume)) * 24) ? root.muted ? "#dd927e" : "#c6abff" : "#44374f"
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 120
-                            }
-                        }
-                    }
-                }
+            hud: true
+            accentColor: root.muted ? "#f38ba8" : "#cba6f7"
+            HyprLevelIndicator {
+                id: volumeContent
+                x: 12
+                anchors.verticalCenter: parent.verticalCenter
+                value: root.volume
+                muted: root.muted
+                symbol: root.muted ? "󰖁" : root.volume < 0.4 ? "󰖀" : "󰕾"
             }
         }
     }
@@ -210,17 +127,18 @@ Scope {
         property string appIcon: ""
         property string workspaceNumber: ""
         property bool opened: false
+        readonly property int textOffset: appIcon ? 78 : 54
         visible: opened
         anchors {
             top: true
             right: true
         }
         margins {
-            top: 12
-            right: 12
+            top: 16
+            right: 16
         }
-        implicitWidth: Math.min(300, screen.width - 24)
-        implicitHeight: 92
+        implicitWidth: Math.min(Math.max(120, Math.ceil(Math.max(headingMeasurement.implicitWidth, detailMeasurement.implicitWidth)) + textOffset + 18), screen.width - 32)
+        implicitHeight: Math.max(38, workspaceText.implicitHeight + 18)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
@@ -231,7 +149,12 @@ Scope {
         IpcHandler {
             target: "workspaceNotify"
             function show(message: string, appClass: string, heading: string): void {
-                popup.controller.dismissPopups();
+                if (!appClass.trim()) {
+                    popup.opened = false;
+                    hideTimer.stop();
+                    return;
+                }
+                popup.controller.dismissPopups("workspace");
                 const lines = message.split("\n");
                 const label = heading || lines[0] || "Workspace";
                 const markers = ["➊", "➋", "➌", "➍", "➎", "➏", "➐", "➑", "➒", "➓"];
@@ -239,12 +162,12 @@ Scope {
                 popup.workspaceNumber = "";
                 if (workspaceIndex >= 0) {
                     popup.workspaceNumber = String(workspaceIndex + 1);
-                    popup.heading = label.slice(1).trim() || "Workspace";
+                    popup.heading = label.slice(1).trim() || "Empty";
                 } else {
                     popup.heading = label;
                 }
                 lines.shift();
-                popup.details = lines.join(" · ");
+                popup.details = lines.filter(line => line.trim() && !/^\d{2}:\d{2}:\d{2}$/.test(line.trim())).join(" · ");
                 const entry = appClass ? DesktopEntries.heuristicLookup(appClass.replace(/-float$/, "")) : null;
                 popup.appIcon = entry ? Quickshell.iconPath(entry.icon) : "";
                 const monitor = Hyprland.focusedMonitor;
@@ -264,101 +187,93 @@ Scope {
 
         Timer {
             id: hideTimer
-            interval: 1200
+            interval: 1000
             onTriggered: popup.opened = false
         }
 
-        Rectangle {
-            anchors.fill: parent
-            radius: 20
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: "#2c2435"
-                }
-                GradientStop {
-                    position: 1
-                    color: "#1b1822"
-                }
-            }
-            border.width: 1
-            border.color: "#70695782"
+        Text {
+            id: headingMeasurement
+            visible: false
+            text: popup.heading
+            textFormat: Text.PlainText
+            font: workspaceHeading.font
+        }
+        Text {
+            id: detailMeasurement
+            visible: false
+            text: popup.details
+            textFormat: Text.PlainText
+            font: workspaceDetail.font
+        }
 
+        HyprNoticeSurface {
+            anchors.fill: parent
+            hud: true
+            accentColor: "#cba6f7"
             Rectangle {
-                x: 16
-                y: 22
-                width: 46
-                height: 46
-                radius: 14
-                color: "#25c6abff"
-                Image {
-                    id: applicationIcon
-                    anchors.centerIn: parent
-                    width: 26
-                    height: 26
-                    source: popup.appIcon
-                    visible: status === Image.Ready
-                    sourceSize.width: 52
-                    sourceSize.height: 52
-                    fillMode: Image.PreserveAspectFit
-                }
-                Text {
-                    anchors.centerIn: parent
-                    visible: applicationIcon.status !== Image.Ready
-                    text: "󰖲"
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 23
-                    color: "#d4bfff"
-                }
-            }
-            Text {
-                x: 76
-                y: 16
-                text: "WORKSPACE"
-                font.family: "sans-serif"
-                font.pixelSize: 8
-                font.letterSpacing: 1.4
-                color: "#a699b4"
-            }
-            Text {
-                x: 76
-                y: 32
-                width: parent.width - x - 42
-                text: popup.heading
-                textFormat: Text.PlainText
-                elide: Text.ElideRight
-                font.family: "sans-serif"
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-                color: "#f4eefa"
-            }
-            Text {
-                x: 76
-                y: 55
-                width: parent.width - x - 16
-                text: popup.details
-                textFormat: Text.PlainText
-                elide: Text.ElideRight
-                font.family: "sans-serif"
-                font.pixelSize: 10
-                color: "#b6a8c3"
-            }
-            Rectangle {
-                anchors.right: parent.right
-                anchors.rightMargin: 14
-                y: 14
+                x: 12
+                anchors.verticalCenter: parent.verticalCenter
                 width: 24
                 height: 24
-                radius: 8
-                visible: popup.workspaceNumber !== ""
-                color: "#25c6abff"
+                color: "#14cba6f7"
+                border.width: 1
+                border.color: "#40cba6f7"
+                Rectangle { width: 7; height: 1; color: "#cba6f7" }
+                Rectangle { width: 1; height: 7; color: "#cba6f7" }
                 Text {
                     anchors.centerIn: parent
-                    text: popup.workspaceNumber
-                    font.family: "sans-serif"
+                    text: popup.workspaceNumber ? popup.workspaceNumber.padStart(2, "0") : "󰖲"
+                    font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
-                    color: "#d4bfff"
+                    color: "#cba6f7"
+                }
+            }
+            Rectangle {
+                x: 43
+                anchors.verticalCenter: parent.verticalCenter
+                width: 1
+                height: 14
+                rotation: 12
+                color: "#585b70"
+            }
+            Image {
+                x: 54
+                anchors.verticalCenter: parent.verticalCenter
+                width: 16
+                height: 16
+                source: popup.appIcon
+                visible: status === Image.Ready
+                sourceSize.width: 36
+                sourceSize.height: 36
+                fillMode: Image.PreserveAspectFit
+            }
+            Column {
+                id: workspaceText
+                x: popup.textOffset
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - x - 18
+                spacing: 3
+                Text {
+                    id: workspaceHeading
+                    width: parent.width
+                    text: popup.heading
+                    textFormat: Text.PlainText
+                    wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                    font.family: "JetBrains Mono"
+                    font.pixelSize: 12
+                    color: "#cdd6f4"
+                }
+                Text {
+                    id: workspaceDetail
+                    visible: text.length > 0
+                    width: parent.width
+                    text: popup.details
+                    textFormat: Text.PlainText
+                    wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                    font.family: "JetBrains Mono"
+                    font.pixelSize: 10
+                    color: "#bac2de"
                 }
             }
         }
@@ -418,22 +333,9 @@ Scope {
             onTriggered: popup.opened = false
         }
 
-        Rectangle {
+        HyprNoticeSurface {
             anchors.fill: parent
-            radius: 20
             clip: true
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: "#2c2435"
-                }
-                GradientStop {
-                    position: 1
-                    color: "#1b1822"
-                }
-            }
-            border.width: 1
-            border.color: "#70695782"
 
             Column {
                 id: content
@@ -448,14 +350,14 @@ Scope {
                     Rectangle {
                         width: 44
                         height: 44
-                        radius: 14
-                        color: "#25c6abff"
+                        radius: 4
+                        color: "#24b4befe"
                         Text {
                             anchors.centerIn: parent
                             text: "󰌌"
                             font.family: "JetBrainsMono Nerd Font"
                             font.pixelSize: 24
-                            color: "#d4bfff"
+                            color: "#b4befe"
                         }
                     }
                     Text {
@@ -465,27 +367,27 @@ Scope {
                         text: popup.heading
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
-                        font.family: "sans-serif"
+                        font.family: "JetBrains Mono"
                         font.pixelSize: 16
                         font.weight: Font.DemiBold
-                        color: "#f4eefa"
+                        color: "#cdd6f4"
                     }
                     Text {
                         x: 58
                         y: 26
                         text: "Navigation & image controls"
-                        font.family: "sans-serif"
+                        font.family: "JetBrains Mono"
                         font.pixelSize: 10
-                        color: "#a699b4"
+                        color: "#a6adc8"
                     }
                     Text {
                         anchors.right: parent.right
                         y: 8
                         text: popup.rows.length + " KEYS"
-                        font.family: "sans-serif"
+                        font.family: "JetBrains Mono"
                         font.pixelSize: 9
                         font.letterSpacing: 1
-                        color: "#c6abff"
+                        color: "#b4befe"
                     }
                 }
 
@@ -508,8 +410,8 @@ Scope {
 
                             Rectangle {
                                 anchors.fill: parent
-                                radius: 7
-                                color: "#08ffffff"
+                                radius: 3
+                                color: "#08cdd6f4"
                             }
                             Rectangle {
                                 id: keycap
@@ -517,10 +419,10 @@ Scope {
                                 y: 2
                                 width: Math.min(126, keyLabel.implicitWidth + 14)
                                 height: parent.height - 4
-                                radius: 6
-                                color: "#302334"
+                                radius: 3
+                                color: "#313244"
                                 border.width: 1
-                                border.color: "#665a456b"
+                                border.color: "#80585b70"
                                 Text {
                                     id: keyLabel
                                     anchors.centerIn: parent
@@ -528,7 +430,7 @@ Scope {
                                     textFormat: Text.PlainText
                                     font.family: "JetBrainsMono Nerd Font"
                                     font.pixelSize: 9
-                                    color: "#dfcff2"
+                                    color: "#cdd6f4"
                                 }
                             }
                             Text {
@@ -538,9 +440,9 @@ Scope {
                                 text: shortcut.description
                                 textFormat: Text.PlainText
                                 elide: Text.ElideRight
-                                font.family: "sans-serif"
+                                font.family: "JetBrains Mono"
                                 font.pixelSize: 11
-                                color: "#c5b8d0"
+                                color: "#bac2de"
                             }
                         }
                     }
@@ -556,9 +458,11 @@ Scope {
         property string heading: "System"
         property string details: ""
         property string glyph: "󰋽"
-        property color accent: "#c6abff"
+        property color accent: "#b4befe"
         property real level: -1
         property var quickSettings: []
+        readonly property bool compactLevel: !quickSettings.length && level >= 0
+        readonly property bool compactText: !quickSettings.length && level < 0
         visible: opened
         anchors {
             top: true
@@ -568,8 +472,8 @@ Scope {
             top: 16
             right: 16
         }
-        implicitWidth: Math.min(quickSettings.length ? 250 : 360, screen.width - 32)
-        implicitHeight: quickSettings.length ? 22 + quickSettings.length * 30 : level >= 0 ? 120 : Math.max(98, Math.min(180, body.implicitHeight + 62))
+        implicitWidth: compactLevel ? Math.min(Math.ceil(systemLevelContent.implicitWidth) + 24, screen.width - 32) : compactText ? Math.min(Math.max(54, Math.ceil(noticeMeasurement.implicitWidth) + 38), screen.width - 32) : Math.min(quickSettings.length ? 250 : 360, screen.width - 32)
+        implicitHeight: compactLevel ? 34 : compactText ? Math.max(38, Math.ceil(body.implicitHeight) + 22) : quickSettings.length ? 22 + quickSettings.length * 30 : level >= 0 ? 120 : Math.max(98, Math.min(180, body.implicitHeight + 62))
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
@@ -578,7 +482,7 @@ Scope {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         function show(icon, duration, color, message) {
-            controller.dismissPopups();
+            controller.dismissPopups("system");
             const raw = message.replace(/^fontsize:\d+\s*/, "").trim();
             quickSettings = [];
             const first = raw ? String.fromCodePoint(raw.codePointAt(0)) : "";
@@ -609,9 +513,9 @@ Scope {
             if (raw.includes("󰕾") && raw.includes("󰃟")) {
                 heading = "Quick settings";
                 const fields = [
-                    { glyph: "󰕾", label: "Volume", accent: "#ff8e86", pattern: /󰕾\s*([\d.]+%)/ },
-                    { glyph: "󰃟", label: "Brightness", accent: "#f1c27c", pattern: /󰃟\s*([\d.]+%)/ },
-                    { glyph: "󰍛", label: "Memory", accent: "#7ddbd7", pattern: /󰘚\s*([\d.]+\s*GB)/ }
+                    { glyph: "󰕾", label: "Volume", accent: "#b4befe", pattern: /󰕾\s*([\d.]+%)/ },
+                    { glyph: "󰃟", label: "Brightness", accent: "#f9e2af", pattern: /󰃟\s*([\d.]+%)/ },
+                    { glyph: "󰍛", label: "Memory", accent: "#a6e3a1", pattern: /󰘚\s*([\d.]+\s*GB)/ }
                 ];
                 const rows = [];
                 for (const field of fields) {
@@ -624,15 +528,16 @@ Scope {
             if (!details)
                 details = heading === "Muted" ? "Output muted" : heading === "Volume" ? "Output unmuted" : "Done";
             const percent = details.match(/^(\d+(?:\.\d+)?)%$/);
-            level = percent ? Math.max(0, Math.min(1, Number(percent[1]) / 100)) : -1;
+            const temperature = details.match(/^(\d+)K$/);
+            level = percent ? Math.max(0, Math.min(1, Number(percent[1]) / 100)) : temperature ? Math.max(0, Math.min(1, (Number(temperature[1]) - 1200) / 1500)) : -1;
             const match = color.match(/^rgb\(([0-9a-fA-F]{6})\)$/);
-            accent = match ? "#" + match[1] : "#c6abff";
+            accent = match ? "#" + match[1] : "#b4befe";
             const monitor = Hyprland.focusedMonitor;
             const target = Quickshell.screens.find(screen => monitor && screen.name === monitor.name);
             if (target)
                 screen = target;
             opened = true;
-            lifetime.interval = Math.max(250, Math.min(60000, duration || 2000));
+            lifetime.interval = compactLevel ? 1000 : Math.max(250, Math.min(60000, duration || 2000));
             lifetime.restart();
         }
 
@@ -641,29 +546,38 @@ Scope {
             onTriggered: systemNotice.opened = false
         }
 
-        Rectangle {
+        Text {
+            id: noticeMeasurement
+            visible: false
+            text: systemNotice.details
+            textFormat: Text.PlainText
+            font: body.font
+            renderType: body.renderType
+        }
+
+        HyprNoticeSurface {
             anchors.fill: parent
-            radius: 20
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: "#2c2435"
-                }
-                GradientStop {
-                    position: 1
-                    color: "#1b1822"
-                }
+            hud: systemNotice.compactLevel
+            accentColor: systemLevelContent.accentColor
+            HyprLevelIndicator {
+                id: systemLevelContent
+                x: 12
+                anchors.verticalCenter: parent.verticalCenter
+                visible: systemNotice.compactLevel
+                value: systemNotice.level
+                symbol: systemNotice.glyph
+                label: systemNotice.details
+                accentColor: "#cba6f7"
+                progressEndColor: "#b4befe"
             }
-            border.width: 1
-            border.color: "#70695782"
 
             Rectangle {
                 x: 18
                 y: 22
-                visible: !systemNotice.quickSettings.length
+                visible: !systemNotice.quickSettings.length && !systemNotice.compactText && !systemNotice.compactLevel
                 width: 46
                 height: 46
-                radius: 14
+                radius: 4
                 color: Qt.rgba(systemNotice.accent.r, systemNotice.accent.g, systemNotice.accent.b, 0.16)
                 Text {
                     anchors.centerIn: parent
@@ -675,30 +589,30 @@ Scope {
             }
             Text {
                 x: systemNotice.quickSettings.length ? 20 : 80
-                visible: !systemNotice.quickSettings.length
+                visible: !systemNotice.quickSettings.length && !systemNotice.compactText && !systemNotice.compactLevel
                 y: 18
                 width: parent.width - x - 18
                 text: systemNotice.heading.toUpperCase()
-                font.family: "sans-serif"
+                font.family: "JetBrains Mono"
                 font.pixelSize: 9
                 font.letterSpacing: 1.4
                 color: systemNotice.accent
             }
             Text {
                 id: body
-                visible: !systemNotice.quickSettings.length
-                x: 80
-                y: 38
+                visible: !systemNotice.quickSettings.length && !systemNotice.compactLevel
+                x: systemNotice.compactText ? 18 : 80
+                y: systemNotice.compactText ? (parent.height - implicitHeight) / 2 : 38
                 width: parent.width - x - 18
                 text: systemNotice.details
                 textFormat: Text.PlainText
-                font.family: "sans-serif"
+                font.family: "JetBrains Mono"
                 font.pixelSize: systemNotice.level >= 0 ? 26 : 12
                 font.weight: systemNotice.level >= 0 ? Font.DemiBold : Font.Normal
-                maximumLineCount: 3
-                elide: Text.ElideRight
+                maximumLineCount: systemNotice.compactText ? 2147483647 : 3
+                elide: systemNotice.compactText ? Text.ElideNone : Text.ElideRight
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                color: "#f4eefa"
+                color: "#cdd6f4"
             }
             Column {
                 x: 14
@@ -718,7 +632,7 @@ Scope {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 24
                             height: 24
-                            radius: 8
+                            radius: 3
                             color: Qt.rgba(settingRow.tone.r, settingRow.tone.g, settingRow.tone.b, 0.12)
                             Text {
                                 anchors.centerIn: parent
@@ -733,7 +647,7 @@ Scope {
                             anchors.verticalCenter: parent.verticalCenter
                             text: parent.modelData.label
                             font.pixelSize: 11
-                            color: "#d4c7df"
+                            color: "#bac2de"
                         }
                         Text {
                             anchors.right: parent.right
@@ -746,26 +660,7 @@ Scope {
                     }
                 }
             }
-            Rectangle {
-                x: 80
-                y: 94
-                width: parent.width - x - 18
-                height: 5
-                radius: 2.5
-                visible: systemNotice.level >= 0
-                color: "#44374f"
-                Rectangle {
-                    width: parent.width * Math.max(0, systemNotice.level)
-                    height: parent.height
-                    radius: parent.radius
-                    color: systemNotice.accent
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: 120
-                        }
-                    }
-                }
-            }
+
         }
     }
 }

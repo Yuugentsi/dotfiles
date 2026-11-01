@@ -1,6 +1,63 @@
 #!/usr/bin/env bash
 
 case "${1:-}" in
+    # recording
+    record)
+        recording_state="${XDG_RUNTIME_DIR:-/tmp}/hypr-recording-$UID"
+        exec 9>"$recording_state.lock"
+        flock -w 5 9 || exit 0
+
+        if [[ -f "$recording_state.pid" ]]; then
+            read -r recording_pid < "$recording_state.pid"
+            if [[ "$recording_pid" =~ ^[0-9]+$ ]] &&
+                [[ "$(cat "/proc/$recording_pid/comm" 2>/dev/null)" == "wf-recorder" ]]; then
+                kill -INT "$recording_pid"
+                for ((recording_attempt = 0; recording_attempt < 50; recording_attempt++)); do
+                    kill -0 "$recording_pid" 2>/dev/null || break
+                    sleep 0.1
+                done
+                if kill -0 "$recording_pid" 2>/dev/null; then
+                    printf '%s\n' "Recording is still finishing" >> "$recording_state.log"
+                    exit 1
+                fi
+                "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 1000 "rgb(80ff80)" "Recording stopped" >/dev/null 2>&1
+                exit 0
+            fi
+            rm -f "$recording_state.pid"
+        fi
+
+        recording_sink=$(pactl get-default-sink 2>/dev/null)
+        recording_audio="$recording_sink.monitor"
+        if [[ -z "$recording_sink" ]] || ! pactl list short sources 2>/dev/null |
+            awk -v source="$recording_audio" '$2 == source { found = 1 } END { exit !found }'; then
+            "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 4000 "rgb(ff8080)" "System audio unavailable" >/dev/null 2>&1
+            exit 1
+        fi
+
+        recording_dir="$HOME/0/videos/recordings"
+        mkdir -p "$recording_dir" || exit 1
+        "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 1000 "rgb(ff8080)" "Recording starts in 1 second" >/dev/null 2>&1
+        sleep 1
+        "$HOME/.config/hypr/scripts/quickshell.sh" dismiss -1 >/dev/null 2>&1
+        recording_file="$recording_dir/$(date +%m-%d-%Y_%H-%M-%S).mp4"
+        (
+            exec 9>&-
+            wf-recorder --audio="$recording_audio" -f "$recording_file" > "$recording_state.log" 2>&1 &
+            recording_pid=$!
+            echo "$recording_pid" > "$recording_state.pid"
+            wait "$recording_pid"
+            recording_result=$?
+            rm -f "$recording_state.pid"
+            if [[ "$recording_result" -ne 0 && "$recording_result" -ne 130 ]]; then
+                "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 4000 "rgb(ff8080)" "Recording failed: $recording_state.log" >/dev/null 2>&1
+            fi
+        ) </dev/null >/dev/null 2>&1 &
+        for ((recording_attempt = 0; recording_attempt < 50; recording_attempt++)); do
+            [[ -f "$recording_state.pid" ]] && break
+            sleep 0.02
+        done
+        ;;
+
     # brightness
     brightness)
         dev=$(ls -1 /sys/class/backlight 2>/dev/null | head -n 1)
@@ -31,8 +88,7 @@ case "${1:-}" in
         fi
 
         [ "$new_pct" -le 30 ] && icon="󰃞" || { [ "$new_pct" -le 70 ] && icon="󰃟" || icon="󰃠"; }
-        hyprctl dismissnotify -1 >/dev/null 2>&1
-        hyprctl notify -1 2000 0 "fontsize:18 $icon ${new_pct}%" >/dev/null 2>&1
+        "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 2000 0 "fontsize:18 $icon ${new_pct}%" >/dev/null 2>&1
         ;;
 
     # volume
@@ -40,11 +96,11 @@ case "${1:-}" in
         if [ "${2:-}" = "mute" ]; then
             wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
             read -r _ vol status < <(wpctl get-volume @DEFAULT_AUDIO_SINK@)
-            hyprctl dismissnotify -1 >/dev/null 2>&1
+            "$HOME/.config/hypr/scripts/quickshell.sh" dismiss -1 >/dev/null 2>&1
             if [ "$status" = "[MUTED]" ]; then
-                hyprctl notify -1 1500 "rgb(ff3333)" "fontsize:18 󰖁" >/dev/null 2>&1
+                "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 1500 "rgb(ff3333)" "fontsize:18 󰖁" >/dev/null 2>&1
             else
-                hyprctl notify -1 1500 "rgb(33ff33)" "fontsize:18 " >/dev/null 2>&1
+                "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 1500 "rgb(33ff33)" "fontsize:18 " >/dev/null 2>&1
             fi
             exit 0
         fi
@@ -70,14 +126,14 @@ case "${1:-}" in
         esac
 
         [ "$new_pct" -lt 30 ] && new_pct=30
-        [ "$new_pct" -gt 90 ] && new_pct=90
+        [ "$new_pct" -gt 95 ] && new_pct=95
 
-        wpctl set-volume @DEFAULT_AUDIO_SINK@ "${new_pct}%"
-        hyprctl dismissnotify -1 >/dev/null 2>&1
+        wpctl set-volume --limit 0.95 @DEFAULT_AUDIO_SINK@ "${new_pct}%"
+        "$HOME/.config/hypr/scripts/quickshell.sh" dismiss -1 >/dev/null 2>&1
         if [ "$status" = "[MUTED]" ]; then
-            hyprctl notify -1 1500 "rgb(ff3333)" "fontsize:18 󰖁" >/dev/null 2>&1
+            "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 1500 "rgb(ff3333)" "fontsize:18 󰖁" >/dev/null 2>&1
         else
-            hyprctl notify -1 1500 "$color" "fontsize:18 $icon ${new_pct}%" >/dev/null 2>&1
+            "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 1500 "$color" "fontsize:18 $icon ${new_pct}%" >/dev/null 2>&1
         fi
         ;;
 
@@ -100,8 +156,7 @@ case "${1:-}" in
 
         hyprctl hyprsunset temperature "$v"
         [ "$v" -le 2000 ] && icon="󰃛" || icon="󰃜"
-        hyprctl dismissnotify -1 >/dev/null 2>&1
-        hyprctl notify -1 2000 0 "fontsize:18 $icon ${v}K" >/dev/null 2>&1
+        "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 2000 0 "fontsize:18 $icon ${v}K" >/dev/null 2>&1
         ;;
 
     # toggle
@@ -114,76 +169,16 @@ case "${1:-}" in
         else
             hyprsunset >/dev/null 2>&1 &
             sleep 0.2
-            hyprctl hyprsunset temperature 2600 >/dev/null 2>&1
-            s=" 󰃛 2600K"
+            hyprctl hyprsunset temperature 2800 >/dev/null 2>&1
+            hyprctl hyprsunset gamma 70 >/dev/null 2>&1
+            s=" 󰃛 2800K · gamma 70%"
         fi
         ram=""
         if [ -r /proc/meminfo ]; then
             ram=$(awk '/MemTotal:/ {t=$2} /MemAvailable:/ {a=$2} END {printf "%.2f GB", (t-a)/(1024*1024)}' /proc/meminfo)
         fi
-        hyprctl dismissnotify -1 >/dev/null 2>&1
-        hyprctl notify 0 2000 0 "fontsize:18 󰕾 70% 󰃟 60%${s} 󰘚 ${ram}" >/dev/null 2>&1
-        ;;
-
-    # switcher
-    switcher)
-        python3 -B -c '
-import sys
-sys.dont_write_bytecode = True
-import json, subprocess, os
-
-ROFI_THEME = [
-    "-no-lazy-filter",
-    "-show-icons",
-    "-theme-str", "* { font: \"JetBrainsMono Nerd Font Medium 11\"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }",
-    "-theme-str", "window { width: 54%; background-color: @bg; transparency: \"real\"; border: 2px; border-color: @glow; border-radius: 18px; }",
-    "-theme-str", "mainbox { background-color: transparent; padding: 12px; spacing: 6px; }",
-    "-theme-str", "inputbar { background-color: rgba(255,255,255,0.07); padding: 8px 12px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }",
-    "-theme-str", "entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }",
-    "-theme-str", "listview { columns: 1; lines: 10; fixed-height: false; dynamic: true; spacing: 4px; scrollbar: true; scrollbar-width: 4px; }",
-    "-theme-str", "scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }",
-    "-theme-str", "element { background-color: @bg-alt; text-color: @fg; padding: 6px 12px; height: 36px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }",
-    "-theme-str", "element normal.normal { background-color: @bg-alt; text-color: @fg; }",
-    "-theme-str", "element alternate.normal { background-color: @bg-alt; text-color: @fg; }",
-    "-theme-str", "element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }",
-    "-theme-str", "element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; }",
-    "-theme-str", "element normal.normal element-text { background-color: transparent; text-color: @fg; }",
-    "-theme-str", "element alternate.normal element-text { background-color: transparent; text-color: @fg; }",
-    "-theme-str", "element selected.normal element-text { background-color: transparent; text-color: @accent; }"
-]
-
-try:
-    clients = json.loads(subprocess.check_output(["hyprctl", "clients", "-j"], text=True))
-except Exception:
-    sys.exit(0)
-
-clients = [c for c in clients if c.get("mapped") and c.get("address")]
-if not clients:
-    sys.exit(0)
-
-clients.sort(key=lambda c: c.get("focusHistoryID", 999))
-
-lines = []
-for c in clients:
-    title = (c.get("title") or c.get("class") or "window")[:52]
-    cls = c.get("class") or "?"
-    lines.append(f"{title}  ·  {cls}\0icon\x1f{cls}")
-
-cmd = ["rofi", "-dmenu", "-i", "-no-custom", "-selected-row", "0", "-format", "i", "-p", "Windows"] + ROFI_THEME
-proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-stdout, _ = proc.communicate(input="\n".join(lines))
-if not stdout.strip():
-    sys.exit(0)
-
-try:
-    idx = int(stdout.strip())
-    chosen_addr = clients[idx]["address"]
-    chosen_class = clients[idx].get("class", "?")
-    subprocess.run(["hyprctl", "dispatch", f"hl.dsp.focus({{ window = \"address:{chosen_addr}\" }})"], stdout=subprocess.DEVNULL)
-    subprocess.Popen(["hyprctl", "notify", "5", "1500", "rgb(a6e3a1)", f"  {chosen_class}"], stdout=subprocess.DEVNULL)
-except Exception:
-    pass
-'
+        "$HOME/.config/hypr/scripts/quickshell.sh" dismiss -1 >/dev/null 2>&1
+        "$HOME/.config/hypr/scripts/quickshell.sh" notify 0 2000 0 "fontsize:18 󰕾 70% 󰃟 60%${s} 󰘚 ${ram}" >/dev/null 2>&1
         ;;
 
     # video
@@ -210,7 +205,7 @@ for root, _, filenames in os.walk(video_dir):
                 pass
 
 if not files:
-    subprocess.Popen(["hyprctl", "notify", "3", "2000", "rgb(f38ba8)", "No videos found in ~/0/videos"], stdout=subprocess.DEVNULL)
+    subprocess.Popen([os.path.expanduser("~/.config/hypr/scripts/quickshell.sh"), "notify", "3", "2000", "rgb(f38ba8)", "No videos found in ~/0/videos"], stdout=subprocess.DEVNULL)
     sys.exit(0)
 
 files.sort(key=lambda x: x[0], reverse=True)
@@ -218,7 +213,7 @@ sorted_paths = [p for _, p in files]
 
 latest_name = os.path.basename(sorted_paths[0])
 display_title = (latest_name[:40] + "...") if len(latest_name) > 43 else latest_name
-subprocess.Popen(["hyprctl", "notify", "1", "2000", "rgb(cba6f7)", f"🎬 Opening: {display_title}"], stdout=subprocess.DEVNULL)
+subprocess.Popen([os.path.expanduser("~/.config/hypr/scripts/quickshell.sh"), "notify", "1", "2000", "rgb(cba6f7)", f"🎬 Opening: {display_title}"], stdout=subprocess.DEVNULL)
 
 subprocess.Popen(["mpv"] + sorted_paths, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 '
@@ -229,15 +224,17 @@ subprocess.Popen(["mpv"] + sorted_paths, stdout=subprocess.DEVNULL, stderr=subpr
         exec 200>/tmp/spotify_listener.lock
         flock -n 200 || exit 0
 
-        playerctl --follow status -f '{{playerName}} {{status}}' 2>/dev/null | while read -r player status; do
-            if [ "$player" = "spotify" ] && [ "$status" = "Playing" ]; then
-                pkill -x mpv 2>/dev/null
-            fi
+        playerctl --player=spotify --follow status 2>/dev/null | while IFS= read -r status; do
+            case "$status" in
+                Playing)
+                    pkill -x mpv 2>/dev/null
+                    ;;
+            esac
         done
         ;;
 
     *)
-        echo "Usage: $0 {brightness [up|down]|volume [up|down|mute]|sunset [up|down]|toggle|switcher|video|spotify-listener}"
+        echo "Usage: $0 {brightness [up|down]|volume [up|down|mute]|sunset [up|down]|toggle|video|spotify-listener}"
         exit 1
         ;;
 esac

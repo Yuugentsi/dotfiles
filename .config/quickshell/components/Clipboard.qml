@@ -1,3 +1,4 @@
+import "../controls/PanelTheme.js" as Theme
 import "../controls"
 import Quickshell
 import Quickshell.Io
@@ -35,12 +36,12 @@ Item {
 
     property string historyPath: Quickshell.env("HOME") + "/.local/state/quickshell/clipboard/clipboard-history.json"
     property string captureScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/clipboard_capture.sh"
-    property color background: "#18181d"
-    property color foreground: "#eef3f8"
-    property color border: "#37343f"
-    property color scrim: "#ac080e16"
-    property color selectedBackground: "#383044"
-    property color selectedText: "#eef3f8"
+    property color background: Theme.background
+    property color foreground: Theme.foreground
+    property color border: Theme.border
+    property color scrim: Theme.scrim
+    property color selectedBackground: Theme.hover
+    property color selectedText: Theme.foreground
     readonly property int cornerRadius: root.space(18)
     property string fontFamily: "sans-serif"
     property int contentMargin: root.space(16)
@@ -435,18 +436,9 @@ Item {
             radius: root.cornerRadius
             anchors.centerIn: parent
             anchors.verticalCenterOffset: 0
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: "#25202e"
-                }
-                GradientStop {
-                    position: 1
-                    color: root.background
-                }
-            }
+            gradient: PanelGradient {}
             border.width: 1
-            border.color: Qt.rgba(0.65, 0.82, 1, 0.10)
+            border.color: Theme.border
 
             MouseArea {
                 anchors.fill: parent
@@ -552,14 +544,14 @@ Item {
                     width: parent.width
                     height: root.space(42)
                     radius: 13
-                    color: "#17141e"
+                    color: Theme.background
                     border.width: 1
-                    border.color: searchInput.activeFocus ? "#625471" : "#37343f"
+                    border.color: searchInput.activeFocus ? "#625471" : Theme.border
                     Text {
                         x: 16
                         anchors.verticalCenter: parent.verticalCenter
                         text: "\uf002"
-                        color: "#aaa6b5"
+                        color: Theme.muted
                         font.family: "Symbols Nerd Font Mono"
                         font.pixelSize: 15
                     }
@@ -598,7 +590,7 @@ Item {
                         Text {
                             visible: !searchInput.text
                             text: "Search…"
-                            color: "#716c76"
+                            color: Theme.dim
                             font: searchInput.font
                         }
                     }
@@ -623,7 +615,7 @@ Item {
                         Text {
                             anchors.centerIn: parent
                             text: "×"
-                            color: "#aaa6b5"
+                            color: Theme.muted
                             font.pixelSize: 18
                         }
                         MouseArea {
@@ -665,7 +657,7 @@ Item {
                             width: 34
                             height: 28
                             radius: 9
-                            color: selected ? "#383044" : filterHit.containsMouse || activeFocus ? "#29252f" : "#151319"
+                            color: selected ? Theme.hover : filterHit.containsMouse || activeFocus ? Theme.surface : Theme.background
                             border.width: selected ? 1 : 0
                             border.color: "#625471"
                             activeFocusOnTab: true
@@ -682,7 +674,7 @@ Item {
                             Text {
                                 anchors.centerIn: parent
                                 text: filterButton.modelData.icon
-                                color: filterButton.selected ? "#d8caff" : "#aaa6b5"
+                                color: filterButton.selected ? Theme.accent : Theme.muted
                                 font.family: "Symbols Nerd Font Mono"
                                 font.pixelSize: 12
                             }
@@ -733,7 +725,7 @@ Item {
                             width: ListView.view.width
                             height: root.rowHeight
                             radius: 10
-                            color: hasCursor ? "#383044" : rowHit.containsMouse ? "#292430" : "#151219"
+                            color: hasCursor ? Theme.hover : rowHit.containsMouse ? Theme.hover : Theme.background
                             border.width: hasCursor ? 1 : 0
                             border.color: "#655271"
                             Behavior on color {
@@ -772,7 +764,7 @@ Item {
                                     visible: !row.previewImage
                                     anchors.centerIn: parent
                                     text: row.entryType === "image" ? "\uf03e" : row.entryType === "file" ? "\uf15b" : "\uf15c"
-                                    color: "#c3b7ff"
+                                    color: Theme.accent
                                     font.family: "Symbols Nerd Font Mono"
                                     font.pixelSize: 17
                                 }
@@ -840,7 +832,7 @@ Item {
                                 anchors.left: parent.left
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: ""
-                                color: "#aaa6b5"
+                                color: Theme.muted
                                 font.family: root.fontFamily
                                 font.pixelSize: 11
                                 font.weight: Font.Medium
@@ -962,7 +954,7 @@ Item {
                         radius: 14
                         enabled: displayModel.count > 0
                         opacity: enabled ? 1 : 0.35
-                        color: pasteHit.containsMouse || activeFocus ? "#ded4ff" : "#c3b7ff"
+                        color: pasteHit.containsMouse || activeFocus ? Theme.accent : Theme.accent
                         activeFocusOnTab: true
                         Accessible.role: Accessible.Button
                         Accessible.name: "Paste selected item"
@@ -971,7 +963,7 @@ Item {
                         Text {
                             anchors.centerIn: parent
                             text: "Paste ↵"
-                            color: "#19171c"
+                            color: Theme.background
                             font.family: root.fontFamily
                             font.pixelSize: 12
                             font.weight: Font.DemiBold
@@ -999,7 +991,7 @@ Item {
         width: contextRoot.space(30)
         height: width
         radius: contextRoot.space(7)
-        color: clipActionHit.containsMouse || activeFocus ? "#383044" : "transparent"
+        color: clipActionHit.containsMouse || activeFocus ? Theme.hover : "transparent"
         opacity: enabled ? 1 : 0.3
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
@@ -1014,7 +1006,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: clipActionButton.glyph
-            color: clipActionButton.danger ? "#e28b9b" : "#c3b7ff"
+            color: clipActionButton.danger ? "#e28b9b" : Theme.accent
             font.family: "Symbols Nerd Font Mono"
             font.pixelSize: contextRoot.space(12)
         }
@@ -1033,11 +1025,11 @@ Item {
         property int selectedIndex: 1
         property string message: ""
         property string confirmText: "Delete"
-        property color background: "#18181d"
-        property color foreground: "#eef3f8"
+        property color background: Theme.background
+        property color foreground: Theme.foreground
         property color scrim: "#b3000000"
-        property color selectedBackground: "#383044"
-        property color selectedText: "#eef3f8"
+        property color selectedBackground: Theme.hover
+        property color selectedText: Theme.foreground
         property string fontFamily: "sans-serif"
         property int cornerRadius: 8
         signal canceled
@@ -1068,7 +1060,7 @@ Item {
             height: 130
             radius: confirmDialogRoot.cornerRadius
             color: confirmDialogRoot.background
-            border.color: "#37343f"
+            border.color: Theme.border
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: 24
@@ -1091,7 +1083,7 @@ Item {
                         radius: 4
                         color: confirmDialogRoot.selectedIndex === index ? confirmDialogRoot.selectedBackground : "transparent"
                         border.width: 1
-                        border.color: confirmDialogRoot.selectedIndex === index ? "#c3b7ff" : "#37343f"
+                        border.color: confirmDialogRoot.selectedIndex === index ? Theme.accent : Theme.border
                         Text {
                             anchors.centerIn: parent
                             text: modelData

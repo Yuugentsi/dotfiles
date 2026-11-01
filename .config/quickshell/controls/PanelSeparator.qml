@@ -1,7 +1,8 @@
+import "PanelTheme.js" as Theme
 import QtQuick
 
 Rectangle {
-    property color foreground: "#eef3f8"
+    property color foreground: Theme.foreground
     width: parent.width
     height: 1
     color: foreground

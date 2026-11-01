@@ -32,24 +32,17 @@ FILES_CACHE_MTIME="$FILES_CACHE_DIR/cache-mtime.txt"
 FILES_HISTORY="$FILES_CACHE_DIR/history.txt"
 FILES_LIMIT=5000
 
+_rofi_filterable_entries() {
+    local entry
+    while IFS= read -r entry || [[ -n "$entry" ]]; do
+        printf '%s\0permanent\x1ffalse\n' "$entry"
+    done
+}
+
 rofi_menu() {
     local lines="${2:-10}"
-    rofi -dmenu -i \
-        -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }' \
-        -theme-str 'window { width: 54%; background-color: @bg; transparency: "real"; border: 2px; border-color: @glow; border-radius: 18px; }' \
-        -theme-str 'mainbox { background-color: transparent; padding: 8px; spacing: 4px; }' \
-        -theme-str 'inputbar { background-color: rgba(255,255,255,0.07); padding: 6px 10px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }' \
-        -theme-str 'entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }' \
-        -theme-str "listview { columns: 1; lines: ${lines}; fixed-height: false; dynamic: true; spacing: 2px; scrollbar: true; scrollbar-width: 4px; }" \
-        -theme-str 'scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }' \
-        -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 28px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }' \
-        -theme-str 'element normal.normal { background-color: @bg-alt; text-color: @fg; }' \
-        -theme-str 'element alternate.normal { background-color: @bg-alt; text-color: @fg; }' \
-        -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }' \
-        -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; }' \
-        -theme-str 'element normal.normal element-text { background-color: transparent; text-color: @fg; }' \
-        -theme-str 'element alternate.normal element-text { background-color: transparent; text-color: @fg; }' \
-        -theme-str 'element selected.normal element-text { background-color: transparent; text-color: @accent; }' \
+    _rofi_filterable_entries | rofi -dmenu -i -format s -auto-select \
+        -theme-str "listview { columns: 1; lines: ${lines}; fixed-height: false; dynamic: true; }" \
         -p "$1"
 }
 
@@ -87,22 +80,8 @@ open_private() {
 }
 
 _manga_rofi_menu() {
-    rofi -dmenu -i -no-custom -selected-row 0 -format i \
-        -theme-str '* { font: "JetBrainsMono Nerd Font Medium 10.5"; bg: rgba(12,4,8,0.75); bg-alt: rgba(255,255,255,0.05); bg-hover: rgba(200,90,120,0.25); fg: #ffe0ec; muted: #b898a8; accent: #f8b4c8; glow: rgba(248,180,200,0.5); }' \
-        -theme-str 'window { width: 54%; background-color: @bg; transparency: "real"; border: 2px; border-color: @glow; border-radius: 18px; }' \
-        -theme-str 'mainbox { background-color: transparent; padding: 8px; spacing: 4px; }' \
-        -theme-str 'inputbar { background-color: rgba(255,255,255,0.07); padding: 6px 10px; border: 1px; border-color: rgba(248,180,200,0.2); border-radius: 10px; children: [ entry ]; }' \
-        -theme-str 'entry { background-color: transparent; text-color: @fg; placeholder-color: @muted; cursor-color: @accent; cursor-width: 2px; }' \
-        -theme-str 'listview { columns: 1; lines: 12; fixed-height: false; dynamic: true; spacing: 2px; scrollbar: true; scrollbar-width: 4px; }' \
-        -theme-str 'scrollbar { background-color: transparent; handle-color: @accent; handle-width: 4px; border-radius: 2px; }' \
-        -theme-str 'element { background-color: @bg-alt; text-color: @fg; padding: 4px 8px; height: 28px; border: 1px; border-color: rgba(255,255,255,0.03); border-radius: 8px; }' \
-        -theme-str 'element normal.normal { background-color: @bg-alt; text-color: @fg; }' \
-        -theme-str 'element alternate.normal { background-color: @bg-alt; text-color: @fg; }' \
-        -theme-str 'element selected.normal { background-color: @bg-hover; text-color: @accent; border: 2px; border-color: @accent; }' \
-        -theme-str 'element-text { background-color: transparent; text-color: @fg; vertical-align: 0.5; highlight: bold #ffffff; }' \
-        -theme-str 'element normal.normal element-text { background-color: transparent; text-color: @fg; }' \
-        -theme-str 'element alternate.normal element-text { background-color: transparent; text-color: @fg; }' \
-        -theme-str 'element selected.normal element-text { background-color: transparent; text-color: @accent; }' \
+    _rofi_filterable_entries | rofi -dmenu -i -no-custom -selected-row 0 -format i \
+        -theme-str 'listview { columns: 1; lines: 12; fixed-height: false; dynamic: true; }' \
         -p "$1"
 }
 
@@ -340,9 +319,14 @@ handle_bang() {
             fi
             ;;
         .mpv) mpv "$query" &>/dev/null & ;;
-        .mp4) (hyprctl notify 5 2000 "rgb(a6e3a1)" "󰄬" && yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" -o "$HOME/videos/yt/%(title)s.%(ext)s" "$query" && hyprctl notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
-        .mp3) (hyprctl notify 5 2000 "rgb(a6e3a1)" "󰄬" && yt-dlp -x --audio-format mp3 -o "$HOME/music/yt/%(title)s.%(ext)s" "$query" && hyprctl notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
-        .dl) (hyprctl notify 5 2000 "rgb(a6e3a1)" "󰄬" && gallery-dl "$query" && hyprctl notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
+        .webm) (
+            IFS= read -r -d '' video < <(find "$HOME" -type d \( -path "*/\.*" -o -name node_modules \) -prune -o -type f -iname "*.webm" -print0 2>/dev/null | shuf -z -n 1)
+            [[ -n "$video" ]] || exit 0
+            mpv -- "$video"
+        ) &>/dev/null & ;;
+        .mp4) ("$HOME/.config/hypr/scripts/quickshell.sh" notify 5 2000 "rgb(a6e3a1)" "󰄬" && yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" -o "$HOME/videos/yt/%(title)s.%(ext)s" "$query" && "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
+        .mp3) ("$HOME/.config/hypr/scripts/quickshell.sh" notify 5 2000 "rgb(a6e3a1)" "󰄬" && yt-dlp -x --audio-format mp3 -o "$HOME/music/yt/%(title)s.%(ext)s" "$query" && "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
+        .dl) ("$HOME/.config/hypr/scripts/quickshell.sh" notify 5 2000 "rgb(a6e3a1)" "󰄬" && gallery-dl "$query" && "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
         .zed)
             if [ -n "$query" ]; then
                 zeditor "$HOME/$query" &>/dev/null &
@@ -374,7 +358,7 @@ handle_bang() {
             hyprctl hyprpaper preload "$cache/current" &>/dev/null
             hyprctl hyprpaper wallpaper ",$cache/current,cover" &>/dev/null
             hyprctl hyprpaper unload unused &>/dev/null
-            hyprctl notify 5 2200 "rgb(cba6f7)" "󰄬 wallpaper set"
+            "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 2200 "rgb(cba6f7)" "󰄬 wallpaper set"
         ) &>/dev/null & ;;
         .wallpaperblur|.wpb) (
             cache="$HOME/.cache/scripts/wallpapers"
@@ -387,10 +371,934 @@ handle_bang() {
             hyprctl hyprpaper preload "$cache/current" &>/dev/null
             hyprctl hyprpaper wallpaper ",$cache/current,cover" &>/dev/null
             hyprctl hyprpaper unload unused &>/dev/null
-            hyprctl notify 5 2200 "rgb(cba6f7)" "󰄬 wallpaper set (blur)"
+            "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 2200 "rgb(cba6f7)" "󰄬 wallpaper set (blur)"
         ) &>/dev/null & ;;
     esac
 }
+
+run_manga_reader() {
+    python3 -B - <<'MANGA_READER_PYTHON'
+import json
+import mimetypes
+import os
+from pathlib import Path
+import random
+import re
+import secrets
+import subprocess
+import tempfile
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import zipfile
+
+HOME = Path.home()
+CACHE = HOME / '.cache/scripts/manga'
+RANDOM_HISTORY = CACHE / 'random_history.txt'
+SHUFFLE_HISTORY = CACHE / 'shuffle_history.txt'
+MENU_HISTORY = CACHE / 'history.txt'
+PROGRESS = CACHE / 'progress.json'
+IMAGE_TYPES = {'.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.bmp'}
+
+
+def find_mangas(root=HOME):
+    files = []
+    for directory, folders, names in os.walk(root):
+        folders[:] = [name for name in folders if not name.startswith('.') and name != 'node_modules']
+        files.extend(Path(directory) / name for name in names if name.lower().endswith('.cbz'))
+    return sorted(files)
+
+
+def read_history(path):
+    return path.read_text().splitlines() if path.exists() else []
+
+
+def save_history(path, entries):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix('.tmp')
+    temporary.write_text(''.join(f'{entry}\n' for entry in entries))
+    temporary.replace(path)
+
+
+def page_order(name):
+    return [int(part) if part.isdigit() else part.casefold() for part in re.split(r'(\d+)', name)]
+
+
+class MangaLibrary:
+    def __init__(self, folder):
+        self.folder = Path(folder)
+        self.files = []
+        self.copies = {}
+        groups = {}
+        for path in sorted(find_mangas(), key=lambda path: (len(path.name), str(path))):
+            try:
+                with zipfile.ZipFile(path) as archive:
+                    images = sorted((info for info in archive.infolist() if not info.is_dir() and Path(info.filename).suffix.lower() in IMAGE_TYPES and not info.filename.startswith('__MACOSX/')), key=lambda info: page_order(info.filename))
+                    if not images:
+                        continue
+                    signature = tuple((info.CRC, info.file_size) for info in images)
+            except (OSError, ValueError, zipfile.BadZipFile):
+                continue
+            representative = groups.get(signature)
+            if representative is None:
+                groups[signature] = path
+                self.files.append(path)
+                self.copies[path] = []
+                representative = path
+            self.copies[representative].append(path)
+        self.current = None
+        self.images = []
+        self.pick_id = ''
+        self.state = {}
+        self.lock = threading.Lock()
+
+    def was_selected(self, path, history):
+        return any(str(copy) in history for copy in self.copies[path])
+
+    def progress(self):
+        data = json.loads(PROGRESS.read_text()) if PROGRESS.exists() else {}
+        entries = [data[str(path)] for path in self.copies.get(self.current, []) if isinstance(data.get(str(path)), dict)]
+        saved = max(entries, key=lambda entry: entry.get('updated', 0), default={})
+        page = max(0, min(len(self.images) - 1, int(saved.get('page', 0))))
+        offset = max(0, min(1, float(saved.get('offset', 0))))
+        return {'page': page, 'offset': offset}
+
+    def save_progress(self, pick_id, page, offset):
+        if pick_id != self.pick_id or self.current is None or not self.images:
+            raise ValueError('Reading selection changed')
+        data = json.loads(PROGRESS.read_text()) if PROGRESS.exists() else {}
+        saved = {
+            'page': max(0, min(len(self.images) - 1, int(page))),
+            'offset': max(0, min(1, float(offset))),
+            'updated': time.time(),
+        }
+        for path in self.copies[self.current]:
+            data[str(path)] = saved
+        PROGRESS.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(mode='w', dir=PROGRESS.parent, prefix='mangas-', suffix='.tmp', delete=False) as output:
+            temporary = Path(output.name)
+            json.dump(data, output, ensure_ascii=False)
+        try:
+            temporary.replace(PROGRESS)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return saved
+
+    def choose(self):
+        self.images = []
+        self.pick_id = secrets.token_hex(8)
+        self.files = [path for path in self.files if path.is_file()]
+        if not self.files:
+            self.current = None
+            self.state = {'title': 'Your library is empty', 'error': 'Add CBZ files to your home folders to get started.', 'total': 0, 'remaining': 0, 'pages': 0, 'size': '', 'folder': '', 'cover': ''}
+            return self.state
+        history = set(read_history(SHUFFLE_HISTORY if SHUFFLE_HISTORY.exists() else RANDOM_HISTORY))
+        available = [path for path in self.files if not self.was_selected(path, history)]
+        if not available:
+            history.clear()
+            available = self.files
+        candidates = [path for path in available if path != self.current] or available
+        self.current = random.choice(candidates)
+        history.update(str(path) for path in self.copies[self.current])
+        save_history(SHUFFLE_HISTORY, sorted(history))
+        cover = ''
+        pages = 0
+        error = ''
+        try:
+            with zipfile.ZipFile(self.current) as archive:
+                images = sorted((info for info in archive.infolist() if not info.is_dir() and Path(info.filename).suffix.lower() in IMAGE_TYPES and not info.filename.startswith('__MACOSX/')), key=lambda info: page_order(info.filename))
+                pages = len(images)
+                self.images = [info.filename for info in images]
+                if images:
+                    preview = self.folder / f'{secrets.token_hex(8)}{Path(images[0].filename).suffix.lower()}'
+                    preview.write_bytes(archive.read(images[0]))
+                    cover = preview.as_uri()
+        except (OSError, ValueError, RuntimeError, zipfile.BadZipFile, NotImplementedError):
+            error = 'The cover could not be loaded. You can still try opening the file.'
+        self.state = {
+            'title': self.current.stem, 'cover': cover, 'pages': pages,
+            'size': f'{self.current.stat().st_size / 1024 / 1024:.1f} MB',
+            'folder': str(self.current.parent.relative_to(HOME)),
+            'total': len(self.files), 'remaining': len(available), 'error': error,
+            'pick': self.pick_id,
+            'progress': self.progress(),
+        }
+        return self.state
+
+    def open(self):
+        if self.current is None:
+            return self.state
+        if not self.current.is_file():
+            self.state['error'] = 'This file no longer exists. Choose another manga.'
+            return self.state
+        if not self.images:
+            self.state['error'] = 'No readable pages were found in this CBZ.'
+            return self.state
+        self.state['error'] = ''
+        self.state['progress'] = self.progress()
+        history = read_history(RANDOM_HISTORY)
+        if all(self.was_selected(path, history) for path in self.files):
+            history = []
+        if str(self.current) not in history:
+            history.append(str(self.current))
+        save_history(RANDOM_HISTORY, history)
+        relative = str(self.current.relative_to(HOME))
+        save_history(MENU_HISTORY, [entry for entry in read_history(MENU_HISTORY) if entry != relative] + [relative])
+        self.state['remaining'] = sum(not self.was_selected(path, history) for path in self.files)
+        return self.state
+
+    def page(self, pick_id, index):
+        if pick_id != self.pick_id or self.current is None or not 0 <= index < len(self.images):
+            raise FileNotFoundError('Page not found')
+        filename = self.images[index]
+        with zipfile.ZipFile(self.current) as archive:
+            content = archive.read(filename)
+        return content, mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+
+QML = r'''
+import QtQuick
+import QtQuick.Window
+import QtQuick.Controls
+import QtQuick.Layouts
+
+ApplicationWindow {
+    id: root
+    visible: false
+    width: 760; height: 820
+    minimumWidth: 580; minimumHeight: 580
+    title: "Mangas"
+    color: "#000000"
+    font.family: "Adwaita Sans"
+    property color accent: "#0a84ff"
+    property color ink: "#f5f5f7"
+    property color secondaryInk: "#98989d"
+    property color separator: "#38383a"
+    property var manga: ({title: "Finding your next read", total: 0, remaining: 0, pages: 0, size: "", folder: "", cover: "", error: ""})
+    property bool busy: false
+    property bool reading: false
+    property int pageIndex: 0
+    property real zoom: 1
+    property bool fitWidth: true
+    property bool showControls: false
+    property bool warmFilter: false
+    property bool autoScrollEnabled: false
+    property real autoScrollSpeed: 150
+    property bool restoringProgress: false
+    property bool allowClose: false
+    property string lastSavedProgress: ""
+    property int resumePage: 0
+    property real resumeOffset: 0
+    function toggleAutoScroll() {
+        smoothScroll.stop()
+        autoScrollEnabled = !autoScrollEnabled
+    }
+    function saveProgress(callback) {
+        if (!reading || restoringProgress || !manga.pick) {
+            if (callback) callback()
+            return
+        }
+        let index = reader.indexAt(reader.contentX + reader.width / 2, reader.contentY + 1)
+        if (index < 0) index = pageIndex
+        let item = reader.itemAtIndex(index)
+        let offset = item && item.height > 0 ? Math.max(0, Math.min(1, (reader.contentY - item.y) / item.height)) : 0
+        let payload = JSON.stringify({pick: manga.pick, page: index, offset: offset})
+        if (payload === lastSavedProgress) {
+            if (callback) callback()
+            return
+        }
+        let request = new XMLHttpRequest()
+        request.open("POST", API_URL + "progress")
+        request.setRequestHeader("Content-Type", "application/json")
+        request.onreadystatechange = function() {
+            if (request.readyState !== XMLHttpRequest.DONE) return
+            if (request.status === 200) root.lastSavedProgress = payload
+            if (callback) callback()
+        }
+        request.send(payload)
+    }
+    function returnToLibrary() {
+        saveProgress(function() { root.reading = false })
+    }
+    function goToStart() {
+        smoothScroll.stop()
+        resumePage = 0
+        resumeOffset = 0
+        reader.positionViewAtBeginning()
+        pageIndex = 0
+        saveProgress()
+    }
+    Timer {
+        interval: 16
+        repeat: true
+        property real lastTick: 0
+        running: root.autoScrollEnabled && root.reading && !root.restoringProgress
+        onRunningChanged: lastTick = Date.now()
+        onTriggered: {
+            let now = Date.now()
+            let elapsed = Math.min(0.05, Math.max(0, (now - lastTick) / 1000))
+            lastTick = now
+            let maximum = reader.originY + Math.max(0, reader.contentHeight - reader.height)
+            let distance = root.autoScrollSpeed * elapsed
+            if (smoothScroll.running) smoothScroll.to = Math.min(maximum, smoothScroll.to + distance)
+            else reader.contentY = Math.min(maximum, reader.contentY + distance)
+        }
+    }
+    Timer {
+        interval: 1500; repeat: true
+        running: root.reading && !root.restoringProgress
+        onTriggered: root.saveProgress()
+    }
+    Timer {
+        interval: 100; repeat: true
+        running: root.reading && root.restoringProgress
+        onTriggered: {
+            reader.forceLayout()
+            reader.positionViewAtIndex(root.resumePage, ListView.Beginning)
+            let item = reader.itemAtIndex(root.resumePage)
+            if (!item || !item.ready) return
+            reader.forceLayout()
+            let maximum = reader.originY + Math.max(0, reader.contentHeight - reader.height)
+            reader.contentY = Math.min(maximum, item.y + item.height * root.resumeOffset)
+            root.pageIndex = root.resumePage
+            root.restoringProgress = false
+        }
+    }
+    onClosing: event => {
+        if (root.reading && !root.allowClose) {
+            event.accepted = false
+            root.saveProgress(function() {
+                root.allowClose = true
+                Qt.callLater(function() { root.close() })
+            })
+        }
+    }
+    function setZoom(value, x = reader.width / 2, y = reader.height / 2) {
+        let nextZoom = Math.max(0.5, Math.min(4, value))
+        if (nextZoom === zoom) return
+        smoothScroll.stop()
+        let ratio = nextZoom / zoom
+        let oldX = reader.contentX
+        let oldY = reader.contentY
+        let index = reader.indexAt(oldX + x, oldY + y)
+        let item = reader.itemAtIndex(index)
+        let offset = item ? oldY + y - item.y : 0
+        zoom = nextZoom
+        reader.forceLayout()
+        item = reader.itemAtIndex(index)
+        reader.contentX = Math.max(0, Math.min(reader.contentWidth - reader.width, (oldX + x) * ratio - x))
+        let targetY = item ? item.y + offset * ratio - y : (oldY + y) * ratio - y
+        let maximum = reader.originY + Math.max(0, reader.contentHeight - reader.height)
+        reader.contentY = Math.max(reader.originY, Math.min(maximum, targetY))
+    }
+    function toggleFullScreen() {
+        if (visibility === Window.FullScreen) showMaximized()
+        else showFullScreen()
+    }
+    function turnPage(offset) {
+        smoothScroll.stop()
+        let nextIndex = Math.max(0, Math.min(manga.pages - 1, pageIndex + offset))
+        reader.positionViewAtIndex(nextIndex, ListView.Beginning)
+        pageIndex = nextIndex
+    }
+    function scrollPage(delta) {
+        if (!delta) return
+        let position = smoothScroll.running ? smoothScroll.to : reader.contentY
+        let start = reader.contentY
+        smoothScroll.stop()
+        let minimum = reader.originY
+        let maximum = minimum + Math.max(0, reader.contentHeight - reader.height)
+        smoothScroll.from = start
+        smoothScroll.to = Math.max(minimum, Math.min(maximum, position - delta))
+        smoothScroll.start()
+    }
+    NumberAnimation {
+        id: smoothScroll
+        target: reader; property: "contentY"
+        duration: 180
+        easing.type: Easing.OutCubic
+    }
+    function request(action, readAfter = false) {
+        if (busy) return
+        if (action === "next" && reading) {
+            saveProgress(function() { root.reading = false; root.request(action, readAfter) })
+            return
+        }
+        busy = true
+        let request = new XMLHttpRequest()
+        request.open("POST", API_URL + action)
+        request.onreadystatechange = function() {
+            if (request.readyState !== XMLHttpRequest.DONE) return
+            root.busy = false
+            if (request.status === 200) {
+                root.manga = JSON.parse(request.responseText)
+                if (root.manga.error || root.manga.total === 0) root.visible = true
+                if (action === "open" && !root.manga.error) {
+                    root.pageIndex = 0
+                    root.resumePage = root.manga.progress ? root.manga.progress.page : 0
+                    root.resumeOffset = root.manga.progress ? root.manga.progress.offset : 0
+                    root.restoringProgress = true
+                    root.lastSavedProgress = ""
+                    root.zoom = 1
+                    root.fitWidth = true
+                    root.showControls = false
+                    smoothScroll.stop()
+                    root.reading = true
+                    root.showFullScreen()
+                    Qt.callLater(function() { reader.positionViewAtIndex(root.resumePage, ListView.Beginning) })
+                }
+                if (action === "next") {
+                    root.reading = false
+                    if (readAfter && root.manga.total > 0) root.request("open")
+                }
+            } else {
+                root.manga = Object.assign({}, root.manga, {error: "Could not load the library. Please reopen this window."})
+                root.visible = true
+            }
+        }
+        request.send()
+    }
+    Component.onCompleted: request("next", true)
+    Shortcut { sequence: "Escape"; onActivated: shortcutsHelp.visible ? shortcutsHelp.close() : root.reading ? root.returnToLibrary() : root.close() }
+    Shortcut { id: helpShortcut; sequence: "H"; context: Qt.ApplicationShortcut; autoRepeat: false; onActivated: shortcutsHelp.visible ? shortcutsHelp.close() : shortcutsHelp.open() }
+    Shortcut { id: quitShortcut; sequence: "Q"; enabled: !shortcutsHelp.visible; onActivated: root.close() }
+    Shortcut { sequence: "Ctrl+R"; enabled: !shortcutsHelp.visible && !root.reading; onActivated: root.request("next") }
+    Shortcut { id: randomMangaShortcut; sequence: "R"; autoRepeat: false; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.request("next", true) }
+    Shortcut { sequence: "Return"; enabled: !shortcutsHelp.visible && !root.reading && root.manga.total > 0; onActivated: root.request("open") }
+    Shortcut { id: nextPageShortcut; sequences: ["Right", "D", "Space", "PgDown"]; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.turnPage(1) }
+    Shortcut { id: previousPageShortcut; sequences: ["Left", "A", "PgUp"]; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.turnPage(-1) }
+    Shortcut { sequences: ["Up", "W"]; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.scrollPage(reader.height * 0.15) }
+    Shortcut { sequences: ["Down", "S"]; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.scrollPage(-reader.height * 0.15) }
+    Shortcut { id: autoScrollShortcut; sequence: "P"; autoRepeat: false; enabled: root.reading && !root.restoringProgress && !shortcutsHelp.visible; onActivated: root.toggleAutoScroll() }
+    Shortcut { id: firstPageShortcut; sequences: ["I", "Home"]; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.goToStart() }
+    Shortcut { sequence: "End"; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.turnPage(root.manga.pages) }
+    Shortcut { sequences: ["Ctrl++", "Ctrl+="]; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.setZoom(root.zoom + 0.25) }
+    Shortcut { sequence: "Ctrl+-"; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.setZoom(root.zoom - 0.25) }
+    Shortcut { id: resetZoomShortcut; sequences: ["Z", "Ctrl+0"]; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.setZoom(1) }
+    Shortcut { id: fullScreenShortcut; sequences: ["F", "F11"]; enabled: !shortcutsHelp.visible; onActivated: root.toggleFullScreen() }
+    Shortcut { sequence: "Tab"; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.showControls = !root.showControls }
+    Shortcut { id: lightFilterShortcut; sequence: "L"; enabled: root.reading && !shortcutsHelp.visible; onActivated: root.warmFilter = !root.warmFilter }
+    component Caption: Text { color: root.secondaryInk; font.family: root.font.family; font.pixelSize: 13 }
+    component Heading: Text { color: root.ink; font.family: root.font.family; font.pixelSize: 18; font.weight: Font.DemiBold }
+    component ReaderPanel: Rectangle {
+        property bool revealed: false
+        radius: 20
+        border.color: root.separator
+        color: "#f21c1c1e"
+        opacity: revealed ? 1 : 0
+        visible: opacity > 0
+        enabled: revealed
+        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+    }
+    component ReaderButton: Button {
+        property bool selected: false
+        property string hint: ""
+        implicitWidth: Math.max(36, contentItem.implicitWidth + 24)
+        implicitHeight: 36
+        hoverEnabled: true
+        opacity: enabled ? 1 : 0.35
+        background: Rectangle {
+            radius: 10
+            color: parent.down ? "#19436b" : parent.selected ? "#102e4d" : parent.hovered ? "#2c2c2e" : "transparent"
+            border.width: parent.selected || parent.hovered ? 1 : 0
+            border.color: "#245a8c"
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
+        contentItem: Text {
+            text: parent.text
+            color: parent.selected ? root.accent : root.ink
+            font.family: root.font.family
+            font.pixelSize: 13
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+        ToolTip.visible: hovered && hint.length > 0
+        ToolTip.text: hint
+        ToolTip.delay: 500
+    }
+    Popup {
+        id: shortcutsHelp
+        anchors.centerIn: Overlay.overlay
+        width: Math.min(root.width - 48, 620)
+        height: Math.min(root.height - 48, 740)
+        padding: 24
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        onOpened: smoothScroll.stop()
+        Overlay.modal: Rectangle { color: "#66000000" }
+        enter: Transition {
+            ParallelAnimation {
+                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 160 }
+                NumberAnimation { property: "scale"; from: 0.96; to: 1; duration: 160; easing.type: Easing.OutCubic }
+            }
+        }
+        exit: Transition {
+            NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 100 }
+        }
+        background: Rectangle {
+            radius: 24
+            border.color: root.separator
+            color: "#2c2c2e"
+        }
+        contentItem: ColumnLayout {
+            spacing: 18
+            RowLayout {
+                Layout.fillWidth: true
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    Caption { text: "READER GUIDE"; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 1 }
+                    Heading { text: "Keyboard shortcuts"; font.pixelSize: 26 }
+                    Caption { text: "Keep your hands on the keyboard." }
+                }
+                ReaderButton { text: "×"; hint: "Close help · H / Esc"; onClicked: shortcutsHelp.close() }
+            }
+            ScrollView {
+                id: shortcutsScroll
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                contentWidth: availableWidth
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ColumnLayout {
+                    width: shortcutsScroll.availableWidth
+                    spacing: 12
+                    Repeater {
+                        model: [
+                            {title: "GENERAL", rows: [
+                                {keys: ["H"], action: "Toggle this guide"},
+                                {keys: ["Esc"], action: "Close help · back to library · close menu"},
+                                {keys: ["Q"], action: "Close reader"}
+                            ]},
+                            {title: "LIBRARY", rows: [
+                                {keys: ["Enter"], action: "Read selected manga"},
+                                {keys: ["Ctrl+R"], action: "Pick another manga"},
+                                {keys: ["R"], action: "Read a random manga while reading"}
+                            ]},
+                            {title: "NAVIGATION", rows: [
+                                {keys: ["→", "D", "Space", "PgDown"], action: "Next page"},
+                                {keys: ["←", "A", "PgUp"], action: "Previous page"},
+                                {keys: ["↑", "W"], action: "Scroll up smoothly"},
+                                {keys: ["↓", "S"], action: "Scroll down smoothly"},
+                                {keys: ["P"], action: "Start / pause automatic scrolling"},
+                                {keys: ["Home", "I"], action: "First page"},
+                                {keys: ["End"], action: "Last page"},
+                                {keys: ["Wheel"], action: "Scroll with the mouse"}
+                            ]},
+                            {title: "VIEW & COMFORT", rows: [
+                                {keys: ["Ctrl++", "Ctrl+="], action: "Zoom in"},
+                                {keys: ["Ctrl+−"], action: "Zoom out"},
+                                {keys: ["Z", "Ctrl+0"], action: "Reset zoom"},
+                                {keys: ["Ctrl+wheel", "Pinch"], action: "Zoom with mouse or touchpad"},
+                                {keys: ["F", "F11"], action: "Toggle fullscreen"},
+                                {keys: ["Tab"], action: "Toggle controls"},
+                                {keys: ["L"], action: "Toggle warm filter"}
+                            ]}
+                        ]
+                        delegate: Rectangle {
+                            id: shortcutSection
+                            required property var modelData
+                            Layout.fillWidth: true
+                            implicitHeight: sectionContent.implicitHeight + 28
+                            radius: 14
+                            color: "#1c1c1e"
+                            border.color: root.separator
+                            ColumnLayout {
+                                id: sectionContent
+                                anchors.fill: parent
+                                anchors.margins: 14
+                                spacing: 10
+                                Caption { text: shortcutSection.modelData.title; color: root.secondaryInk; font.pixelSize: 10; font.letterSpacing: 1.5 }
+                                Repeater {
+                                    model: shortcutSection.modelData.rows
+                                    delegate: RowLayout {
+                                        id: shortcutRow
+                                        required property var modelData
+                                        Layout.fillWidth: true
+                                        spacing: 12
+                                        Caption { text: shortcutRow.modelData.action; color: root.ink; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12 }
+                                        Flow {
+                                            Layout.preferredWidth: shortcutsHelp.width < 560 ? 160 : 228
+                                            Layout.preferredHeight: implicitHeight
+                                            layoutDirection: Qt.RightToLeft
+                                            spacing: 5
+                                            Repeater {
+                                                model: shortcutRow.modelData.keys
+                                                delegate: Rectangle {
+                                                    required property string modelData
+                                                    implicitWidth: keyLabel.implicitWidth + 16
+                                                    implicitHeight: 26
+                                                    radius: 6
+                                                    color: "#2c2c2e"
+                                                    border.color: root.separator
+                                                    Text {
+                                                        id: keyLabel
+                                                        anchors.centerIn: parent
+                                                        text: parent.modelData
+                                                        font.family: "JetBrains Mono"
+                                                        font.pixelSize: 11
+                                                        color: root.ink
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                Rectangle {
+                    implicitWidth: 28; implicitHeight: 26
+                    radius: 6; color: "#102e4d"; border.color: "#19436b"
+                    Heading { anchors.centerIn: parent; text: "H"; font.pixelSize: 12 }
+                }
+                Caption { text: "Press again to close"; Layout.fillWidth: true }
+                Caption { text: "Esc also closes"; font.pixelSize: 11 }
+            }
+        }
+    }
+    ColumnLayout {
+        visible: !root.reading
+        anchors.fill: parent
+        anchors.margins: 28
+        spacing: 18
+        RowLayout {
+            Layout.fillWidth: true
+            ColumnLayout {
+                spacing: 5
+                Caption { text: "LIBRARY"; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 1.2 }
+                Heading { text: "Your next read"; font.pixelSize: 32; font.weight: Font.Bold; font.letterSpacing: -0.8 }
+                Caption { text: "A little time for a good story."; font.pixelSize: 14 }
+            }
+            Item { Layout.fillWidth: true }
+            ToolButton {
+                text: "×"; font.pixelSize: 26
+                onClicked: root.close()
+                background: Rectangle { color: parent.hovered ? "#2c2c2e" : "transparent"; radius: 10 }
+                contentItem: Heading { text: "×"; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                Accessible.name: "Close"
+            }
+        }
+        RowLayout {
+            spacing: 12
+            Repeater {
+                model: [{label: "In your library", value: root.manga.total || 0}, {label: "Unread picks", value: root.manga.remaining || 0}]
+                delegate: Rectangle {
+                    required property var modelData
+                    Layout.fillWidth: true; Layout.preferredHeight: 86
+                    color: "#1c1c1e"; radius: 20; border.color: root.separator
+                    Column {
+                        anchors.left: parent.left; anchors.leftMargin: 20
+                        anchors.verticalCenter: parent.verticalCenter; spacing: 7
+                        Caption { text: modelData.label }
+                        Heading { text: modelData.value; font.pixelSize: 24 }
+                    }
+                }
+            }
+        }
+        Rectangle {
+            Layout.fillWidth: true; Layout.fillHeight: true
+            Layout.minimumHeight: 180
+            color: "#1c1c1e"; radius: 24; border.color: root.separator; clip: true
+            Image {
+                id: cover
+                anchors.fill: parent; anchors.margins: 18
+                source: root.manga.cover || ""
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+                sourceSize.width: 1000; sourceSize.height: 1400
+            }
+            Caption {
+                anchors.centerIn: parent
+                visible: cover.status !== Image.Ready
+                text: root.busy ? "Loading…" : root.manga.total ? "No cover available" : "No CBZ files found"
+            }
+        }
+        ColumnLayout {
+            Layout.fillWidth: true; spacing: 7
+            Heading { Layout.fillWidth: true; text: root.manga.title || ""; font.pixelSize: 21; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight }
+            Caption { Layout.fillWidth: true; text: root.manga.total ? root.manga.pages + " pages   ·   " + root.manga.size : "" }
+            Caption { Layout.fillWidth: true; text: root.manga.folder || ""; elide: Text.ElideMiddle; font.pixelSize: 11 }
+            Caption { Layout.fillWidth: true; visible: !!root.manga.error; text: root.manga.error || ""; color: "#ff453a"; wrapMode: Text.Wrap }
+        }
+        RowLayout {
+            Layout.fillWidth: true; spacing: 12
+            Button {
+                Layout.fillWidth: true; Layout.preferredHeight: 54
+                enabled: !root.busy && root.manga.total > 0
+                onClicked: root.request("next")
+                background: Rectangle { color: parent.down ? "#3a3a3c" : parent.hovered ? "#2c2c2e" : "#1c1c1e"; border.color: root.separator; radius: 16; opacity: parent.enabled ? 1 : 0.4; Behavior on color { ColorAnimation { duration: 120 } } }
+                contentItem: Heading { text: "Another manga"; font.pixelSize: 15; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+            }
+            Button {
+                Layout.fillWidth: true; Layout.preferredHeight: 54
+                enabled: !root.busy && root.manga.total > 0
+                onClicked: root.request("open")
+                background: Rectangle { color: parent.hovered ? "#0062cc" : root.accent; radius: 16; opacity: parent.enabled ? 1 : 0.4; Behavior on color { ColorAnimation { duration: 120 } } }
+                contentItem: Heading { text: root.manga.progress && (root.manga.progress.page > 0 || root.manga.progress.offset > 0) ? "Continue reading" : "Read manga"; color: "#ffffff"; font.pixelSize: 15; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+            }
+        }
+        Caption { Layout.alignment: Qt.AlignHCenter; text: "Ctrl+R  Shuffle    ·    Enter  Read    ·    H  Help"; font.pixelSize: 11 }
+    }
+    Item {
+        visible: root.reading
+        anchors.fill: parent
+        ListView {
+            id: reader
+            anchors.fill: parent
+            model: root.reading ? root.manga.pages || 0 : 0
+            contentWidth: Math.max(width, width * root.zoom)
+            flickableDirection: Flickable.AutoFlickIfNeeded
+            spacing: 12
+            cacheBuffer: height * 2
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+            onContentYChanged: {
+                let index = indexAt(contentX + width / 2, contentY + Math.min(height / 3, 200))
+                if (index >= 0) root.pageIndex = index
+            }
+            onMovementStarted: smoothScroll.stop()
+            delegate: Item {
+                required property int index
+                property bool ready: pageImage.status === Image.Ready || pageImage.status === Image.Error
+                width: reader.contentWidth
+                height: pageImage.height
+                Image {
+                    id: pageImage
+                    property real pageRatio: implicitWidth > 0 && implicitHeight > 0 ? implicitWidth / implicitHeight : cover.implicitWidth > 0 && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 2 / 3
+                    width: (root.fitWidth ? reader.width : Math.min(reader.width, reader.height * pageRatio)) * root.zoom
+                    height: width / pageRatio
+                    x: (parent.width - width) / 2
+                    source: API_URL + "page/" + root.manga.pick + "/" + parent.index
+                    fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    smooth: true
+                    mipmap: true
+                }
+                Caption {
+                    anchors.centerIn: parent
+                    visible: pageImage.status !== Image.Ready
+                    text: pageImage.status === Image.Error ? "This page could not be loaded." : "Loading page…"
+                }
+            }
+        }
+        MouseArea {
+            id: readerMouse
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            onWheel: wheel => {
+                let delta = wheel.pixelDelta.y || wheel.angleDelta.y
+                if ((wheel.modifiers & Qt.ControlModifier) && delta) {
+                    root.setZoom(root.zoom * Math.exp(delta * 0.0015), wheel.x, wheel.y)
+                    wheel.accepted = true
+                } else if (wheel.pixelDelta.y) {
+                    smoothScroll.stop()
+                    wheel.accepted = false
+                } else if (wheel.angleDelta.y) {
+                    root.scrollPage(wheel.angleDelta.y * 0.75)
+                    wheel.accepted = true
+                } else wheel.accepted = false
+            }
+        }
+        Rectangle {
+            id: warmOverlay
+            anchors.fill: parent
+            visible: root.warmFilter
+            color: "#ffb568"
+            opacity: 0.14
+            enabled: false
+        }
+        Rectangle {
+            id: dimOverlay
+            anchors.fill: parent
+            visible: root.warmFilter
+            color: "black"
+            opacity: 0.16
+            enabled: false
+        }
+        PinchHandler {
+            id: pinchZoom
+            target: null
+            enabled: root.reading
+            acceptedDevices: PointerDevice.TouchPad | PointerDevice.TouchScreen
+            rotationAxis.enabled: false
+            xAxis.enabled: false
+            yAxis.enabled: false
+            onScaleChanged: delta => root.setZoom(root.zoom * delta, centroid.position.x, centroid.position.y)
+        }
+        Item {
+            anchors.top: parent.top
+            width: parent.width; height: 60
+            HoverHandler { id: headerHover }
+            ReaderPanel {
+                id: readerHeader
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 10
+                width: Math.min(parent.width - 32, 900)
+                height: 44
+                revealed: root.showControls || headerHover.hovered
+                RowLayout {
+                    anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
+                    spacing: 12
+                    ReaderButton { text: "‹ Library"; hint: "Library · Esc"; onClicked: root.returnToLibrary() }
+                    Heading { Layout.fillWidth: true; text: root.manga.title || ""; elide: Text.ElideRight; font.pixelSize: 16 }
+                    ReaderButton { text: "×"; hint: "Close · Q"; onClicked: root.close() }
+                }
+            }
+        }
+        Item {
+            anchors.bottom: parent.bottom
+            width: parent.width; height: 132
+            HoverHandler { id: footerHover }
+            ReaderPanel {
+                id: readerFooter
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 16
+                width: Math.min(parent.width - 32, 680)
+                height: 104
+                revealed: root.showControls || footerHover.hovered
+                ColumnLayout {
+                    anchors.fill: parent; anchors.margins: 12
+                    spacing: 6
+                    RowLayout {
+                        Layout.fillWidth: true
+                        ReaderButton { text: "‹ Previous"; hint: "Previous page · A / ←"; enabled: root.pageIndex > 0; onClicked: root.turnPage(-1) }
+                        Item { Layout.fillWidth: true }
+                        Heading { text: (root.pageIndex + 1) + " / " + (root.manga.pages || 0); font.pixelSize: 14 }
+                        Item { Layout.fillWidth: true }
+                        ReaderButton { text: "Next ›"; hint: "Next page · D / →"; enabled: root.pageIndex + 1 < root.manga.pages; onClicked: root.turnPage(1) }
+                    }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 2
+                        radius: 1
+                        color: root.separator
+                        Rectangle {
+                            width: parent.width * (root.pageIndex + 1) / Math.max(1, root.manga.pages || 0)
+                            height: parent.height
+                            radius: 1
+                            color: root.accent
+                            Behavior on width { NumberAnimation { duration: 160 } }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+                        Item { Layout.fillWidth: true }
+                        ReaderButton {
+                            text: root.fitWidth ? "Fit page" : "Fit width"
+                            hint: "Switch page sizing"
+                            onClicked: { root.fitWidth = !root.fitWidth; root.zoom = 1; Qt.callLater(function() { reader.positionViewAtIndex(root.pageIndex, ListView.Beginning) }) }
+                        }
+                        Rectangle { implicitWidth: 1; implicitHeight: 18; color: root.separator; Layout.leftMargin: 6; Layout.rightMargin: 6 }
+                        ReaderButton { text: "−"; hint: "Zoom out · Ctrl+−"; enabled: root.zoom > 0.5; onClicked: root.setZoom(root.zoom - 0.25) }
+                        ReaderButton { text: Math.round(root.zoom * 100) + "%"; hint: "Reset zoom · Z"; onClicked: root.setZoom(1) }
+                        ReaderButton { text: "+"; hint: "Zoom in · Ctrl++"; enabled: root.zoom < 4; onClicked: root.setZoom(root.zoom + 0.25) }
+                        Rectangle { implicitWidth: 1; implicitHeight: 18; color: root.separator; Layout.leftMargin: 6; Layout.rightMargin: 6 }
+                        ReaderButton { text: "Auto"; selected: root.autoScrollEnabled; hint: "Automatic scrolling · P"; enabled: !root.restoringProgress; onClicked: root.toggleAutoScroll() }
+                        ReaderButton { text: "Warm"; selected: root.warmFilter; hint: "Reading filter · L"; onClicked: root.warmFilter = !root.warmFilter }
+                        ReaderButton { text: root.visibility === Window.FullScreen ? "Window" : "Full screen"; hint: "Toggle fullscreen · F"; onClicked: root.toggleFullScreen() }
+                        Item { Layout.fillWidth: true }
+                    }
+                }
+            }
+        }
+    }
+}
+'''
+
+
+def show_menu():
+    CACHE.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='mangas-', dir=CACHE) as directory:
+        library = MangaLibrary(directory)
+        token = secrets.token_urlsafe(24)
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                match = re.fullmatch(rf'/{re.escape(token)}/page/([a-f0-9]+)/([0-9]+)', self.path)
+                if not match:
+                    self.send_error(404)
+                    return
+                try:
+                    with library.lock:
+                        content, content_type = library.page(match[1], int(match[2]))
+                except (OSError, ValueError, RuntimeError, zipfile.BadZipFile, NotImplementedError):
+                    self.send_error(404)
+                    return
+                self.send_response(200)
+                self.send_header('Content-Type', content_type)
+                self.send_header('Content-Length', str(len(content)))
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(content)
+
+            def do_POST(self):
+                action = self.path.removeprefix(f'/{token}/')
+                if self.path != f'/{token}/{action}' or action not in ('next', 'open', 'progress'):
+                    self.send_error(404)
+                    return
+                try:
+                    with library.lock:
+                        if action == 'progress':
+                            length = int(self.headers.get('Content-Length', 0))
+                            if not 0 < length <= 4096:
+                                raise ValueError('Invalid reading progress')
+                            progress = json.loads(self.rfile.read(length))
+                            state = library.save_progress(progress['pick'], progress['page'], progress['offset'])
+                        else:
+                            state = library.choose() if action == 'next' else library.open()
+                    payload = json.dumps(state).encode()
+                except (OSError, ValueError) as error:
+                    payload = json.dumps(dict(library.state, error=str(error))).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+            def log_message(self, *args):
+                pass
+
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            url = f'http://127.0.0.1:{server.server_port}/{token}/'
+            source = QML.replace('API_URL', json.dumps(url))
+            path = Path(directory) / 'menu.qml'
+            path.write_text(source)
+            subprocess.run(['/usr/bin/qml6', str(path)], check=True)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+
+if __name__ == '__main__':
+    show_menu()
+
+MANGA_READER_PYTHON
+}
+
+if [[ -n "$1" ]]; then
+    case "$1" in
+        manga-reader|.manga-reader) run_manga_reader ;;
+        manga|.manga) handle_bang ".manga" ;;
+        .*) handle_bang "$1" ;;
+        *) handle_bang ".$1" ;;
+    esac
+    wait
+    exit 0
+fi
 
 anime_entries='❀  AnimeKai
 ❀  Miruro
@@ -581,8 +1489,8 @@ run_config_menu() {
     [[ -z "$config_choice" ]] && exit 0
     if [[ "$config_choice" == *Backup* ]]; then
         cd "$HOME/.config" && zip -rq "$HOME/dotfiles.zip" aria2 gallery-dl kitty waybar rofi hypr mpv swayimg yt-dlp swaync zathura fish \
-            && hyprctl notify 5 3000 "rgb(a6e3a1)" "󰁯  Backup saved → ~/dotfiles.zip" \
-            || hyprctl notify 3 3000 "rgb(f38ba8)" "󰅗  Backup failed"
+            && "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 3000 "rgb(a6e3a1)" "󰁯  Backup saved → ~/dotfiles.zip" \
+            || "$HOME/.config/hypr/scripts/quickshell.sh" notify 3 3000 "rgb(f38ba8)" "󰅗  Backup failed"
         exit 0
     fi
     if [[ "$config_choice" == *"Emoji Picker" ]]; then
@@ -1329,7 +2237,7 @@ run_files_menu() {
                 nohup zeditor "$fullpath" >/dev/null 2>&1 &
             fi
         else
-            hyprctl notify -1 2000 0 "fontsize:16 󰅙 last not found"
+            "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 2000 0 "fontsize:16 󰅙 last not found"
         fi
         exit 0
     fi
@@ -1404,7 +2312,7 @@ run_files_menu() {
         esac
         _files_save_history "$file"
     else
-        hyprctl notify -1 2000 0 "fontsize:16 󰅙 not found"
+        "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 2000 0 "fontsize:16 󰅙 not found"
     fi
 }
 
@@ -1428,6 +2336,7 @@ main_menu_items+=('❀  Search All ('"$all_count"')')
 main_menu_items+=('❀  Websites ('"$websites_count"')')
 main_menu_items+=('❀  Cfg ('"$config_count"')')
 [[ "$manga_count" -gt 0 ]] && main_menu_items+=('❀  Mangas ('"$manga_count"')')
+main_menu_items+=('❀  Manga Reader')
 [[ "$video_count" -gt 0 ]] && main_menu_items+=('❀  Videos ('"$video_count"')')
 [[ "$image_count" -gt 0 ]] && main_menu_items+=('❀  Images ('"$image_count"')')
 main_menu_items+=('❀  Files')
@@ -1438,6 +2347,7 @@ case "$chosen" in
     *Search*) run_search_all ;;
     *Websites*) run_websites_menu ;;
     *Cfg*) run_config_menu ;;
+    *Manga\ Reader*) run_manga_reader ;;
     *Mangas*) run_manga_menu ;;
     *Videos*) run_video_menu ;;
     *Images*) run_image_menu ;;

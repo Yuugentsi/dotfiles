@@ -1,7 +1,9 @@
 # ─── settings ───
-set fullscreen true
 set adjust-open width
 set page-cache-size 40
+set scroll-page-aware true
+set guioptions ""
+set scroll-step 50
 
 # ─── fullscreen ───
 map f toggle_fullscreen
@@ -11,8 +13,8 @@ map [presentation] f toggle_fullscreen
 # ─── navigation ───
 map 1 navigate previous
 map 2 navigate next
-map 3 adjust_window best-fit
-map 4 zoom in
+map [fullscreen] 1 navigate previous
+map [fullscreen] 2 navigate next
 map <Left> navigate previous
 map <Right> navigate next
 map [fullscreen] <Left> navigate previous

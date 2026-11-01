@@ -59,7 +59,7 @@ end
 swayimg.decoration = false
 swayimg.imagelist.adjacent = true
 swayimg.imagelist.fsmon = false
-swayimg.text.timeout = 3
+swayimg.text.timeout = 1
 swayimg.imagelist.order = "numeric"
 swayimg.viewer.default_scale = "fit"
 swayimg.viewer.set_window_background("auto")
@@ -421,6 +421,17 @@ end
 -- ─── notify
 
 local function notify(title, message)
+    if os.execute("command -v quickshell >/dev/null 2>&1") then
+        local command = "timeout 1s quickshell ipc -p "
+            .. shell_quote(HOME .. "/.config/quickshell/shell.qml")
+            .. " call -- helpNotify show " .. shell_quote(title) .. " " .. shell_quote(message)
+            .. " >/dev/null 2>&1"
+        if not os.execute(command) then
+            swayimg.text.status = "Quickshell help notification is unavailable"
+        end
+        return
+    end
+
     local hyprland = os.getenv("HYPRLAND_INSTANCE_SIGNATURE")
     if hyprland and hyprland ~= "" then
         local command = "hyprctl notify -1 2000 "
@@ -463,7 +474,7 @@ local function show_shortcuts()
         "q: quit",
     }, "\n")
 
-    notify("", text)
+    notify("Swayimg shortcuts", text)
 end
 
 -- ─── info / exif toggle
@@ -481,7 +492,6 @@ local function toggle_exif()
         swayimg.viewer.text = { bottomleft = default_viewer_text }
         swayimg.gallery.text = { bottomleft = default_viewer_text }
     end
-    swayimg.text.visible = true
 end
 
 -- ─── save last image
@@ -515,13 +525,13 @@ end)
 swayimg.viewer.on_image_change(function()
     swayimg.viewer.text = { bottomleft = default_viewer_text }
     exif_on = false
-    swayimg.text.visible = true
+    swayimg.text.visible = false
 end)
 
 swayimg.gallery.on_image_change(function()
     swayimg.gallery.text = { bottomleft = default_viewer_text }
     exif_on = false
-    swayimg.text.visible = true
+    swayimg.text.visible = false
 end)
 
 -- ─── viewer keybindings ───
@@ -582,12 +592,13 @@ swayimg.viewer.on_key("0", function() swayimg.viewer.reset() end)
 -- ----- single-case -----
 swayimg.viewer.on_key("N", open_all_images)
 swayimg.viewer.on_key("O", open_viewer_folder)
-swayimg.viewer.on_key("t", toggle_info)
+on_key_both(swayimg.viewer, "t", toggle_info)
 swayimg.viewer.on_key("Ctrl-r", rename_all_random)
 
 -- ─── gallery keybindings ───
 
 swayimg.gallery.on_key("Return", function() swayimg.mode = "viewer" end)
+on_key_both(swayimg.gallery, "t", toggle_info)
 swayimg.gallery.on_key("1", function() swayimg.gallery.select("left") end)
 swayimg.gallery.on_key("2", function() swayimg.gallery.select("right") end)
 swayimg.gallery.on_key("KP_1", function() swayimg.gallery.select("left") end)

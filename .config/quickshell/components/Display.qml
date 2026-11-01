@@ -1,3 +1,4 @@
+import "../controls/PanelTheme.js" as Theme
 import QtQuick
 import QtQuick.Shapes
 import Quickshell
@@ -225,7 +226,7 @@ Item {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         Rectangle {
             anchors.fill: parent
-            color: "#ac080e16"
+            color: Theme.scrim
         }
         MouseArea {
             anchors.fill: parent
@@ -245,9 +246,9 @@ Item {
             width: Math.min(420, panel.width - 32)
             height: Math.min(view.implicitHeight + 40, panel.height - 112)
             radius: 24
-            color: "#18111f"
+            gradient: PanelGradient {}
             border.width: 1
-            border.color: "#50365f"
+            border.color: Theme.border
             focus: true
             Keys.onEscapePressed: root.close()
             MouseArea {
@@ -265,7 +266,7 @@ Item {
 
     component CyberFrame: Item {
         id: cyberFrameRoot
-        property color fillColor: "#100d18"
+        property color fillColor: Theme.background
         property color strokeColor: "#67477c"
         property real cut: 14
         Shape {
@@ -311,7 +312,7 @@ Item {
 
     component DisplayViewLabelText: Text {
 
-        color: "#bba6ca"
+        color: Theme.muted
         font.family: "sans-serif"
         font.pixelSize: 12
     }
@@ -345,14 +346,14 @@ Item {
             width: 11
             height: 11
             radius: 6
-            color: displayViewLightSliderSlider.pressed ? "#ffffff" : "#dcc6ff"
+            color: displayViewLightSliderSlider.pressed ? "#ffffff" : Theme.accent
         }
     }
 
     component DisplayView: Item {
         id: displayViewRoot
         required property var backend
-        readonly property color accent: "#c3a0ff"
+        readonly property color accent: Theme.accent
         readonly property color ember: "#ff9c66"
         implicitHeight: displayViewContent.implicitHeight
         ScrollView {
@@ -384,7 +385,7 @@ Item {
                         x: 52
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Display"
-                        color: "#f3eaff"
+                        color: Theme.foreground
                         font.pixelSize: 21
                         font.weight: Font.DemiBold
                     }
@@ -398,7 +399,7 @@ Item {
                         onClicked: displayViewRoot.backend.close()
                         contentItem: DisplayViewLabelText {
                             text: "×"
-                            color: displayViewCloseButton.hovered ? "#f8efff" : "#a08bae"
+                            color: displayViewCloseButton.hovered ? Theme.foreground : "#a08bae"
                             font.pixelSize: 21
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -413,7 +414,7 @@ Item {
                     width: parent.width
                     height: 40
                     radius: 12
-                    color: "#211728"
+                    color: Theme.surface
                     Row {
                         anchors.fill: parent
                         anchors.margins: 3
@@ -468,7 +469,7 @@ Item {
                                 }
                                 background: Rectangle {
                                     radius: 9
-                                    color: displayViewModeButton.selected ? "#45304f" : displayViewModeButton.hovered ? "#302039" : "transparent"
+                                    color: displayViewModeButton.selected ? "#45304f" : displayViewModeButton.hovered ? Theme.hover : "transparent"
                                     border.width: displayViewModeButton.selected ? 1 : 0
                                     border.color: "#80608e"
                                     Behavior on color {
@@ -488,9 +489,9 @@ Item {
                         width: (parent.width - 10) / 2
                         height: 116
                         radius: 17
-                        color: "#251b30"
+                        color: Theme.surface
                         border.width: 1
-                        border.color: "#3b2b49"
+                        border.color: Theme.border
                         DisplayViewGlyph {
                             x: 14
                             y: 14
@@ -508,7 +509,7 @@ Item {
                             x: 14
                             y: 37
                             text: displayViewRoot.backend.state.brightnessAvailable ? Math.round(displayViewBrightness.value) + "%" : "—"
-                            color: "#f0e6ff"
+                            color: Theme.foreground
                             font.pixelSize: 25
                             font.weight: Font.Medium
                         }
@@ -534,9 +535,9 @@ Item {
                         width: (parent.width - 10) / 2
                         height: 116
                         radius: 17
-                        color: "#251b30"
+                        color: Theme.surface
                         border.width: 1
-                        border.color: "#3b2b49"
+                        border.color: Theme.border
                         DisplayViewGlyph {
                             x: 14
                             y: 14
@@ -554,7 +555,7 @@ Item {
                             x: 14
                             y: 37
                             text: Math.round(displayViewGamma.value) + "%"
-                            color: "#f0e6ff"
+                            color: Theme.foreground
                             font.pixelSize: 25
                             font.weight: Font.Medium
                         }
@@ -592,7 +593,7 @@ Item {
                         }
                     }
                     border.width: 1
-                    border.color: displayViewRoot.backend.state.nightEnabled ? "#5b3e70" : "#3b2b49"
+                    border.color: displayViewRoot.backend.state.nightEnabled ? "#5b3e70" : Theme.border
                     Item {
                         x: 16
                         y: 16
@@ -661,7 +662,7 @@ Item {
                                 var gradient = context.createLinearGradient(0, height, width, 0);
                                 gradient.addColorStop(0, "#ff9c66");
                                 gradient.addColorStop(0.5, "#cf8dbc");
-                                gradient.addColorStop(1, "#c3a0ff");
+                                gradient.addColorStop(1, Theme.accent);
                                 context.strokeStyle = gradient;
                                 context.beginPath();
                                 context.arc(center, center, radius, start, start + span * displayViewTemperature.position);
@@ -680,7 +681,7 @@ Item {
                             width: 15
                             height: 15
                             radius: 8
-                            color: "#f5eaff"
+                            color: Theme.foreground
                             border.width: 3
                             border.color: "#9b72bc"
                         }
@@ -690,7 +691,7 @@ Item {
                             DisplayViewLabelText {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: Math.round(displayViewTemperature.value)
-                                color: "#f5eaff"
+                                color: Theme.foreground
                                 font.pixelSize: 35
                                 font.weight: Font.Light
                             }
@@ -698,7 +699,7 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: "Kelvin"
                                 font.pixelSize: 10
-                                color: "#aa91bd"
+                                color: Theme.muted
                             }
                         }
                         DisplayViewLabelText {

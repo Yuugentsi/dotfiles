@@ -1,3 +1,4 @@
+import "controls/PanelTheme.js" as Theme
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -8,10 +9,14 @@ import "components"
 ShellRoot {
     id: shell
     Dock {}
+    SpotifyAutoResume {}
     WindowSwitcher {}
     DynamicIsland { id: dynamicIsland; audioBackend: audio; displayBackend: display }
     Hypr { audioBackend: audio }
-    MusicNotify { suppressNotifications: !dynamicIsland.automaticNotifications || !dynamicIsland.settingsReady || dynamicIsland.doNotDisturb }
+    MusicNotify {
+        suppressNotifications: !dynamicIsland.settingsReady || dynamicIsland.doNotDisturb
+        suppressAutomaticNotifications: !dynamicIsland.automaticNotifications
+    }
     property bool barVisible: false
     IpcHandler {
         target: "bar"
@@ -23,20 +28,20 @@ ShellRoot {
                 clipboard.close()
                 audio.close()
                 bluetooth.close()
-                wifi.close(); display.close()
+                wifi.close(); display.close(); hyprPanel.close()
             }
         }
     }
     PanelMenu {
         id: panelMenu
-        opened: hub.opened || media.opened || clipboard.opened || audio.opened || bluetooth.opened || wifi.opened || display.opened
+        opened: hub.opened || media.opened || clipboard.opened || audio.opened || bluetooth.opened || wifi.opened || display.opened || hyprPanel.opened
         onOpening: {
             hub.close()
             media.close()
             clipboard.close()
             audio.close()
             bluetooth.close()
-            wifi.close(); display.close()
+            wifi.close(); display.close(); hyprPanel.close()
         }
         onSelected: function(panel) {
             panelMenu.lastPanel = panel
@@ -48,20 +53,21 @@ ShellRoot {
                 else if (panel === "bluetooth") bluetooth.open()
                 else if (panel === "wifi") wifi.open()
                 else if (panel === "display") display.open()
+                else if (panel === "hypr") hyprPanel.open()
             })
         }
     }
     EdgePanels {
         options: panelMenu.options
-        available: !panelMenu.opened && !hub.opened && !media.opened && !clipboard.opened && !audio.opened && !bluetooth.opened && !wifi.opened && !display.opened
+        available: !panelMenu.opened && !hub.opened && !media.opened && !clipboard.opened && !audio.opened && !bluetooth.opened && !wifi.opened && !display.opened && !hyprPanel.opened
         onSelected: function(index) { panelMenu.activate(index) }
     }
-    Hub { id: hub; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; onOpenedChanged: if (opened) { panelMenu.lastPanel = "hub"; media.close(); clipboard.close(); audio.close(); bluetooth.close(); wifi.close(); display.close() } }
-    Media { id: media; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; onOpenedChanged: if (opened) { panelMenu.lastPanel = "media"; hub.close(); clipboard.close(); audio.close(); bluetooth.close(); wifi.close(); display.close() } }
-    Clipboard { id: clipboard; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; onOpenedChanged: if (opened) { panelMenu.lastPanel = "clipboard"; hub.close(); media.close(); audio.close(); bluetooth.close(); wifi.close(); display.close() } }
+    Hub { id: hub; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; onOpenedChanged: if (opened) { panelMenu.lastPanel = "hub"; media.close(); clipboard.close(); audio.close(); bluetooth.close(); wifi.close(); display.close(); hyprPanel.close() } }
+    Media { id: media; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; onOpenedChanged: if (opened) { panelMenu.lastPanel = "media"; hub.close(); clipboard.close(); audio.close(); bluetooth.close(); wifi.close(); display.close(); hyprPanel.close() } }
+    Clipboard { id: clipboard; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; onOpenedChanged: if (opened) { panelMenu.lastPanel = "clipboard"; hub.close(); media.close(); audio.close(); bluetooth.close(); wifi.close(); display.close(); hyprPanel.close() } }
 
-    Audio { id: audio; bluetoothBackend: bluetooth; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; popupX: 228; onOpenedChanged: if (opened) { panelMenu.lastPanel = "audio"; hub.close(); media.close(); clipboard.close(); bluetooth.close(); wifi.close(); display.close() } }
-    Bluetooth { id: bluetooth; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; popupX: 294; onOpenedChanged: if (opened) { panelMenu.lastPanel = "bluetooth"; hub.close(); media.close(); clipboard.close(); audio.close(); wifi.close(); display.close() } }
+    Audio { id: audio; bluetoothBackend: bluetooth; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; popupX: 228; onOpenedChanged: if (opened) { panelMenu.lastPanel = "audio"; hub.close(); media.close(); clipboard.close(); bluetooth.close(); wifi.close(); display.close(); hyprPanel.close() } }
+    Bluetooth { id: bluetooth; onBackRequested: panelMenu.selected("hub"); onPanelRequested: function(panel) { panelMenu.selected(panel) }; popupX: 294; onOpenedChanged: if (opened) { panelMenu.lastPanel = "bluetooth"; hub.close(); media.close(); clipboard.close(); audio.close(); wifi.close(); display.close(); hyprPanel.close() } }
 
     Wifi {
         id: wifi
@@ -74,7 +80,7 @@ ShellRoot {
             clipboard.close()
             audio.close()
             bluetooth.close()
-            display.close()
+            display.close(); hyprPanel.close()
         }
     }
     Display {
@@ -89,6 +95,22 @@ ShellRoot {
             audio.close()
             bluetooth.close()
             wifi.close()
+            hyprPanel.close()
+        }
+    }
+
+    HyprPanel {
+        id: hyprPanel
+        onPanelRequested: function(panel) { panelMenu.selected(panel) }
+        onOpenedChanged: if (opened) {
+            panelMenu.lastPanel = "hypr"
+            hub.close()
+            media.close()
+            clipboard.close()
+            audio.close()
+            bluetooth.close()
+            wifi.close()
+            display.close()
         }
     }
 
@@ -108,16 +130,16 @@ ShellRoot {
             width: 58
             height: parent.height
             radius: 4
-            color: hub.opened || hit.containsMouse ? "#383044" : "#18181d"
+            color: hub.opened || hit.containsMouse ? Theme.hover : Theme.background
             border.width: hub.opened ? 1 : 0
-            border.color: "#c3b7ff"
+            border.color: Theme.accent
 
             Text {
                 anchors.centerIn: parent
                 text: "◇ Hub"
                 font.family: "sans-serif"
                 font.pixelSize: 11
-                color: hub.opened ? "#c3b7ff" : "#eef3f8"
+                color: hub.opened ? Theme.accent : Theme.foreground
             }
 
             MouseArea {
@@ -137,15 +159,15 @@ ShellRoot {
             width: 66
             height: parent.height
             radius: 4
-            color: media.opened || mediaHit.containsMouse ? "#383044" : "#18181d"
+            color: media.opened || mediaHit.containsMouse ? Theme.hover : Theme.background
             border.width: media.opened ? 1 : 0
-            border.color: "#c3b7ff"
+            border.color: Theme.accent
             Text {
                 anchors.centerIn: parent
                 text: "♫ Media"
                 font.family: "sans-serif"
                 font.pixelSize: 11
-                color: media.opened ? "#c3b7ff" : "#eef3f8"
+                color: media.opened ? Theme.accent : Theme.foreground
             }
             MouseArea {
                 id: mediaHit
@@ -160,18 +182,44 @@ ShellRoot {
         }
         Rectangle {
             x: 132
+            width: 58
+            height: parent.height
+            radius: 4
+            color: hyprPanel.opened || hyprHit.containsMouse ? Theme.hover : Theme.background
+            border.width: hyprPanel.opened ? 1 : 0
+            border.color: Theme.accent
+            Text {
+                anchors.centerIn: parent
+                text: "Hypr"
+                font.family: "sans-serif"
+                font.pixelSize: 11
+                color: hyprPanel.opened ? Theme.accent : Theme.foreground
+            }
+            MouseArea {
+                id: hyprHit
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: hyprPanel.toggle()
+            }
+            ToolTip.visible: hyprHit.containsMouse
+            ToolTip.delay: 600
+            ToolTip.text: "Open Hypr"
+        }
+        Rectangle {
+            x: 194
             width: 88
             height: parent.height
             radius: 4
-            color: clipboard.opened || clipboardHit.containsMouse ? "#383044" : "#18181d"
+            color: clipboard.opened || clipboardHit.containsMouse ? Theme.hover : Theme.background
             border.width: clipboard.opened ? 1 : 0
-            border.color: "#c3b7ff"
+            border.color: Theme.accent
             Text {
                 anchors.centerIn: parent
                 text: "Clipboard"
                 font.family: "sans-serif"
                 font.pixelSize: 11
-                color: clipboard.opened ? "#c3b7ff" : "#eef3f8"
+                color: clipboard.opened ? Theme.accent : Theme.foreground
             }
             MouseArea {
                 id: clipboardHit
@@ -185,19 +233,19 @@ ShellRoot {
             ToolTip.text: "Open Clipboard"
         }
         Rectangle {
-            x: 224
+            x: 286
             width: 62
             height: parent.height
             radius: 4
-            color: audio.opened || audioHit.containsMouse ? "#383044" : "#18181d"
+            color: audio.opened || audioHit.containsMouse ? Theme.hover : Theme.background
             border.width: audio.opened ? 1 : 0
-            border.color: "#c3b7ff"
+            border.color: Theme.accent
             Text {
                 anchors.centerIn: parent
                 text: "󰕾 Audio"
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 10
-                color: audio.opened ? "#c3b7ff" : "#eef3f8"
+                color: audio.opened ? Theme.accent : Theme.foreground
             }
             MouseArea {
                 id: audioHit
@@ -211,12 +259,12 @@ ShellRoot {
             ToolTip.text: "Open Audio"
         }
         Rectangle {
-            x: 290; width: 68; height: parent.height; radius: 4
-            color: wifi.opened || wifiHit.containsMouse ? "#383044" : "#18181d"
-            border.width: wifi.opened ? 1 : 0; border.color: "#c3b7ff"
+            x: 352; width: 68; height: parent.height; radius: 4
+            color: wifi.opened || wifiHit.containsMouse ? Theme.hover : Theme.background
+            border.width: wifi.opened ? 1 : 0; border.color: Theme.accent
             Text {
                 anchors.centerIn: parent; text: "\uf1eb  Wi-Fi"
-                color: wifi.opened ? "#c3b7ff" : "#eef3f8"
+                color: wifi.opened ? Theme.accent : Theme.foreground
                 font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 10
             }
             MouseArea { id: wifiHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: wifi.toggle() }
@@ -225,12 +273,12 @@ ShellRoot {
             ToolTip.text: "Open Wi-Fi"
         }
         Rectangle {
-            x: 362; width: 76; height: parent.height; radius: 4
-            color: display.opened || displayHit.containsMouse ? "#383044" : "#18181d"
-            border.width: display.opened ? 1 : 0; border.color: "#c3b7ff"
+            x: 424; width: 76; height: parent.height; radius: 4
+            color: display.opened || displayHit.containsMouse ? Theme.hover : Theme.background
+            border.width: display.opened ? 1 : 0; border.color: Theme.accent
             Text {
                 anchors.centerIn: parent; text: "\uf185  Display"
-                color: display.opened ? "#c3b7ff" : "#eef3f8"
+                color: display.opened ? Theme.accent : Theme.foreground
                 font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 10
             }
             MouseArea { id: displayHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: display.toggle() }

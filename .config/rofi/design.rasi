@@ -1,0 +1,187 @@
+* {
+    font: "Adwaita Sans 11";
+    background-color: transparent;
+    text-color: #eee8f7;
+    bg: rgba(21, 17, 29, 0.64);
+    bg-alt: rgba(255, 255, 255, 0.035);
+    fg: #eee8f7;
+    muted: #a497b5;
+    accent: #c4a7e7;
+    glow: rgba(196, 167, 231, 0.24);
+    selected: rgba(196, 167, 231, 0.18);
+    spacing: 0px;
+}
+
+window {
+    width: 64%;
+    location: center;
+    anchor: center;
+    background-color: @bg;
+    transparency: "real";
+    border: 1px;
+    border-color: @glow;
+    border-radius: 24px;
+    padding: 0px;
+    cursor: default;
+}
+
+mainbox {
+    padding: 22px;
+    spacing: 16px;
+    children: [ "inputbar", "message", "listview" ];
+}
+
+
+num-filtered-rows {
+    font: "JetBrainsMono Nerd Font 9";
+    text-color: @accent;
+    background-color: rgba(196, 167, 231, 0.10);
+    border-radius: 8px;
+    padding: 5px 9px;
+    expand: false;
+    vertical-align: 0.5;
+}
+
+inputbar {
+    background-color: rgba(255, 255, 255, 0.045);
+    border: 1px;
+    border-color: rgba(196, 167, 231, 0.32);
+    border-radius: 14px;
+    padding: 14px 16px;
+    spacing: 12px;
+    children: [ "textbox-search", "entry", "num-filtered-rows" ];
+}
+
+textbox-search {
+    str: "";
+    font: "JetBrainsMono Nerd Font 12";
+    text-color: @accent;
+    expand: false;
+    vertical-align: 0.5;
+}
+
+entry {
+    text-color: @fg;
+    placeholder: "Search applications…";
+    placeholder-color: @muted;
+    cursor-color: @accent;
+    cursor-width: 2px;
+    vertical-align: 0.5;
+    cursor: text;
+}
+
+listview {
+    columns: 2;
+    lines: 6;
+    spacing: 6px;
+    scrollbar: false;
+    fixed-height: false;
+    dynamic: true;
+    fixed-columns: true;
+}
+
+element {
+    background-color: transparent;
+    text-color: @fg;
+    orientation: horizontal;
+    padding: 12px;
+    spacing: 12px;
+    border: 1px;
+    border-color: transparent;
+    border-radius: 12px;
+    children: [ "element-icon", "element-text" ];
+    cursor: pointer;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: @bg-alt;
+    text-color: @fg;
+}
+
+element selected.normal,
+element selected.active {
+    background-color: @selected;
+    text-color: #f5edff;
+    border-color: rgba(196, 167, 231, 0.55);
+}
+
+element normal.active,
+element alternate.active {
+    background-color: rgba(196, 167, 231, 0.08);
+    text-color: @accent;
+}
+
+element normal.urgent,
+element alternate.urgent {
+    background-color: rgba(237, 135, 150, 0.08);
+    text-color: #f0b8c3;
+}
+
+element selected.urgent {
+    background-color: rgba(237, 135, 150, 0.20);
+    text-color: #ffe4e9;
+    border-color: rgba(237, 135, 150, 0.55);
+}
+
+element-icon {
+    size: 32px;
+    vertical-align: 0.5;
+    cursor: inherit;
+}
+
+element-text {
+    text-color: inherit;
+    vertical-align: 0.5;
+    highlight: bold;
+    cursor: inherit;
+    expand: true;
+}
+
+message {
+    background-color: @bg-alt;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+textbox {
+    text-color: @fg;
+}
+
+scrollbar {
+    background-color: transparent;
+    handle-color: rgba(196, 167, 231, 0.40);
+    handle-width: 3px;
+    border-radius: 8px;
+}
+
+mode-switcher {
+    enabled: false;
+}
+
+@media (enabled: DMENU) {
+    window {
+        width: 58%;
+    }
+    mainbox {
+        padding: 16px;
+        spacing: 12px;
+        children: [ "inputbar", "message", "listview" ];
+    }
+    inputbar {
+        padding: 12px 14px;
+        children: [ "textbox-search", "entry" ];
+    }
+    entry {
+        placeholder: "Search…";
+    }
+    listview {
+        columns: 1;
+        lines: 12;
+    }
+    element {
+        padding: 8px 12px;
+        border-radius: 10px;
+        children: [ "element-text" ];
+    }
+}

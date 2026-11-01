@@ -1,7 +1,8 @@
+import "PanelTheme.js" as Theme
 import QtQuick
 
 Text {
-    property color foreground: "#eef3f8"
+    property color foreground: Theme.foreground
     property string fontFamily: "sans-serif"
     color: Qt.darker(foreground, 1.4)
     font.family: fontFamily

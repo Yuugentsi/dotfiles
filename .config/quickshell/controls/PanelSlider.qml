@@ -1,3 +1,4 @@
+import "PanelTheme.js" as Theme
 import QtQuick
 import QtQuick.Controls
 Item {
@@ -12,9 +13,9 @@ Item {
     property real value: 0
     property real trackHeight: 3
     property real knobSize: 10
-    property color fillColor: "#c3b7ff"
+    property color fillColor: Theme.accent
     property color knobColor: "white"
-    property color trackColor: "#3e3949"
+    property color trackColor: Theme.track
     readonly property bool dragging: slider.pressed
     readonly property real liveValue: slider.value
     signal released(real value)

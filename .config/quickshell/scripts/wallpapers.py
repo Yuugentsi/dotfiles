@@ -10,7 +10,7 @@ import tempfile
 import time
 
 LIBRARY = Path.home() / "0/pictures/wallpapers"
-STATE = Path.home() / ".local/state/omarchy/hyprpaper"
+STATE = Path.home() / ".local/state/hyprpaper"
 CONFIG = Path.home() / ".config/hypr/hyprpaper.conf"
 EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".avif", ".jxl"}
 
@@ -75,7 +75,7 @@ def apply(path, mode):
         temporary.replace(target)
         if CONFIG.is_file() and not CONFIG.with_suffix(".conf.before-wallpapers").exists():
             shutil.copy2(CONFIG, CONFIG.with_suffix(".conf.before-wallpapers"))
-        CONFIG.write_text(f"splash = false\nipc = true\nwallpaper {{\n    monitor =\n    path = {target}\n    fit_mode = cover\n}}\n")
+        CONFIG.write_text(f"splash = false\nipc = true\nwallpaper {{\n    monitor =\n    path = ~/{target.relative_to(Path.home())}\n    fit_mode = cover\n}}\n")
         ensure_hyprpaper()
         for monitor in monitors:
             run(["hyprctl", "hyprpaper", "wallpaper", f"{monitor['name']},{target},cover"])

@@ -1,0 +1,16 @@
+.pragma library
+
+var background = "#f31c192b"
+var surface = "#30263d"
+var hover = "#3d304b"
+var selected = "#4e3a60"
+var border = "#7065516f"
+var accent = "#c7acd9"
+var foreground = "#f3eaff"
+var muted = "#b5a8c2"
+var dim = "#8e809c"
+var track = "#46394f"
+var gradientTop = "#ed2a2036"
+var gradientMiddle = "#f0211b30"
+var gradientBottom = "#f31c192b"
+var scrim = "#980e0b14"

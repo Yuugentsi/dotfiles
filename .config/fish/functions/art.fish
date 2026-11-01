@@ -1,5 +1,6 @@
 # ─────────── art ───────────
-# usage: art [directory] --no-feat|clean
+# clean audio metadata and rename files to track title
+# usage: art [directory] [--no-feat|clean]
 
 function art -d "clean audio metadata (flac/mp3)"
     set -l R (set_color red)

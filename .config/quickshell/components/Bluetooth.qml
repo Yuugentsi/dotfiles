@@ -1,3 +1,4 @@
+import "../controls/PanelTheme.js" as Theme
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -184,8 +185,8 @@ PluginPanel {
     readonly property bool headerHasCursor: cursorActive && focusSection === "header"
     readonly property string toggleHint: root.adapter && root.adapter.enabled ? "Turn Bluetooth off" : "Turn Bluetooth on"
 
-    readonly property color hoverFill: bar ? "#383044" : "transparent"
-    readonly property color selectedFill: bar ? "#383044" : "transparent"
+    readonly property color hoverFill: bar ? Theme.hover : "transparent"
+    readonly property color selectedFill: bar ? Theme.hover : "transparent"
 
     function sectionCount(section) {
         if (section === "connected")
@@ -1231,7 +1232,7 @@ PluginPanel {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Bluetooth"
-                color: "#e8dff1"
+                color: Theme.foreground
                 font.family: "sans-serif"
                 font.pixelSize: 12
                 font.weight: Font.Medium
@@ -1275,7 +1276,7 @@ PluginPanel {
                 width: bluetoothQuickViewList.width
                 height: status ? 52 : 40
                 radius: 9
-                color: modelData.connected ? "#383044" : bluetoothQuickViewHit.containsMouse || activeFocus ? "#2a2531" : "transparent"
+                color: modelData.connected ? Theme.hover : bluetoothQuickViewHit.containsMouse || activeFocus ? Theme.surface : "transparent"
                 activeFocusOnTab: true
                 Accessible.role: Accessible.Button
                 Accessible.name: (modelData.deviceName || modelData.name) + (modelData.connected ? ", disconnect" : ", connect")
@@ -1285,7 +1286,7 @@ PluginPanel {
                     x: 10
                     anchors.verticalCenter: parent.verticalCenter
                     text: "\uf293"
-                    color: bluetoothQuickViewDeviceRow.modelData.connected ? "#c3b7ff" : "#8f829a"
+                    color: bluetoothQuickViewDeviceRow.modelData.connected ? Theme.accent : Theme.dim
                     font.family: "Symbols Nerd Font Mono"
                     font.pixelSize: 15
                 }
@@ -1298,7 +1299,7 @@ PluginPanel {
                         width: parent.width
                         text: bluetoothQuickViewDeviceRow.modelData.deviceName || bluetoothQuickViewDeviceRow.modelData.name
                         textFormat: Text.PlainText
-                        color: "#e5dcec"
+                        color: Theme.foreground
                         font.family: "sans-serif"
                         font.pixelSize: 11
                         elide: Text.ElideRight
@@ -1306,7 +1307,7 @@ PluginPanel {
                     Text {
                         visible: !!bluetoothQuickViewDeviceRow.status
                         text: bluetoothQuickViewDeviceRow.status
-                        color: "#a69ab2"
+                        color: Theme.muted
                         font.family: "sans-serif"
                         font.pixelSize: 9
                     }
@@ -1316,7 +1317,7 @@ PluginPanel {
                     anchors.rightMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     text: bluetoothQuickViewDeviceRow.pending ? "…" : bluetoothQuickViewDeviceRow.modelData.connected ? "✓" : "›"
-                    color: "#c3b7ff"
+                    color: Theme.accent
                     font.pixelSize: 14
                 }
                 MouseArea {
@@ -1332,7 +1333,7 @@ PluginPanel {
             width: parent.width
             visible: !bluetoothQuickViewRoot.adapter || (bluetoothQuickViewRoot.adapter.enabled && bluetoothQuickViewRoot.rows.length === 0)
             text: !bluetoothQuickViewRoot.adapter ? "No Bluetooth adapter" : bluetoothQuickViewRoot.adapter.discovering ? "Searching for devices…" : "No devices available"
-            color: "#928b96"
+            color: Theme.dim
             font.family: "sans-serif"
             font.pixelSize: 11
             wrapMode: Text.Wrap

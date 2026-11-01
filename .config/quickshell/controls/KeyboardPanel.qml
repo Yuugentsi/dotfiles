@@ -1,3 +1,4 @@
+import "PanelTheme.js" as Theme
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -46,20 +47,17 @@ Item {
             onSelected: function(panel) { if (root.owner) root.owner.panelRequested(panel) }
         }
 
-        Rectangle { anchors.fill: parent; color: "#ac080e16" }
+        Rectangle { anchors.fill: parent; color: Theme.scrim }
         MouseArea { anchors.fill: parent; onClicked: if (root.owner) root.owner.close() }
         Rectangle {
             x: root.centered ? (window.width - width) / 2 : Math.max(6, Math.min(root.owner ? root.owner.popupX : 6, window.width - width - 6))
             y: root.centered ? (window.height - height) / 2 : 44
             width: root.contentWidth + 36
             height: root.contentHeight + 36
-            gradient: Gradient {
-                GradientStop { position: 0; color: "#202027" }
-                GradientStop { position: 1; color: "#18181d" }
-            }
+            gradient: PanelGradient {}
             radius: 8
             border.width: 1
-            border.color: "#37343f"
+            border.color: Theme.border
             MouseArea { anchors.fill: parent; onClicked: {} }
             Item { id: container; anchors.fill: parent; anchors.margins: 18 }
         }

@@ -1,3 +1,4 @@
+import "PanelTheme.js" as Theme
 import QtQuick
 import Quickshell.Io
 
@@ -11,7 +12,7 @@ Item {
     property bool opened: false
     property real popupX: 6
     property QtObject bar: QtObject {
-        property color foreground: "#eef3f8"
+        property color foreground: Theme.foreground
         property color urgent: "#bf616a"
         property string fontFamily: "JetBrainsMono Nerd Font"
         property var shell: null

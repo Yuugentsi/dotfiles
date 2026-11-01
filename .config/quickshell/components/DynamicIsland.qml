@@ -1,6 +1,8 @@
+import "../controls/PanelTheme.js" as Theme
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
@@ -334,11 +336,11 @@ Item {
         implicitWidth: 30
         implicitHeight: 30
         radius: Math.min(width, height) / 2
-        color: primary ? (islandButtonHit.containsMouse ? "#ffab94" : "#ff786b") : islandButtonHit.containsMouse ? "#3b253e" : "transparent"
+        color: primary ? (islandButtonHit.containsMouse ? "#cba6f7" : "#b4befe") : islandButtonHit.containsMouse ? "#313244" : "transparent"
         scale: islandButtonHit.pressed ? 0.94 : 1
         Behavior on scale { NumberAnimation { duration: 100 } }
         border.width: primary ? 1 : 0
-        border.color: primary ? "#ffbc9e" : islandButtonHit.containsMouse ? "#b56d9e" : "#70395e"
+        border.color: primary ? "#cdd6f4" : islandButtonHit.containsMouse ? "#45475a" : "#313244"
         opacity: enabled ? 1 : 0.32
         Accessible.role: Accessible.Button
         Accessible.name: label
@@ -350,7 +352,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: islandButtonRoot.glyph
-            color: islandButtonRoot.primary ? "#19171c" : "#aaa6b5"
+            color: islandButtonRoot.primary ? "#1e1e2e" : "#bac2de"
             font.family: "Symbols Nerd Font Mono"
             font.pixelSize: 13
         }
@@ -368,15 +370,15 @@ Item {
             padding: 8
             contentItem: Text {
                 text: islandButtonRoot.label
-                color: "#e9e4ef"
+                color: "#cdd6f4"
                 font.family: "sans-serif"
                 font.pixelSize: 10
             }
             background: Rectangle {
                 radius: 8
-                color: "#f21d1b22"
+                color: "#f21e1e2e"
                 border.width: 1
-                border.color: "#609d6c9f"
+                border.color: "#45475a"
             }
         }
     }
@@ -443,8 +445,8 @@ Item {
             ClippingRectangle {
                 width: parent.width
                 height: 148
-                radius: 20
-                color: "#2e1d35"
+                radius: 6
+                color: "#181825"
                 Image {
                     anchors.fill: parent
                     source: islandPlayerRoot.player ? islandPlayerRoot.player.trackArtUrl || "" : ""
@@ -463,11 +465,11 @@ Item {
                         }
                         GradientStop {
                             position: 0.35
-                            color: "#102c1430"
+                            color: "#101e1e2e"
                         }
                         GradientStop {
                             position: 1
-                            color: "#ed21132d"
+                            color: "#ed181825"
                         }
                     }
                 }
@@ -486,7 +488,7 @@ Item {
                         font.pixelSize: 18
                         font.weight: Font.Medium
                         font.letterSpacing: -0.35
-                        color: "#f7f3fc"
+                        color: "#cdd6f4"
                         maximumLineCount: 2
                         wrapMode: Text.Wrap
                         elide: Text.ElideRight
@@ -498,10 +500,14 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         font.family: "sans-serif"
                         font.pixelSize: 11
-                        color: "#e0bdd4"
+                        color: "#cba6f7"
                         elide: Text.ElideRight
                     }
                 }
+                Rectangle { x: 9; y: 9; width: 18; height: 1; color: "#70cba6f7" }
+                Rectangle { x: 9; y: 9; width: 1; height: 12; color: "#70cba6f7" }
+                Rectangle { x: parent.width - 27; y: parent.height - 9; width: 18; height: 1; color: "#70b4befe" }
+                Rectangle { x: parent.width - 10; y: parent.height - 21; width: 1; height: 12; color: "#70b4befe" }
                 MouseArea {
                     id: islandPlayerGestures
                     anchors.fill: parent
@@ -629,11 +635,11 @@ Item {
                                 }
                                 context.stroke();
                             }
-                            draw("#59405f", width);
+                            draw("#313244", width);
                             const gradient = context.createLinearGradient(0, 0, width, 0);
-                            gradient.addColorStop(0, "#ff786b");
-                            gradient.addColorStop(0.55, "#e59bd4");
-                            gradient.addColorStop(1, "#70d8df");
+                            gradient.addColorStop(0, "#b4befe");
+                            gradient.addColorStop(0.55, "#cba6f7");
+                            gradient.addColorStop(1, "#b4befe");
                             draw(gradient, width * islandPlayerProgress.visualPosition);
                         }
                     }
@@ -643,7 +649,7 @@ Item {
                         width: 7
                         height: 7
                         radius: 4
-                        color: "#ffc4ba"
+                        color: "#cdd6f4"
                         opacity: islandPlayerProgress.hovered || islandPlayerProgress.pressed ? 1 : 0
                     }
                 }
@@ -653,13 +659,13 @@ Item {
                     Text {
                         anchors.left: parent.left
                         text: islandPlayerRoot.formatTime(islandPlayerProgress.pressed ? islandPlayerProgress.value : islandPlayerRoot.position)
-                        color: "#928b96"
+                        color: Theme.dim
                         font.pixelSize: 9
                     }
                     Text {
                         anchors.right: parent.right
                         text: islandPlayerRoot.duration > 0 ? islandPlayerRoot.formatTime(islandPlayerRoot.duration) : "--:--"
-                        color: "#928b96"
+                        color: Theme.dim
                         font.pixelSize: 9
                     }
                 }
@@ -702,7 +708,7 @@ Item {
                 width: parent.width
                 visible: !!islandPlayerRoot.controller.displayBackend.error || islandPlayerRoot.controller.recording || islandPlayerRoot.controller.microphoneActive
                 text: islandPlayerRoot.controller.displayBackend.error ? "Could not adjust display" : islandPlayerRoot.controller.recording ? "● Recording screen" : "● Microphone in use"
-                color: islandPlayerRoot.controller.displayBackend.error ? "#ffac8c" : "#b5a8c2"
+                color: islandPlayerRoot.controller.displayBackend.error ? "#f38ba8" : "#bac2de"
                 font.pixelSize: 10
                 elide: Text.ElideRight
             }
@@ -713,7 +719,7 @@ Item {
         id: islandSliderRoot
         property string glyph: ""
         property string label: ""
-        property color accent: "#ff786b"
+        property color accent: "#b4befe"
         property real value: 0
         property real minimum: 0
         property real maximum: 1
@@ -744,7 +750,7 @@ Item {
                 width: islandSliderSlider.availableWidth
                 height: 3
                 radius: 3
-                color: "#403647"
+                color: "#313244"
                 Rectangle {
                     width: parent.width * islandSliderSlider.visualPosition
                     height: parent.height
@@ -758,7 +764,7 @@ Item {
                 width: 9
                 height: 9
                 radius: 5
-                color: islandSliderSlider.pressed ? "#ffffff" : "#ffbc9e"
+                color: islandSliderSlider.pressed ? "#cdd6f4" : "#cdd6f4"
             }
         }
         Text {
@@ -766,7 +772,7 @@ Item {
             anchors.rightMargin: 0
             anchors.verticalCenter: parent.verticalCenter
             text: Math.round(islandSliderRoot.maximum === 100 ? islandSliderSlider.value : islandSliderSlider.value * 100) + "%"
-            color: "#aaa6b5"
+            color: "#bac2de"
             font.pixelSize: 11
         }
     }
@@ -870,7 +876,7 @@ Item {
                 width: 1
                 height: 1
                 radius: 0.5
-                color: "#70d8df"
+                color: "#cba6f7"
                 opacity: islandWindowWindow.expanded ? 0 : islandWindowWindow.edgeInside ? 0.9 : 0.5
                 Behavior on opacity { NumberAnimation { duration: 160 } }
             }
@@ -886,7 +892,7 @@ Item {
             }
         }
 
-        Rectangle {
+        Item {
             id: islandWindowPill
             anchors.horizontalCenter: parent.horizontalCenter
             y: islandWindowWindow.expanded ? 10 : -height - 4
@@ -894,24 +900,59 @@ Item {
             enabled: islandWindowWindow.expanded
             width: islandWindowWindow.expanded ? islandWindowWindow.width - 4 : Math.min(islandWindowWindow.width - 4, islandWindowWindow.controller.playing ? 250 : 196)
             height: !islandWindowWindow.expanded ? 38 : islandWindowWindow.notificationMode ? 202 : islandWindowWindow.mode === "dashboard" || islandWindowWindow.mode === "music" ? Math.min(islandWindowWindow.height - 10, islandWindowPlayerView.implicitHeight + 54) : 106
-            radius: islandWindowWindow.expanded ? 24 : 19
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: "#703c1935"
+            property real radius: 0
+            clip: true
+            Shape {
+                id: islandSurface
+                anchors.fill: parent
+                z: -1
+                ShapePath {
+                    strokeWidth: 1
+                    strokeColor: "#45475a"
+                    fillColor: "#1e1e2e"
+                    startX: 14
+                    startY: 1
+                    PathLine { x: islandSurface.width - 1; y: 1 }
+                    PathLine { x: islandSurface.width - 1; y: islandSurface.height - 14 }
+                    PathLine { x: islandSurface.width - 14; y: islandSurface.height - 1 }
+                    PathLine { x: 1; y: islandSurface.height - 1 }
+                    PathLine { x: 1; y: 14 }
+                    PathLine { x: 14; y: 1 }
                 }
-                GradientStop {
-                    position: 0.45
-                    color: "#70201936"
+                ShapePath {
+                    strokeWidth: 1
+                    strokeColor: "#70cba6f7"
+                    fillColor: "transparent"
+                    startX: 14
+                    startY: 1
+                    PathLine { x: 52; y: 1 }
                 }
-                GradientStop {
-                    position: 1
-                    color: "#881b1834"
+                ShapePath {
+                    strokeWidth: 1
+                    strokeColor: "#70cba6f7"
+                    fillColor: "transparent"
+                    startX: islandSurface.width - 44
+                    startY: islandSurface.height - 1
+                    PathLine { x: islandSurface.width - 14; y: islandSurface.height - 1 }
+                    PathLine { x: islandSurface.width - 1; y: islandSurface.height - 14 }
+                    PathLine { x: islandSurface.width - 1; y: islandSurface.height - 28 }
                 }
             }
-            border.width: 1
-            border.color: "#609d6c9f"
-            clip: true
+            Row {
+                x: parent.width - 58
+                y: 1
+                spacing: 3
+                Repeater {
+                    model: 5
+                    Rectangle {
+                        required property int index
+                        width: 3
+                        height: 2
+                        color: "#cba6f7"
+                        opacity: 0.12 + index * 0.07
+                    }
+                }
+            }
             Behavior on y {
                 NumberAnimation {
                     duration: 140
@@ -947,7 +988,7 @@ Item {
                 y: 39
                 width: parent.width - 44
                 height: 1
-                color: "#40302c36"
+                color: "#60313244"
                 visible: islandWindowWindow.expanded
             }
 
@@ -988,7 +1029,7 @@ Item {
                             height: 5
                             anchors.verticalCenter: parent.verticalCenter
                             radius: 2
-                            color: islandWindowWindow.controller.recording ? "#ff5a64" : islandWindowWindow.controller.playing ? "#70d8df" : "#80658f"
+                            color: islandWindowWindow.controller.recording ? "#f38ba8" : islandWindowWindow.controller.playing ? "#b4befe" : "#6c7086"
                             SequentialAnimation on height {
                                 running: islandWindowWindow.visible && islandWindowWindow.expanded && islandWindowWindow.controller.playing
                                 loops: Animation.Infinite
@@ -1015,7 +1056,7 @@ Item {
                 y: 5
                 z: 2
                 width: expanded ? parent.width - 52 : parent.width - 180
-                height: expanded ? 76 : 28
+                height: expanded ? 164 : 28
                 clip: true
                 onVisibleChanged: if (!visible) expanded = false
                 Connections {
@@ -1040,10 +1081,10 @@ Item {
                     width: parent.width
                     height: parent.height - 28
                     visible: islandAdjustments.expanded
-                    radius: 12
-                    color: "#b32a1835"
+                    radius: 3
+                    color: "#1e1e2e"
                     border.width: islandAdjustments.expanded ? 1 : 0
-                    border.color: "#608b4d72"
+                    border.color: "#60313244"
                 }
                 Item {
                     width: islandWindowHeader.width - 180
@@ -1055,8 +1096,9 @@ Item {
                         text: islandWindowWindow.controller.recording ? "Screen recording" : islandWindowWindow.controller.player ? islandWindowWindow.controller.player.identity || "Audio" : "Dynamic Island"
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
-                        color: "#f3eaff"
-                        font.pixelSize: 11
+                        color: "#cdd6f4"
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 10
                         font.weight: Font.Medium
                     }
                     MouseArea {
@@ -1067,18 +1109,19 @@ Item {
                         onClicked: islandAdjustments.expanded = !islandAdjustments.expanded
                     }
                 }
-                Row {
-                    x: 4
-                    y: 28
+                Grid {
+                    x: 6
+                    y: 34
+                    columns: 2
                     visible: islandAdjustments.expanded
-                    width: parent.width - 8
-                    spacing: 6
+                    width: parent.width - 12
+                    spacing: 8
                     IslandControl {
                         id: islandBrightnessControl
-                        width: (parent.width - parent.spacing * 3) / 4
+                        width: (parent.width - parent.spacing) / 2
                         label: "Brightness"
                         glyph: "\uf185"
-                        accent: "#ff9777"
+                        accent: "#f9e2af"
                         minimum: 10
                         value: islandWindowWindow.controller.displayBackend.state.brightness
                         enabled: islandWindowWindow.controller.displayBackend.state.brightnessAvailable
@@ -1088,10 +1131,10 @@ Item {
                     }
                     IslandControl {
                         id: islandGammaControl
-                        width: (parent.width - parent.spacing * 3) / 4
+                        width: (parent.width - parent.spacing) / 2
                         label: "Gamma"
                         glyph: "\uf042"
-                        accent: "#74dce2"
+                        accent: "#b4befe"
                         minimum: 30
                         value: islandWindowWindow.controller.displayBackend.state.gamma
                         enabled: islandWindowWindow.controller.displayBackend.state.sunsetAvailable
@@ -1101,10 +1144,10 @@ Item {
                     }
                     IslandControl {
                         id: islandVolumeControl
-                        width: (parent.width - parent.spacing * 3) / 4
+                        width: (parent.width - parent.spacing) / 2
                         label: "Volume"
                         glyph: "\uf028"
-                        accent: "#dba1ec"
+                        accent: "#cba6f7"
                         minimum: 0
                         value: Math.min(100, islandWindowWindow.controller.volume * 100)
                         enabled: islandWindowWindow.controller.volumeAvailable
@@ -1114,10 +1157,10 @@ Item {
                     }
                     IslandControl {
                         id: islandTemperatureControl
-                        width: (parent.width - parent.spacing * 3) / 4
-                        label: "Night light temperature"
+                        width: (parent.width - parent.spacing) / 2
+                        label: "Night light"
                         glyph: "\uf186"
-                        accent: "#ffd08a"
+                        accent: "#fab387"
                         minimum: 1000
                         maximum: 2700
                         wheelStep: 100
@@ -1141,7 +1184,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         glyph: islandWindowWindow.controller.doNotDisturb ? "\uf1f6" : "\uf0f3"
                         label: islandWindowWindow.controller.doNotDisturb ? "Disable do not disturb" : "Enable do not disturb"
-                        color: islandWindowWindow.controller.doNotDisturb ? "#604e284c" : "transparent"
+                        color: islandWindowWindow.controller.doNotDisturb ? "#313244" : "transparent"
                         onClicked: {
                             islandWindowWindow.controller.doNotDisturb = !islandWindowWindow.controller.doNotDisturb;
                             islandWindowWindow.controller.clearEvent();
@@ -1165,7 +1208,7 @@ Item {
                             width: 4
                             height: 4
                             radius: 2
-                            color: "#70d8df"
+                            color: "#cba6f7"
                             visible: islandWindowWindow.controller.notifications.length > 0
                         }
                     }
@@ -1175,11 +1218,11 @@ Item {
                         height: 6
                         radius: 3
                         anchors.verticalCenter: parent.verticalCenter
-                        color: islandWindowWindow.controller.recording ? "#ff5a64" : "#ff9c66"
+                        color: islandWindowWindow.controller.recording ? "#f38ba8" : "#fab387"
                     }
                     Text {
                         text: islandWindowWindow.controller.hasBattery ? (islandWindowWindow.controller.charging ? "ϟ " : "") + islandWindowWindow.controller.batteryPercent + "%" : "◦"
-                        color: islandWindowWindow.controller.charging ? "#70d8df" : islandWindowWindow.controller.batteryPercent >= 0 && islandWindowWindow.controller.batteryPercent <= 20 ? "#ff9c66" : "#c7aacb"
+                        color: islandWindowWindow.controller.charging ? "#b4befe" : islandWindowWindow.controller.batteryPercent >= 0 && islandWindowWindow.controller.batteryPercent <= 20 ? "#fab387" : "#cba6f7"
                         font.pixelSize: 11
                     }
                 }
@@ -1219,7 +1262,7 @@ Item {
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
                         font.pixelSize: 10
-                        color: "#c7aacb"
+                        color: "#cba6f7"
                     }
                     Text {
                         width: parent.width
@@ -1228,7 +1271,7 @@ Item {
                         elide: Text.ElideRight
                         font.pixelSize: 15
                         font.weight: Font.DemiBold
-                        color: "#f3eaff"
+                        color: "#cdd6f4"
                     }
                     Text {
                         width: parent.width
@@ -1239,7 +1282,7 @@ Item {
                         maximumLineCount: 2
                         elide: Text.ElideRight
                         font.pixelSize: 11
-                        color: "#c7aacb"
+                        color: "#cba6f7"
                     }
                     Row {
                         spacing: 7
@@ -1280,7 +1323,7 @@ Item {
                         Text {
                             text: islandWindowWindow.mode === "volume" ? "\uf028" : islandWindowWindow.mode === "brightness" ? "\uf185" : islandWindowWindow.mode === "battery" ? "\uf240" : "\uf111"
                             font.family: "Symbols Nerd Font Mono"
-                            color: islandWindowWindow.mode === "activity" ? "#ff9c66" : "#70d8df"
+                            color: islandWindowWindow.mode === "activity" ? "#fab387" : "#b4befe"
                             font.pixelSize: 21
                         }
                         Text {
@@ -1288,7 +1331,7 @@ Item {
                             text: islandWindowWindow.controller.eventTitle + (islandWindowWindow.controller.eventValue >= 0 ? "   " + Math.round(islandWindowWindow.controller.eventValue * 100) + "%" : "")
                             textFormat: Text.PlainText
                             elide: Text.ElideRight
-                            color: "#f3eaff"
+                            color: "#cdd6f4"
                             font.pixelSize: 14
                         }
                     }
@@ -1298,20 +1341,20 @@ Item {
                         text: islandWindowWindow.controller.eventDetail
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
-                        color: "#c7aacb"
+                        color: "#cba6f7"
                         font.pixelSize: 11
                     }
                     Rectangle {
                         width: parent.width
                         height: 4
                         radius: 2
-                        color: "#493451"
+                        color: "#313244"
                         visible: islandWindowWindow.controller.eventValue >= 0
                         Rectangle {
                             width: parent.width * Math.max(0, Math.min(1, islandWindowWindow.controller.eventValue))
                             height: parent.height
                             radius: 2
-                            color: "#f3eaff"
+                            color: "#cdd6f4"
                             Behavior on width {
                                 NumberAnimation {
                                     duration: 120

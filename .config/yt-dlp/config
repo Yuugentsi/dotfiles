@@ -24,7 +24,8 @@
 --merge-output-format mp4
 --no-overwrites
 --no-playlist
--o %(title)s.%(ext)s
+--parse-metadata "webpage_url:^(?:https?://(?:www\.)?realbooru\.com/index\.php\?[^#]*?\bid=(?P<realbooru_id>[0-9]+)(?:[&#]|$))|$"
+-o %(realbooru_id,title)s.%(ext)s
 --paths ~/0/videos/
 --windows-filenames
 

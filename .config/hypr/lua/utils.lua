@@ -1,21 +1,28 @@
 -- ─── utils ───
 local mainMod = "SUPER"
 
--- ─── utils.sh ───
+-- ─── startup ───
 hl.on("hyprland.start", function()
+    hl.exec_cmd("~/.config/hypr/scripts/quickshell.sh start")
+    hl.exec_cmd("python3 -B ~/.config/quickshell/scripts/wallpapers.py restore")
+    hl.exec_cmd("hyprsunset -t 2900 -g 100")
+    hl.exec_cmd("swaync")
     hl.exec_cmd("bash ~/.config/hypr/scripts/utils.sh spotify-listener")
 end)
 
+-- ─── utils.sh ───
 hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd("~/.config/hypr/scripts/utils.sh record"), { dont_inhibit = true, allow_input_capture = true })
 
-local vol_mute = "~/.config/hypr/scripts/utils.sh volume mute"
-local vol_down = "~/.config/hypr/scripts/utils.sh volume down"
-local vol_up   = "~/.config/hypr/scripts/utils.sh volume up"
+local vol_mute = "~/.config/hypr/scripts/quickshell.sh volume mute"
+local vol_down = "~/.config/hypr/scripts/quickshell.sh volume down"
+local vol_up   = "~/.config/hypr/scripts/quickshell.sh volume up"
 
 -- hl.bind("F6",               hl.dsp.exec_cmd(vol_mute),                                         { repeating = true })
 -- hl.bind("F7",               hl.dsp.exec_cmd(vol_down),                                         { repeating = true })
 -- hl.bind("F8",               hl.dsp.exec_cmd(vol_up),                                           { repeating = true })
 hl.bind("XF86AudioMute",    hl.dsp.exec_cmd(vol_mute),                                         { repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd(vol_down), { repeating = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd(vol_up), { repeating = true })
 
 local brightness_down = "~/.config/hypr/scripts/utils.sh brightness down"
 local brightness_up   = "~/.config/hypr/scripts/utils.sh brightness up"
@@ -32,7 +39,33 @@ hl.bind("ALT + F3", hl.dsp.exec_cmd(sunset_up),   { repeating = true })
 local toggle_cmd = "~/.config/hypr/scripts/utils.sh toggle"
 hl.bind("F9", hl.dsp.exec_cmd(toggle_cmd))
 
+-- ─── scratchpads ───
 hl.bind(mainMod .. " + T", hl.dsp.workspace.toggle_special("thunar"))
+
+local scratchpad_apps = {
+    ["special:thunar"] = function(class) return class == "thunar" end,
+    ["special:kitty"] = function(class) return class == "kitty-float" end,
+    ["special:mpv"] = function(class) return class == "mpv" end,
+    ["special:telegram"] = function(class)
+        return class:match("^telegram") or class:match("^org%.telegram%.")
+    end,
+}
+hl.on("window.open", function(w)
+    local belongs = w.workspace and scratchpad_apps[w.workspace.name]
+    if belongs and w.class and not belongs(string.lower(w.class)) then
+        local active_ws = hl.get_active_workspace()
+        hl.dispatch(hl.dsp.window.move({
+            workspace = tostring(active_ws and active_ws.id or 1),
+            window = "address:" .. w.address,
+            follow = false,
+        }))
+    end
+    local sp = hl.get_active_special_workspace()
+    local sp_check = sp and scratchpad_apps[sp.name]
+    if sp_check and w.class and not sp_check(string.lower(w.class)) then
+        hl.dispatch(hl.dsp.workspace.toggle_special(sp.name:sub(9)))
+    end
+end)
 hl.on("workspace.active", function()
     local special = hl.get_active_special_workspace()
     if special and (special.name == "special:thunar" or special.name == "special:kitty" or special.name == "special:telegram") then
@@ -152,10 +185,17 @@ hl.bind(mainMod .. " + F1", hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/m
 hl.bind(mainMod .. " + G",  hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/media.py music"), { locked = true })
 hl.bind("ALT + F1",         hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/media.py stop"), { locked = true })
 hl.bind("ALT + G",          hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/media.py video"))
+hl.on("hyprland.start", function()
+    hl.exec_cmd("python3 -B ~/.config/hypr/scripts/media.py image --install")
+end)
 
+-- ─── microphone ───
 hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true, repeating = true })
 
+-- ─── player-next.py ───
 hl.bind("F1",              hl.dsp.exec_cmd("python3 -B ~/.config/hypr/scripts/player-next.py"), { locked = true })
+
+-- ─── playerctl ───
 hl.bind("ALT + K",         hl.dsp.exec_cmd("playerctl next"),       { locked = true })
 hl.bind("ALT + J",         hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("ALT + H",         hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
@@ -186,14 +226,19 @@ hl.bind(mainMod .. " + SUPER_L", function()
     hl.dispatch(hl.dsp.focus({ workspace = next_ws }))
 end, { release = true })
 
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh ipc panels toggle"), { description = "Open Hub" })
+-- ─── quickshell ───
+-- hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh ipc panels toggle"), { description = "Open Hub" })
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh ipc hub toggle"), { description = "Open quick settings" })
 
 hl.bind("F6", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh volume mute"), { repeating = true })
 hl.bind("F7", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh volume down"), { repeating = true })
 hl.bind("F8", hl.dsp.exec_cmd("~/.config/hypr/scripts/quickshell.sh volume up"), { repeating = true })
 
+-- ─── swaync ───
 hl.bind(mainMod .. " + N",         hl.dsp.exec_cmd("swaync-client -t"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd("swaync-client -C && ~/.config/hypr/scripts/quickshell.sh notify -1 2000 0 '🔔 Notifications cleared'"))
+
+-- ─── quickshell timer ───
 hl.bind(mainMod .. " + U", function()
     hl.exec_cmd("~/.config/hypr/scripts/quickshell.sh notify 0 2000 'rgb(cba6f7)' '󰔟 Timer started (waiting 2s)...'")
     hl.timer(function()
@@ -201,6 +246,7 @@ hl.bind(mainMod .. " + U", function()
     end, { timeout = 2000, type = "oneshot" })
 end)
 
+-- ─── quickshell window switcher ───
 local switcherHeld = false
 hl.bind("ALT + Escape", function()
     switcherHeld = true

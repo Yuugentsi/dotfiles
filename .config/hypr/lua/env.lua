@@ -26,7 +26,7 @@ local env_vars = {
 
     -- gtk
     CLUTTER_BACKEND                     = "wayland",
-    GTK_THEME                           = "Adwaita:dark",
+    GTK_THEME                           = "adw-gtk3-dark",
     NO_AT_BRIDGE                        = "1",
     __GL_VRR_ALLOWED                    = "1",
     WLR_RENDERER_ALLOW_SOFTWARE         = "0",

@@ -6,52 +6,33 @@ hl.on("hyprland.start", function()
         hl.exec_cmd(cmd)
     end
     -- -------------------- exec --------------------
-    exec("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP GTK_THEME=Adwaita:dark")
+    exec("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     exec("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE XDG_RUNTIME_DIR")
 
-
-    exec("~/.config/hypr/scripts/quickshell.sh start")
-    exec("python3 -B ~/.config/quickshell/scripts/wallpapers.py restore")
-    exec("hyprsunset -t 2700 -g 100")
-    exec("swaync")
     exec("hypridle")
     exec("spotify")
     exec("wl-clip-persist --clipboard regular")
     exec("setsid -f wl-paste --type text --watch cliphist store")
     exec("setsid -f wl-paste --type image --watch cliphist store")
-    exec("GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface icon-theme 'Obsidian' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface cursor-theme 'Vanilla-DMZ' && GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' && command -v xfconf-query >/dev/null 2>&1 && xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita:dark' --create -t string")
+    exec([[setsid -f wl-paste --type text --watch sh -c 'u=$(cat | tr -d "\r\n "); case "$u" in *://*wallhaven.cc/w/*) if gallery-dl -d "$HOME/0/pictures/wallpapers" "$u" >/dev/null 2>&1; then hyprctl notify 1 5000 "rgb(88c0d0)" "󰸉 "; else hyprctl notify 3 5000 "rgb(bf616a)" "󰸉 "; fi ;; esac']])
+    exec("GSETTINGS_BACKEND=dconf gsettings set org.gnome.desktop.interface cursor-theme 'Vanilla-DMZ'")
 
-    exec("thunar -q; GTK_THEME=Adwaita:dark thunar --daemon")
+    exec("thunar -q; thunar --daemon")
 
 end)
 
--- ----- mpv & zathura -----
-local single_instance_classes = {
-    ["mpv"] = "mpv",
-    ["zathura"] = "zathura",
-    ["org.pwmt.zathura"] = "zathura",
-}
-
+-- ----- mpv_zathura -----
 hl.on("window.open", function(opened_win)
-    if string.lower(opened_win.class or "") == "spotify" then
-        hl.exec_cmd("playerctl --player=spotify play")
-    end
-
-    local target = single_instance_classes[opened_win.class]
+    local class = string.lower(opened_win.class or "")
+    if class == "spotify" then hl.exec_cmd("playerctl --player=spotify play") end
+    -- ─── mpv audio ───
+    if class == "mpv" then hl.exec_cmd("pkill -f '^/usr/bin/mpv --no-video --audio-display=no' 2>/dev/null || true") end
+    local target = class == "mpv" and "mpv" or (class == "zathura" or class == "org.pwmt.zathura") and "zathura"
     if not target then return end
-
-    local wins = {}
     for _, w in ipairs(hl.get_windows()) do
-        if single_instance_classes[w.class] == target then
-            table.insert(wins, w)
-        end
-    end
-
-    if #wins > 1 then
-        for _, w in ipairs(wins) do
-            if w.address ~= opened_win.address then
-                hl.dispatch(hl.dsp.window.close({ window = w }))
-            end
+        local other_class = string.lower(w.class or "")
+        if w.address ~= opened_win.address and (other_class == target or (target == "zathura" and other_class == "org.pwmt.zathura")) then
+            hl.dispatch(hl.dsp.window.close({ window = w }))
         end
     end
 end)

@@ -3,17 +3,23 @@ hl.config({ binds = { workspace_back_and_forth = true, workspace_center_on = 1 }
 hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = 0, gaps_in = 0 })
 hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = 0, gaps_in = 0 })
 --
-hl.workspace_rule({ workspace = "5", on_created_empty = "brave-origin" })
--- hl.workspace_rule({ workspace = "6", on_created_empty = "kitty" })
 --hl.workspace_rule({ workspace = "6", layout = "master" })
 --hl.workspace_rule({ workspace = "7", layout = "master" })
-hl.workspace_rule({ workspace = "8", on_created_empty = "thunar" })
-hl.workspace_rule({ workspace = "special:thunar", on_created_empty = "thunar" })
-hl.workspace_rule({ workspace = "special:kitty", on_created_empty = "kitty --class kitty-float" })
-hl.workspace_rule({ workspace = "special:mpv", on_created_empty = "mpv --force-window --idle --fs" })
-hl.workspace_rule({ workspace = "special:telegram", on_created_empty = "Telegram" })
--- hl.workspace_rule({ workspace = "8", on_created_empty = "zeditor aria2 gallery-dl kitty rofi swayimg mpv swaync fish yt-dlp zathura hypr waybar" })
-hl.workspace_rule({ workspace = "9", on_created_empty = "spotify" })
+local workspace_autostart = {
+    ["5"] = "brave-origin",
+    ["8"] = "thunar",
+    ["9"] = "spotify",
+    ["special:thunar"] = "thunar",
+    ["special:kitty"] = "kitty --class kitty-float",
+    ["special:mpv"] = "mpv --force-window --idle --fs",
+    ["special:telegram"] = "Telegram",
+}
+hl.on("workspace.created", function(workspace)
+    local command = workspace_autostart[workspace.name]
+    if workspace.is_empty and command then
+        hl.exec_cmd(command)
+    end
+end)
 
 hl.window_rule({ name = "no-gaps-wtv1", match = { float = false, workspace = "w[tv1]s[false]" }, border_size = 0, rounding = 0 })
 hl.window_rule({ name = "no-gaps-f1", match = { float = false, workspace = "f[1]s[false]" }, border_size = 0, rounding = 0 })
@@ -90,7 +96,7 @@ hl.window_rule({
     match       = { class = "(?i)thunar" },
     float       = true,
     center      = true,
-    size        = "750 500",
+    size        = "900 650",
     border_size = 0,
 })
 
@@ -186,7 +192,9 @@ hl.window_rule({
     opacity    = "0.85 override 0.85 override 0.85 override",
     no_blur    = true,
     workspace  = "9 silent",
-    fullscreen = true,
+    float      = true,
+    center     = true,
+    size       = "(monitor_w*0.60) (monitor_h*0.70)",
 })
 
 -- hyprland

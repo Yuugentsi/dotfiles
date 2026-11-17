@@ -3,6 +3,13 @@
 case "${1:-}" in
     # recording
     record)
+        rec_notify() {
+            "$HOME/.config/hypr/scripts/quickshell.sh" notify "$1" "$2" "$3" "fontsize:15 $4" >/dev/null 2>&1
+        }
+        if ! command -v wf-recorder >/dev/null 2>&1; then
+            rec_notify 3 4000 "rgb(f38ba8)" "󰅙  wf-recorder is not installed"
+            exit 1
+        fi
         recording_state="${XDG_RUNTIME_DIR:-/tmp}/hypr-recording-$UID"
         exec 9>"$recording_state.lock"
         flock -w 5 9 || exit 0
@@ -17,10 +24,20 @@ case "${1:-}" in
                     sleep 0.1
                 done
                 if kill -0 "$recording_pid" 2>/dev/null; then
-                    printf '%s\n' "Recording is still finishing" >> "$recording_state.log"
+                    rec_notify 0 3000 "rgb(f9e2af)" "󱦟  Recording is still finishing"
                     exit 1
                 fi
-                "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 1000 "rgb(80ff80)" "Recording stopped" >/dev/null 2>&1
+                recording_info=""
+                if [[ -f "$recording_state.info" ]]; then
+                    { read -r recording_start; read -r recording_file; } < "$recording_state.info"
+                    if [[ "$recording_start" =~ ^[0-9]+$ ]]; then
+                        recording_elapsed=$(( $(date +%s) - recording_start ))
+                        recording_info=$(printf '%02d:%02d' $((recording_elapsed / 60)) $((recording_elapsed % 60)))
+                    fi
+                    [[ -n "$recording_file" ]] && recording_info="$recording_info  ·  $(basename "$recording_file")"
+                    rm -f "$recording_state.info"
+                fi
+                rec_notify 5 3000 "rgb(a6e3a1)" "󰄬  Recording saved${recording_info:+  ·  $recording_info}"
                 exit 0
             fi
             rm -f "$recording_state.pid"
@@ -30,26 +47,31 @@ case "${1:-}" in
         recording_audio="$recording_sink.monitor"
         if [[ -z "$recording_sink" ]] || ! pactl list short sources 2>/dev/null |
             awk -v source="$recording_audio" '$2 == source { found = 1 } END { exit !found }'; then
-            "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 4000 "rgb(ff8080)" "System audio unavailable" >/dev/null 2>&1
+            rec_notify 3 4000 "rgb(f38ba8)" "󰝟  System audio unavailable"
             exit 1
         fi
 
         recording_dir="$HOME/0/videos/recordings"
         mkdir -p "$recording_dir" || exit 1
-        "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 1000 "rgb(ff8080)" "Recording starts in 1 second" >/dev/null 2>&1
+        rec_notify 0 1000 "rgb(f38ba8)" "󰑋  Recording in 1s"
         sleep 1
         "$HOME/.config/hypr/scripts/quickshell.sh" dismiss -1 >/dev/null 2>&1
         recording_file="$recording_dir/$(date +%m-%d-%Y_%H-%M-%S).mp4"
+        printf '%s\n%s\n' "$(date +%s)" "$recording_file" > "$recording_state.info"
         (
             exec 9>&-
-            wf-recorder --audio="$recording_audio" -f "$recording_file" > "$recording_state.log" 2>&1 &
+            wf-recorder --audio="$recording_audio" \
+                -c libx264 -p preset=fast -p crf=16 -x yuv420p -r 60 \
+                -C aac -P b=320k \
+                -f "$recording_file" > "$recording_state.log" 2>&1 &
             recording_pid=$!
             echo "$recording_pid" > "$recording_state.pid"
             wait "$recording_pid"
             recording_result=$?
             rm -f "$recording_state.pid"
             if [[ "$recording_result" -ne 0 && "$recording_result" -ne 130 ]]; then
-                "$HOME/.config/hypr/scripts/quickshell.sh" notify -1 4000 "rgb(ff8080)" "Recording failed: $recording_state.log" >/dev/null 2>&1
+                rm -f "$recording_state.info"
+                rec_notify 3 5000 "rgb(f38ba8)" "󰅗  Recording failed  ·  see $recording_state.log"
             fi
         ) </dev/null >/dev/null 2>&1 &
         for ((recording_attempt = 0; recording_attempt < 50; recording_attempt++)); do
@@ -169,9 +191,9 @@ case "${1:-}" in
         else
             hyprsunset >/dev/null 2>&1 &
             sleep 0.2
-            hyprctl hyprsunset temperature 2800 >/dev/null 2>&1
+            hyprctl hyprsunset temperature 2900 >/dev/null 2>&1
             hyprctl hyprsunset gamma 70 >/dev/null 2>&1
-            s=" 󰃛 2800K · gamma 70%"
+            s=" 󰃛 2900K · gamma 70%"
         fi
         ram=""
         if [ -r /proc/meminfo ]; then

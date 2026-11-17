@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for b in zen-browser brave-origin librewolf firefox chromium; do
+for b in librewolf zen-browser brave-origin firefox chromium; do
     if command -v "$b" &>/dev/null; then
         BROWSER="$b"
         break
@@ -219,6 +219,11 @@ open_site_choice() {
         *swaync) zeditor "$HOME/.config/swaync" ;;
         *zathura) zeditor "$HOME/.config/zathura" ;;
         *fish) zeditor "$HOME/.config/fish" ;;
+        *fuzzel) zeditor "$HOME/.config/fuzzel" ;;
+        *nano) zeditor "$HOME/.config/nano" ;;
+        *nvim) zeditor "$HOME/.config/nvim" ;;
+        *quickshell) zeditor "$HOME/.config/quickshell" ;;
+        *zed) zeditor "$HOME/.config/zed" ;;
     esac
 }
 
@@ -327,6 +332,7 @@ handle_bang() {
         .mp4) ("$HOME/.config/hypr/scripts/quickshell.sh" notify 5 2000 "rgb(a6e3a1)" "󰄬" && yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" -o "$HOME/videos/yt/%(title)s.%(ext)s" "$query" && "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
         .mp3) ("$HOME/.config/hypr/scripts/quickshell.sh" notify 5 2000 "rgb(a6e3a1)" "󰄬" && yt-dlp -x --audio-format mp3 -o "$HOME/music/yt/%(title)s.%(ext)s" "$query" && "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
         .dl) ("$HOME/.config/hypr/scripts/quickshell.sh" notify 5 2000 "rgb(a6e3a1)" "󰄬" && gallery-dl "$query" && "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 3000 "rgb(a6e3a1)" "󰄬") &>/dev/null & ;;
+        .cfg) zeditor "$HOME/.config/aria2" "$HOME/.config/gallery-dl" "$HOME/.config/kitty" "$HOME/.config/waybar" "$HOME/.config/rofi" "$HOME/.config/hypr" "$HOME/.config/mpv" "$HOME/.config/swayimg" "$HOME/.config/yt-dlp" "$HOME/.config/swaync" "$HOME/.config/zathura" "$HOME/.config/fish" "$HOME/.config/fuzzel" "$HOME/.config/nano" "$HOME/.config/nvim" "$HOME/.config/quickshell" "$HOME/.config/zed" &>/dev/null & ;;
         .zed)
             if [ -n "$query" ]; then
                 zeditor "$HOME/$query" &>/dev/null &
@@ -385,6 +391,7 @@ from pathlib import Path
 import random
 import re
 import secrets
+import signal
 import subprocess
 import tempfile
 import threading
@@ -398,6 +405,7 @@ RANDOM_HISTORY = CACHE / 'random_history.txt'
 SHUFFLE_HISTORY = CACHE / 'shuffle_history.txt'
 MENU_HISTORY = CACHE / 'history.txt'
 PROGRESS = CACHE / 'progress.json'
+READER_PID = CACHE / 'reader.pid'
 IMAGE_TYPES = {'.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.bmp'}
 
 
@@ -447,10 +455,16 @@ class MangaLibrary:
                 representative = path
             self.copies[representative].append(path)
         self.current = None
+        self.archive = None
         self.images = []
         self.pick_id = ''
         self.state = {}
         self.lock = threading.Lock()
+
+    def close_archive(self):
+        if self.archive is not None:
+            self.archive.close()
+            self.archive = None
 
     def was_selected(self, path, history):
         return any(str(copy) in history for copy in self.copies[path])
@@ -485,6 +499,7 @@ class MangaLibrary:
         return saved
 
     def choose(self):
+        self.close_archive()
         self.images = []
         self.pick_id = secrets.token_hex(8)
         self.files = [path for path in self.files if path.is_file()]
@@ -505,15 +520,17 @@ class MangaLibrary:
         pages = 0
         error = ''
         try:
-            with zipfile.ZipFile(self.current) as archive:
-                images = sorted((info for info in archive.infolist() if not info.is_dir() and Path(info.filename).suffix.lower() in IMAGE_TYPES and not info.filename.startswith('__MACOSX/')), key=lambda info: page_order(info.filename))
-                pages = len(images)
-                self.images = [info.filename for info in images]
-                if images:
-                    preview = self.folder / f'{secrets.token_hex(8)}{Path(images[0].filename).suffix.lower()}'
-                    preview.write_bytes(archive.read(images[0]))
-                    cover = preview.as_uri()
+            self.archive = zipfile.ZipFile(self.current)
+            archive = self.archive
+            images = sorted((info for info in archive.infolist() if not info.is_dir() and Path(info.filename).suffix.lower() in IMAGE_TYPES and not info.filename.startswith('__MACOSX/')), key=lambda info: page_order(info.filename))
+            pages = len(images)
+            self.images = [info.filename for info in images]
+            if images:
+                preview = self.folder / f'{secrets.token_hex(8)}{Path(images[0].filename).suffix.lower()}'
+                preview.write_bytes(archive.read(images[0]))
+                cover = preview.as_uri()
         except (OSError, ValueError, RuntimeError, zipfile.BadZipFile, NotImplementedError):
+            self.close_archive()
             error = 'The cover could not be loaded. You can still try opening the file.'
         self.state = {
             'title': self.current.stem, 'cover': cover, 'pages': pages,
@@ -548,11 +565,10 @@ class MangaLibrary:
         return self.state
 
     def page(self, pick_id, index):
-        if pick_id != self.pick_id or self.current is None or not 0 <= index < len(self.images):
+        if pick_id != self.pick_id or self.archive is None or not 0 <= index < len(self.images):
             raise FileNotFoundError('Page not found')
         filename = self.images[index]
-        with zipfile.ZipFile(self.current) as archive:
-            content = archive.read(filename)
+        content = self.archive.read(filename)
         return content, mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
 
@@ -1056,7 +1072,7 @@ ApplicationWindow {
             contentWidth: Math.max(width, width * root.zoom)
             flickableDirection: Flickable.AutoFlickIfNeeded
             spacing: 12
-            cacheBuffer: height * 2
+            cacheBuffer: height * 3
             boundsBehavior: Flickable.StopAtBounds
             clip: true
             onContentYChanged: {
@@ -1076,6 +1092,7 @@ ApplicationWindow {
                     height: width / pageRatio
                     x: (parent.width - width) / 2
                     source: API_URL + "page/" + root.manga.pick + "/" + parent.index
+                    sourceSize.width: Math.ceil(reader.width * Math.max(1, root.zoom) * Screen.devicePixelRatio)
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
@@ -1216,8 +1233,22 @@ ApplicationWindow {
 '''
 
 
+def stop_previous_reader():
+    try:
+        pid = int(READER_PID.read_text())
+        command = Path(f'/proc/{pid}/cmdline').read_bytes()
+    except (OSError, ValueError):
+        return
+    if b'menu.qml' in command:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+
+
 def show_menu():
     CACHE.mkdir(parents=True, exist_ok=True)
+    stop_previous_reader()
     with tempfile.TemporaryDirectory(prefix='mangas-', dir=CACHE) as directory:
         library = MangaLibrary(directory)
         token = secrets.token_urlsafe(24)
@@ -1237,7 +1268,7 @@ def show_menu():
                 self.send_response(200)
                 self.send_header('Content-Type', content_type)
                 self.send_header('Content-Length', str(len(content)))
-                self.send_header('Cache-Control', 'no-store')
+                self.send_header('Cache-Control', 'private, max-age=3600')
                 self.end_headers()
                 self.wfile.write(content)
 
@@ -1271,13 +1302,18 @@ def show_menu():
         server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
+        process = None
         try:
             url = f'http://127.0.0.1:{server.server_port}/{token}/'
             source = QML.replace('API_URL', json.dumps(url))
             path = Path(directory) / 'menu.qml'
             path.write_text(source)
-            subprocess.run(['/usr/bin/qml6', str(path)], check=True)
+            process = subprocess.Popen(['/usr/bin/qml6', str(path)])
+            READER_PID.write_text(str(process.pid))
+            process.wait()
         finally:
+            if process is not None and READER_PID.exists() and READER_PID.read_text() == str(process.pid):
+                READER_PID.unlink(missing_ok=True)
             server.shutdown()
             server.server_close()
             thread.join()
@@ -1373,7 +1409,12 @@ config_entries='❀  aria2
 ❀  yt-dlp
 ❀  swaync
 ❀  zathura
-❀  fish'
+❀  fish
+❀  fuzzel
+❀  nano
+❀  nvim
+❀  quickshell
+❀  zed'
 
 all_entries=$(printf '%s\n%s\n%s\n%s\n%s\n%s\n%s' "$favorites_entries" "$ai_entries" "$anime_entries" "$tech_entries" "$web_entries" "$streaming_entries" "$config_entries")
 all_count=$(printf '%s\n' "$all_entries" | wc -l)
@@ -1488,7 +1529,7 @@ run_config_menu() {
     config_choice=$(printf '󰁯  Backup → dotfiles.zip\n❀  Open All\n%s' "$config_entries" | rofi_menu "❀  Cfg:" 14)
     [[ -z "$config_choice" ]] && exit 0
     if [[ "$config_choice" == *Backup* ]]; then
-        cd "$HOME/.config" && zip -rq "$HOME/dotfiles.zip" aria2 gallery-dl kitty waybar rofi hypr mpv swayimg yt-dlp swaync zathura fish \
+        cd "$HOME/.config" && zip -rq "$HOME/dotfiles.zip" aria2 gallery-dl kitty waybar rofi hypr mpv swayimg yt-dlp swaync zathura fish fuzzel nano nvim quickshell zed \
             && "$HOME/.config/hypr/scripts/quickshell.sh" notify 5 3000 "rgb(a6e3a1)" "󰁯  Backup saved → ~/dotfiles.zip" \
             || "$HOME/.config/hypr/scripts/quickshell.sh" notify 3 3000 "rgb(f38ba8)" "󰅗  Backup failed"
         exit 0
@@ -1498,7 +1539,7 @@ run_config_menu() {
         exit 0
     fi
     if [[ "$config_choice" == *"Open All" ]]; then
-        zeditor "$HOME/.config/aria2" "$HOME/.config/gallery-dl" "$HOME/.config/kitty" "$HOME/.config/waybar" "$HOME/.config/rofi" "$HOME/.config/hypr" "$HOME/.config/mpv" "$HOME/.config/swayimg" "$HOME/.config/yt-dlp" "$HOME/.config/swaync" "$HOME/.config/zathura" "$HOME/.config/fish" &>/dev/null &
+        zeditor "$HOME/.config/aria2" "$HOME/.config/gallery-dl" "$HOME/.config/kitty" "$HOME/.config/waybar" "$HOME/.config/rofi" "$HOME/.config/hypr" "$HOME/.config/mpv" "$HOME/.config/swayimg" "$HOME/.config/yt-dlp" "$HOME/.config/swaync" "$HOME/.config/zathura" "$HOME/.config/fish" "$HOME/.config/fuzzel" "$HOME/.config/nano" "$HOME/.config/nvim" "$HOME/.config/quickshell" "$HOME/.config/zed" &>/dev/null &
         exit 0
     fi
     local cfg
@@ -1971,7 +2012,11 @@ _image_open() {
     local dir viewer
     dir=$(dirname "$file")
 
-    if command -v swayimg &>/dev/null; then
+    if [[ -f "$HOME/.config/hypr/scripts/media.py" ]]; then
+        _image_add_history "${file#$HOME/}"
+        setsid -f python3 -B "$HOME/.config/hypr/scripts/media.py" image "$file" >/dev/null 2>&1
+        return
+    elif command -v swayimg &>/dev/null; then
         viewer="swayimg"
     elif command -v imv &>/dev/null; then
         viewer="imv"
@@ -2048,7 +2093,9 @@ _image_open_recent() {
     local first
     first=$(ls -1v "$dir" 2>/dev/null | head -1)
 
-    if command -v swayimg &>/dev/null; then
+    if [[ -f "$HOME/.config/hypr/scripts/media.py" ]]; then
+        setsid -f python3 -B "$HOME/.config/hypr/scripts/media.py" image "$dir/$first" >/dev/null 2>&1
+    elif command -v swayimg &>/dev/null; then
         swayimg "$dir/$first" >/dev/null 2>&1 &
     elif command -v imv &>/dev/null; then
         imv "$dir/$first" >/dev/null 2>&1 &
@@ -2255,7 +2302,7 @@ run_files_menu() {
         file="${file#󰈙  }"
 
     elif [[ "$chosen" == *"Cfg Files"* ]]; then
-        local config_dirs=(aria2 gallery-dl kitty rofi swayimg mpv swaync fish yt-dlp zathura hypr waybar)
+        local config_dirs=(aria2 gallery-dl kitty rofi swayimg mpv swaync fish yt-dlp zathura hypr waybar fuzzel nano nvim quickshell zed)
         local config_entries="󰒓  Open All\n"
         for d in "${config_dirs[@]}"; do
             if [[ -d "$HOME/.config/$d" ]]; then

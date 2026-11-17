@@ -64,3 +64,8 @@ local shot_output = "hyprshot -m output -m active -z -t 500 -o ~/0/pictures/scre
 
 hl.bind("Print",       hl.dsp.exec_cmd(shot_region))
 hl.bind("ALT + Print", hl.dsp.exec_cmd(shot_output))
+
+
+
+
+

@@ -13,7 +13,7 @@ Item {
     property real popupX: 6
     property QtObject bar: QtObject {
         property color foreground: Theme.foreground
-        property color urgent: "#bf616a"
+        property color urgent: "#d9737f"
         property string fontFamily: "JetBrainsMono Nerd Font"
         property var shell: null
     }

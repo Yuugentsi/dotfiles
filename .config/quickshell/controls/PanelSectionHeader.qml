@@ -4,9 +4,10 @@ import QtQuick
 Text {
     property color foreground: Theme.foreground
     property string fontFamily: "sans-serif"
-    color: Qt.darker(foreground, 1.4)
+    color: Theme.dim
     font.family: fontFamily
     font.pixelSize: 10
-    font.bold: true
-    font.letterSpacing: 1
+    font.weight: Font.Bold
+    font.letterSpacing: 1.4
+    font.capitalization: Font.AllUppercase
 }

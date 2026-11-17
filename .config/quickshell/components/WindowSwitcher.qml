@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
@@ -16,6 +17,7 @@ Item {
     property int selectedIndex: -1
     property string selectedAddress: ""
     property string pendingAddress: ""
+    property string excludedAddress: ""
     property var history: []
     property var windows: []
     property var sources: Hyprland.toplevels.values
@@ -34,15 +36,19 @@ Item {
             updateSelection(selectedIndex + direction);
             return;
         }
-        windows = Model.rank(sources, history);
+        const active = Hyprland.activeToplevel;
+        excludedAddress = active ? active.address : "";
+        windows = Model.rank(sources, history).filter(window => window.address !== excludedAddress);
+        if (!windows.length) {
+            heldMode = false;
+            return;
+        }
         heldMode = held;
         const monitor = Hyprland.focusedMonitor;
         const target = Quickshell.screens.find(screen => monitor && screen.name === monitor.name);
         if (target)
             panel.screen = target;
-        const active = Hyprland.activeToplevel;
-        const activeIndex = active ? windows.findIndex(window => window.address === active.address) : -1;
-        updateSelection(activeIndex >= 0 ? activeIndex + direction : direction < 0 ? windows.length - 1 : 0);
+        updateSelection(direction < 0 ? windows.length - 1 : 0);
         opened = true;
         Hyprland.refreshToplevels();
         Qt.callLater(function () {
@@ -79,7 +85,7 @@ Item {
             return;
         const previous = selectedAddress;
         const oldIndex = selectedIndex;
-        windows = Model.reconcile(sources, windows.map(window => window.address));
+        windows = Model.reconcile(sources, windows.map(window => window.address)).filter(window => window.address !== excludedAddress);
         if (!windows.length) {
             cancel();
             return;
@@ -168,10 +174,26 @@ Item {
         id: switcherWindowPanel
         required property var controller
         readonly property bool navigationIsolated: switcherWindowShortcutGuard.active
-        readonly property int columns: Math.max(1, Math.min(4, controller.windows.length || 1, Math.floor((width - 104) / 300)))
-        readonly property real tileWidth: Math.min(360, (width - 104) / columns)
-        readonly property real tileHeight: Math.round((tileWidth - 28) * 9 / 16) + 76
-        readonly property int rows: Math.max(1, Math.min(Math.ceil(controller.windows.length / columns), Math.floor((height - 190) / tileHeight)))
+        readonly property var layout: calculateLayout()
+        readonly property real tileWidth: layout.tileWidth
+        readonly property real tileHeight: layout.tileHeight
+        readonly property int columns: layout.columns
+        readonly property int rows: layout.rows
+
+        function calculateLayout() {
+            const count = Math.max(1, controller.windows.length);
+            const availableWidth = Math.max(1, width - 160);
+            const availableHeight = Math.max(1, height - 260);
+            let best = { columns: 1, rows: count, tileWidth: 1, tileHeight: 1 };
+            for (let candidate = 1; candidate <= count; candidate++) {
+                const rowCount = Math.ceil(count / candidate);
+                const size = Math.min(400, availableWidth / candidate, availableHeight / rowCount * 360 / 280);
+                if (size > best.tileWidth || (size === best.tileWidth && candidate * rowCount < best.columns * best.rows))
+                    best = { columns: candidate, rows: rowCount, tileWidth: size, tileHeight: size * 280 / 360 };
+            }
+            return best;
+        }
+        property real wheelDistance: 0
         visible: controller.opened || switcherWindowFade.running
         anchors {
             top: true
@@ -191,6 +213,20 @@ Item {
             id: switcherWindowShortcutGuard
             window: switcherWindowPanel
             enabled: switcherWindowPanel.controller.opened
+        }
+
+        function scrollWindows(delta) {
+            wheelReset.restart();
+            wheelDistance += delta;
+            if (Math.abs(wheelDistance) >= 120) {
+                controller.step(wheelDistance > 0 ? -1 : 1);
+                wheelDistance = 0;
+            }
+        }
+        Timer {
+            id: wheelReset
+            interval: 240
+            onTriggered: switcherWindowPanel.wheelDistance = 0
         }
 
         function takeFocus() {
@@ -226,10 +262,9 @@ Item {
                     switcherWindowPanel.controller.cancel();
                 else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)
                     switcherWindowPanel.controller.accept();
-                else if (event.key === Qt.Key_Backtab || (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier))) {
-                    event.accepted = true;
-                    return;
-                } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Right)
+                else if (event.key === Qt.Key_Backtab || (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier)))
+                    switcherWindowPanel.controller.step(-1);
+                else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Right)
                     switcherWindowPanel.controller.step(1);
                 else if (event.key === Qt.Key_Left)
                     switcherWindowPanel.controller.step(-1);
@@ -252,6 +287,14 @@ Item {
                 }
             }
         }
+        function tileX(index) {
+            const row = Math.floor(index / columns);
+            const rowSize = Math.min(columns, controller.windows.length - row * columns);
+            return (index % columns + (columns - rowSize) / 2) * tileWidth;
+        }
+        function tileY(index) {
+            return Math.floor(index / columns) * tileHeight;
+        }
         Item {
             id: switcherWindowContent
             anchors.fill: parent
@@ -259,19 +302,15 @@ Item {
             Behavior on opacity {
                 NumberAnimation {
                     id: switcherWindowFade
-                    duration: 140
+                    duration: 160
                     easing.type: Easing.OutCubic
                 }
-            }
-            Rectangle {
-                anchors.fill: parent
-                color: "#990c0911"
             }
             MouseArea {
                 anchors.fill: parent
                 onClicked: switcherWindowPanel.controller.cancel()
                 onWheel: function (wheel) {
-                    switcherWindowPanel.controller.step(wheel.angleDelta.y > 0 ? -1 : 1);
+                    switcherWindowPanel.scrollWindows(wheel.angleDelta.y || wheel.angleDelta.x);
                     wheel.accepted = true;
                 }
             }
@@ -279,124 +318,138 @@ Item {
                 id: switcherWindowContentLoader
                 anchors.centerIn: parent
                 active: false
-                sourceComponent: Rectangle {
-                    id: switcherWindowCard
-                    width: switcherWindowPanel.columns * switcherWindowPanel.tileWidth + 40
-                    height: 72 + switcherWindowPanel.rows * switcherWindowPanel.tileHeight + 42
-                    radius: 23
-                    color: "#f21d1b22"
-                    border.width: 1
-                    border.color: "#6b536e80"
-                    scale: switcherWindowPanel.controller.opened ? 1 : 0.96
+                sourceComponent: Item {
+                    id: switcherWindowOverview
+                    width: switcherWindowGrid.width
+                    height: switcherWindowGrid.height + 120
+                    scale: switcherWindowPanel.controller.opened ? 1 : 0.94
                     Behavior on scale {
                         NumberAnimation {
-                            duration: 160
-                            easing.type: Easing.OutCubic
+                            duration: 240
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 1.3
                         }
                     }
+
                     function previewCount() {
                         let ready = 0;
-                        for (let index = 0; index < switcherWindowPanel.controller.windows.length; index++) {
-                            const item = switcherWindowGrid.itemAtIndex(index);
+                        for (let index = 0; index < switcherWindowTiles.count; index++) {
+                            const item = switcherWindowTiles.itemAt(index) as WindowCard;
                             if (item && item.previewReady)
                                 ready++;
                         }
                         return ready;
                     }
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {}
-                    }
-                    Row {
-                        x: 24
-                        y: 22
-                        spacing: 10
+
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: 8
+                        width: windowCount.implicitWidth + 28
+                        height: 30
+                        radius: 15
+                        color: "#d91e1e2e"
+                        border.width: 1
+                        border.color: "#59cba6f7"
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: "#80000000"
+                            shadowBlur: 0.8
+                            shadowVerticalOffset: 3
+                        }
                         Text {
-                            text: "Windows"
-                            color: "#f3eaff"
-                            font.family: "sans-serif"
-                            font.pixelSize: 19
+                            id: windowCount
+                            anchors.centerIn: parent
+                            text: (switcherWindowPanel.controller.selectedIndex + 1) + "  /  " + switcherWindowPanel.controller.windows.length
+                            color: "#cba6f7"
+                            font.family: "monospace"
+                            font.pixelSize: 12
                             font.weight: Font.DemiBold
                         }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: switcherWindowPanel.controller.windows.length
-                            color: "#b8a1cc"
-                            font.pixelSize: 13
-                        }
                     }
-                    ToolButton {
-                        id: switcherWindowCloseButton
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.rightMargin: 18
-                        anchors.topMargin: 15
-                        width: 30
-                        height: 30
-                        text: "×"
-                        Accessible.name: "Cancel window selection"
-                        onClicked: switcherWindowPanel.controller.cancel()
-                        contentItem: Text {
-                            text: "×"
-                            color: "#bba6ca"
-                            font.pixelSize: 20
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        background: Rectangle {
-                            radius: 10
-                            color: switcherWindowCloseButton.hovered ? "#3b2a47" : "transparent"
-                        }
-                    }
-                    GridView {
+                    Item {
                         id: switcherWindowGrid
-                        x: 20
-                        y: 64
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: 56
                         width: switcherWindowPanel.columns * switcherWindowPanel.tileWidth
                         height: switcherWindowPanel.rows * switcherWindowPanel.tileHeight
-                        cellWidth: switcherWindowPanel.tileWidth
-                        cellHeight: switcherWindowPanel.tileHeight
-                        clip: true
-                        cacheBuffer: 0
-                        boundsBehavior: Flickable.StopAtBounds
-                        model: switcherWindowPanel.controller.windows
-                        currentIndex: switcherWindowPanel.controller.selectedIndex
-                        highlightRangeMode: GridView.ApplyRange
-                        preferredHighlightBegin: 0
-                        preferredHighlightEnd: height - cellHeight
-                        highlightMoveDuration: 100
-                        onCurrentIndexChanged: if (currentIndex >= 0)
-                            positionViewAtIndex(currentIndex, GridView.Contain)
-                        ScrollBar.vertical: ScrollBar {
-                            policy: ScrollBar.AsNeeded
-                        }
-                        delegate: WindowCard {
-                            required property var modelData
-                            required property int index
-                            width: switcherWindowGrid.cellWidth
-                            height: switcherWindowGrid.cellHeight
-                            windowData: modelData
-                            selected: index === switcherWindowPanel.controller.selectedIndex
-                            active: switcherWindowPanel.visible
-                            onPointed: if (switcherWindowPanel.controller.selectedIndex !== index)
-                                switcherWindowPanel.controller.updateSelection(index)
-                            onChosen: {
-                                switcherWindowPanel.controller.updateSelection(index);
-                                switcherWindowPanel.controller.accept();
+                        Repeater {
+                            id: switcherWindowTiles
+                            model: switcherWindowPanel.controller.windows
+                            delegate: WindowCard {
+                                required property var modelData
+                                required property int index
+                                x: switcherWindowPanel.tileX(index)
+                                y: switcherWindowPanel.tileY(index)
+                                width: switcherWindowPanel.tileWidth
+                                height: switcherWindowPanel.tileHeight
+                                windowData: modelData
+                                position: index + 1
+                                selected: index === switcherWindowPanel.controller.selectedIndex
+                                active: switcherWindowPanel.visible
+                                onChosen: {
+                                    switcherWindowPanel.controller.updateSelection(index);
+                                    switcherWindowPanel.controller.accept();
+                                }
                             }
                         }
                     }
-                    Text {
-                        x: 25
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 17
-                        width: parent.width - 50
-                        text: switcherWindowPanel.controller.windows.length ? "Tab / arrows to choose   ·   Release Alt or Enter to switch   ·   Esc to cancel" : "No open windows   ·   Esc to close"
-                        color: "#9b8ba7"
-                        font.family: "sans-serif"
-                        font.pixelSize: 10
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
+                        anchors.bottomMargin: 8
+                        width: switcherWindowHints.implicitWidth + 28
+                        height: 34
+                        radius: 17
+                        color: "#d91e1e2e"
+                        border.width: 1
+                        border.color: "#33cba6f7"
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: "#80000000"
+                            shadowBlur: 0.8
+                            shadowVerticalOffset: 3
+                        }
+                        Row {
+                            id: switcherWindowHints
+                            anchors.centerIn: parent
+                            spacing: 16
+                            Repeater {
+                                model: [
+                                    { keys: switcherWindowPanel.controller.heldMode ? "Esc" : "Tab", label: "next" },
+                                    { keys: switcherWindowPanel.controller.heldMode ? "Alt" : "Enter", label: switcherWindowPanel.controller.heldMode ? "release to open" : "open" },
+                                    { keys: switcherWindowPanel.controller.heldMode ? "Click" : "Esc", label: switcherWindowPanel.controller.heldMode ? "pick" : "cancel" }
+                                ]
+                                delegate: Row {
+                                    id: hintItem
+                                    required property var modelData
+                                    spacing: 7
+                                    Rectangle {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: keyLabel.implicitWidth + 14
+                                        height: 20
+                                        radius: 6
+                                        color: "#313244"
+                                        Text {
+                                            id: keyLabel
+                                            anchors.centerIn: parent
+                                            text: hintItem.modelData.keys
+                                            color: "#cdd6f4"
+                                            font.family: "monospace"
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                        }
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: hintItem.modelData.label
+                                        color: "#a6adc8"
+                                        font.pixelSize: 11
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -404,148 +457,198 @@ Item {
     }
 
     component WindowCard: Item {
-        id: windowCardRoot
+        id: windowPreviewRoot
         required property var windowData
         property bool selected: false
         property bool active: false
-        property bool pointerReady: false
-        property point lastPointer: Qt.point(-1, -1)
+        property int position: 0
         readonly property var handle: windowData ? windowData.wayland : null
         readonly property var entry: handle && handle.appId ? DesktopEntries.heuristicLookup(handle.appId) : null
         readonly property string appName: entry ? entry.name : handle ? handle.appId : "Application"
-        readonly property bool previewReady: windowCardCapture.hasContent
+        readonly property string iconSource: entry && entry.icon ? Quickshell.iconPath(entry.icon, true) : ""
+        readonly property bool previewReady: windowCapture.hasContent
+        readonly property bool emphasized: selected || previewHit.containsMouse
         signal chosen
-        signal pointed
 
-        Timer {
-            interval: 180
-            running: true
-            onTriggered: windowCardRoot.pointerReady = true
-        }
+        Item {
+            width: 360
+            height: 280
+            scale: windowPreviewRoot.width / 360
+            transformOrigin: Item.TopLeft
 
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 4
-            radius: 15
-            color: windowCardRoot.selected ? "#3c304b" : windowCardHit.containsMouse ? "#2b2533" : "#24212a"
-            border.width: windowCardRoot.selected ? 2 : 1
-            border.color: windowCardRoot.selected ? "#c3b7ff" : "#3d3447"
-            Behavior on color {
-                ColorAnimation {
-                    duration: 110
+            Item {
+                id: previewFrame
+                readonly property real aspect: windowCapture.sourceSize.width > 0 && windowCapture.sourceSize.height > 0 ? windowCapture.sourceSize.width / windowCapture.sourceSize.height : 16 / 10
+                width: Math.min(316, 196 * aspect)
+                height: width / aspect
+                x: (parent.width - width) / 2
+                y: 18 + (196 - height) / 2
+                scale: windowPreviewRoot.selected ? 1.04 : windowPreviewRoot.emphasized ? 1 : 0.95
+                opacity: windowPreviewRoot.emphasized ? 1 : 0.8
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 240
+                        easing.type: Easing.OutBack
+                        easing.overshoot: 1.6
+                    }
                 }
-            }
-            Behavior on border.color {
-                ColorAnimation {
-                    duration: 110
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 180
+                    }
                 }
-            }
 
-            Row {
-                x: 12
-                y: 12
-                width: parent.width - 24
-                spacing: 7
-                Image {
-                    width: 22
-                    height: 22
-                    source: windowCardRoot.entry && windowCardRoot.entry.icon ? Quickshell.iconPath(windowCardRoot.entry.icon, true) : ""
-                    sourceSize.width: 44
-                    sourceSize.height: 44
-                    fillMode: Image.PreserveAspectFit
+                Rectangle {
+                    id: previewGlowSource
+                    anchors.fill: parent
+                    radius: 14
+                    color: "#cba6f7"
+                    visible: false
+                }
+                MultiEffect {
+                    anchors.fill: previewGlowSource
+                    source: previewGlowSource
+                    autoPaddingEnabled: true
+                    shadowEnabled: true
+                    shadowColor: windowPreviewRoot.selected ? "#cba6f7" : "#000000"
+                    shadowBlur: 1.0
+                    shadowScale: windowPreviewRoot.selected ? 1.05 : 1.0
+                    shadowVerticalOffset: windowPreviewRoot.selected ? 0 : 8
+                    shadowOpacity: windowPreviewRoot.selected ? 0.75 : 0.55
+                    opacity: 1
+                    Behavior on shadowOpacity {
+                        NumberAnimation {
+                            duration: 200
+                        }
+                    }
+                    Behavior on shadowColor {
+                        ColorAnimation {
+                            duration: 200
+                        }
+                    }
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: -3
+                    radius: 17
+                    opacity: windowPreviewRoot.selected ? 1 : 0
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: "#cba6f7" }
+                        GradientStop { position: 0.5; color: "#f5c2e7" }
+                        GradientStop { position: 1; color: "#89b4fa" }
+                    }
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 200
+                        }
+                    }
+                }
+                ClippingRectangle {
+                    anchors.fill: parent
+                    radius: 14
+                    color: "#181825"
+                    ScreencopyView {
+                        id: windowCapture
+                        anchors.fill: parent
+                        constraintSize: Qt.size(previewFrame.width, previewFrame.height)
+                        captureSource: windowPreviewRoot.active ? windowPreviewRoot.handle : null
+                        live: windowPreviewRoot.active && windowPreviewRoot.selected
+                        paintCursor: false
+                        onCaptureSourceChanged: if (captureSource && !live)
+                            Qt.callLater(function () {
+                                windowCapture.captureFrame();
+                            })
+                    }
+                    Image {
+                        anchors.centerIn: parent
+                        width: 56
+                        height: 56
+                        source: windowPreviewRoot.iconSource
+                        sourceSize: Qt.size(112, 112)
+                        fillMode: Image.PreserveAspectFit
+                        visible: !windowCapture.hasContent
+                        Text {
+                            anchors.centerIn: parent
+                            visible: parent.status !== Image.Ready
+                            text: "󰖯"
+                            color: "#cba6f7"
+                            font.pixelSize: 36
+                        }
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 14
+                        color: "transparent"
+                        border.width: 1
+                        border.color: "#26ffffff"
+                    }
+                }
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.bottom
+                    width: 34
+                    height: 34
+                    radius: 17
+                    color: "#1e1e2e"
+                    border.width: 1
+                    border.color: windowPreviewRoot.selected ? "#cba6f7" : "#45475a"
+                    Image {
+                        anchors.centerIn: parent
+                        width: 20
+                        height: 20
+                        source: windowPreviewRoot.iconSource
+                        sourceSize: Qt.size(40, 40)
+                        fillMode: Image.PreserveAspectFit
+                        visible: source !== ""
+                    }
                     Text {
                         anchors.centerIn: parent
-                        visible: parent.status !== Image.Ready
-                        text: "◇"
-                        font.pixelSize: 15
-                        color: "#c3b7ff"
+                        visible: windowPreviewRoot.iconSource === ""
+                        text: windowPreviewRoot.position
+                        color: "#cba6f7"
+                        font.pixelSize: 13
+                        font.weight: Font.Bold
                     }
                 }
-                Text {
-                    width: parent.width - 29
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: windowCardRoot.windowData ? windowCardRoot.windowData.title || windowCardRoot.appName : "Window closed"
-                    textFormat: Text.PlainText
-                    elide: Text.ElideRight
-                    color: windowCardRoot.selected ? "#f7f3fc" : "#cec4db"
-                    font.family: "sans-serif"
-                    font.pixelSize: 13
-                    font.weight: windowCardRoot.selected ? Font.DemiBold : Font.Normal
-                }
             }
-
-            ClippingRectangle {
-                id: windowCardThumbnail
-                x: 10
-                y: 44
-                width: parent.width - 20
-                height: parent.height - 76
-                radius: 8
-                color: "#16131b"
-                ScreencopyView {
-                    id: windowCardCapture
-                    anchors.centerIn: parent
-                    readonly property real aspect: sourceSize.width > 0 && sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 9
-                    width: Math.min(windowCardThumbnail.width, windowCardThumbnail.height * aspect)
-                    height: width / aspect
-                    constraintSize: Qt.size(windowCardThumbnail.width, windowCardThumbnail.height)
-                    captureSource: windowCardRoot.active ? windowCardRoot.handle : null
-                    live: windowCardRoot.active && windowCardRoot.selected
-                    paintCursor: false
-                    onCaptureSourceChanged: if (captureSource && !live)
-                        Qt.callLater(function () {
-                            windowCardCapture.captureFrame();
-                        })
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 240
+                width: Math.min(captionColumn.implicitWidth + 28, 330)
+                height: captionColumn.implicitHeight + 12
+                radius: height / 2
+                color: windowPreviewRoot.selected ? "#e61e1e2e" : "#b31e1e2e"
+                opacity: windowPreviewRoot.emphasized ? 1 : 0.75
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 180
+                    }
                 }
                 Column {
+                    id: captionColumn
                     anchors.centerIn: parent
-                    width: parent.width - 16
-                    spacing: 6
-                    visible: !windowCardCapture.hasContent
+                    width: Math.min(implicitWidth, 302)
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "▣"
-                        font.pixelSize: 26
-                        color: "#7e6c91"
-                    }
-                    Text {
-                        width: parent.width
-                        text: "Preview unavailable"
+                        width: Math.min(implicitWidth, 302)
                         horizontalAlignment: Text.AlignHCenter
-                        color: "#92869f"
-                        font.pixelSize: 11
+                        text: windowPreviewRoot.windowData ? windowPreviewRoot.windowData.title || windowPreviewRoot.appName : "Window closed"
+                        textFormat: Text.PlainText
+                        elide: Text.ElideRight
+                        color: windowPreviewRoot.selected ? "#f5e0ff" : "#cdd6f4"
+                        font.pixelSize: 12
+                        font.weight: windowPreviewRoot.selected ? Font.DemiBold : Font.Medium
                     }
                 }
-            }
-            Text {
-                x: 12
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 10
-                width: parent.width - 24
-                text: windowCardRoot.appName + (windowCardRoot.windowData && windowCardRoot.windowData.workspace ? "  ·  Workspace " + windowCardRoot.windowData.workspace.name : "")
-                textFormat: Text.PlainText
-                elide: Text.ElideRight
-                color: windowCardRoot.selected ? "#c3b7ff" : "#92869f"
-                font.pixelSize: 11
             }
         }
         MouseArea {
-            id: windowCardHit
+            id: previewHit
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onEntered: {
-                windowCardRoot.lastPointer = Qt.point(mouseX, mouseY);
-                if (windowCardRoot.pointerReady)
-                    windowCardRoot.pointed();
-            }
-            onPositionChanged: function (mouse) {
-                const moved = Math.abs(mouse.x - windowCardRoot.lastPointer.x) > 0.5 || Math.abs(mouse.y - windowCardRoot.lastPointer.y) > 0.5;
-                windowCardRoot.lastPointer = Qt.point(mouse.x, mouse.y);
-                if (containsMouse && windowCardRoot.pointerReady && moved)
-                    windowCardRoot.pointed();
-            }
-            onClicked: windowCardRoot.chosen()
+            onClicked: windowPreviewRoot.chosen()
         }
     }
 }

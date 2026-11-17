@@ -1,6 +1,7 @@
 import "../controls/PanelTheme.js" as Theme
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -23,20 +24,18 @@ Item {
     property var shell: null
     property var manifest: null
     property bool opened: false
-    property string section: "player"
+    property string section: "images"
 
     function syncViews() {
         if (imagesView.item)
             imagesView.item.close();
-        if (playerView.item)
-            playerView.item.close();
         if (videosView.item)
             videosView.item.close();
         if (wallpapersView.item)
             wallpapersView.item.close();
         if (wallhavenView.item)
             wallhavenView.item.close();
-        var view = section === "images" ? imagesView.item : section === "videos" ? videosView.item : section === "wallpapers" ? wallpapersView.item : section === "wallhaven" ? wallhavenView.item : playerView.item;
+        var view = section === "images" ? imagesView.item : section === "videos" ? videosView.item : section === "wallpapers" ? wallpapersView.item : section === "wallhaven" ? wallhavenView.item : null;
         if (opened && view)
             view.open("{}");
     }
@@ -49,7 +48,7 @@ Item {
     function open(payloadJson) {
         try {
             var payload = JSON.parse(payloadJson || "{}");
-            if (payload.section === "images" || payload.section === "player" || payload.section === "videos" || payload.section === "wallpapers" || payload.section === "wallhaven")
+            if (payload.section === "images" || payload.section === "videos" || payload.section === "wallpapers" || payload.section === "wallhaven")
                 section = payload.section;
         } catch (e) {}
         opened = true;
@@ -133,12 +132,13 @@ Item {
             id: frame
             anchors.centerIn: parent
             anchors.verticalCenterOffset: 20
-            width: Math.min(root.space(root.section === "player" ? 900 : 940), panel.width - root.space(32))
-            height: Math.min(root.space(root.section === "player" ? 630 : root.section === "wallpapers" ? 600 : 676), panel.height - root.space(96))
-            radius: root.space(24)
+            width: Math.min(root.space(940), panel.width - root.space(32))
+            height: Math.min(root.space(root.section === "wallpapers" ? 600 : 676), panel.height - root.space(96))
+            radius: Theme.panelRadius
             gradient: PanelGradient {}
             border.width: 1
             border.color: Theme.border
+            PanelAura { radius: parent.radius }
             focus: true
             Keys.onEscapePressed: root.dismiss()
             MouseArea {
@@ -151,10 +151,6 @@ Item {
                 spacing: root.space(8)
                 Repeater {
                     model: [
-                        {
-                            key: "player",
-                            label: "♫  Player"
-                        },
                         {
                             key: "images",
                             label: "Images"
@@ -186,7 +182,7 @@ Item {
                             }
                         }
                         border.width: selected ? 1 : 0
-                        border.color: "#625471"
+                        border.color: "#45393f"
                         activeFocusOnTab: true
                         Keys.onReturnPressed: root.selectSection(modelData.key)
                         Keys.onSpacePressed: root.selectSection(modelData.key)
@@ -285,25 +281,8 @@ Item {
                         item.open("{}");
                 }
             }
-            Loader {
-                id: playerView
-                anchors.fill: imagesView
-                visible: root.section === "player"
-                sourceComponent: PlayerView {}
-                onLoaded: {
-                    item.bar = root.bar;
-                    if (root.opened && visible)
-                        item.open("{}");
-                }
-            }
             Connections {
                 target: imagesView.item
-                function onDismissed() {
-                    root.dismiss();
-                }
-            }
-            Connections {
-                target: playerView.item
                 function onDismissed() {
                     root.dismiss();
                 }
@@ -349,11 +328,11 @@ Item {
             height: deleteSwipeDelegateRow.height
             anchors.right: parent.right
             radius: 12 * deleteSwipeDelegateRow.scaleFactor
-            color: "#c93550"
+            color: "#d9737f"
             Text {
                 anchors.centerIn: parent
                 text: "×"
-                color: "white"
+                color: Theme.foreground
                 font.pixelSize: 26 * deleteSwipeDelegateRow.scaleFactor
             }
         }
@@ -370,7 +349,7 @@ Item {
         width: contextRoot.space(34)
         height: width
         radius: contextRoot.space(11)
-        color: danger ? (imagesViewImageButtonMouse.containsMouse ? "#633545" : "#392a36") : primary ? (imagesViewImageButtonMouse.containsMouse ? Theme.accent : Theme.accent) : imagesViewImageButtonMouse.containsMouse ? Theme.hover : Theme.surface
+        color: danger ? (imagesViewImageButtonMouse.containsMouse ? "#d9737f" : "#2c252b") : primary ? (imagesViewImageButtonMouse.containsMouse ? Theme.accent : Theme.accent) : imagesViewImageButtonMouse.containsMouse ? Theme.hover : Theme.surface
         scale: imagesViewImageButtonMouse.pressed ? 0.94 : 1
         Behavior on color {
             ColorAnimation {
@@ -386,7 +365,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: imagesViewImageButtonControl.text
-            color: imagesViewImageButtonControl.danger ? "#ffa5b8" : imagesViewImageButtonControl.primary ? Theme.surface : contextRoot.accent
+            color: imagesViewImageButtonControl.danger ? "#d9737f" : imagesViewImageButtonControl.primary ? Theme.surface : contextRoot.accent
             font.family: "sans-serif"
             font.pixelSize: contextRoot.space(15)
         }
@@ -752,93 +731,149 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 ScrollBar.vertical: ScrollBar {}
                 delegate: Item {
+                    id: imagesViewEntry
                     required property var modelData
+                    readonly property bool hot: imagesViewHit.containsMouse
                     objectName: "images-entry-" + modelData.path
                     width: imagesViewGallery.cellWidth
                     height: imagesViewGallery.cellHeight
-                    ClippingRectangle {
+                    Repeater {
+                        model: imagesViewEntry.modelData.isFolder ? 2 : 0
+                        Rectangle {
+                            required property int index
+                            anchors.fill: parent
+                            anchors.margins: imagesViewRoot.space(8)
+                            anchors.topMargin: imagesViewRoot.space(8) - (index + 1) * 4
+                            anchors.bottomMargin: imagesViewRoot.space(8) + (index + 1) * 4
+                            radius: imagesViewRoot.space(16)
+                            color: index === 0 ? "#362d34" : "#2c252b"
+                            border.width: 1
+                            border.color: Qt.rgba(0.902, 0.843, 0.863, 0.06)
+                            rotation: imagesViewEntry.hot ? (index === 0 ? -4 : 4) : (index === 0 ? -2 : 2)
+                            z: -1 - index
+                            Behavior on rotation { NumberAnimation { duration: 220; easing.type: Easing.OutBack } }
+                        }
+                    }
+                    Item {
                         anchors.fill: parent
                         anchors.margins: imagesViewRoot.space(6)
-                        radius: imagesViewRoot.space(14)
-                        color: imagesViewHit.containsMouse ? "#393346" : Theme.surface
-                        border.width: 1
-                        border.color: imagesViewHit.containsMouse ? Theme.accent : "#3b3546"
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 100
-                            }
+                        scale: imagesViewEntry.hot ? 1.025 : 1
+                        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: -3
+                            radius: imagesViewRoot.space(19)
+                            color: "transparent"
+                            border.width: 2
+                            border.color: Qt.alpha(Theme.accent, 0.55)
+                            opacity: imagesViewEntry.hot ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: 160 } }
                         }
-                        Image {
-                            id: imagesViewThumbnail
-                            anchors {
-                                top: parent.top
-                                left: parent.left
-                                right: parent.right
-                                bottom: imagesViewCaption.top
+                        ClippingRectangle {
+                            anchors.fill: parent
+                            radius: imagesViewRoot.space(16)
+                            color: "#221c21"
+                            Image {
+                                id: imagesViewThumbnail
+                                anchors.fill: parent
+                                source: imagesViewEntry.modelData.url
+                                sourceSize.width: 420
+                                sourceSize.height: 300
+                                asynchronous: true
+                                fillMode: Image.PreserveAspectCrop
+                                scale: imagesViewEntry.hot ? 1.08 : 1
+                                opacity: status === Image.Ready ? 1 : 0
+                                Behavior on scale { NumberAnimation { duration: 420; easing.type: Easing.OutCubic } }
+                                Behavior on opacity { NumberAnimation { duration: 240 } }
                             }
-                            source: modelData.url
-                            sourceSize.width: 420
-                            sourceSize.height: 300
-                            asynchronous: true
-                            fillMode: Image.PreserveAspectCrop
-                            clip: true
-                        }
-                        Text {
-                            anchors.centerIn: imagesViewThumbnail
-                            visible: imagesViewThumbnail.status === Image.Error
-                            text: "Image unavailable"
-                            color: Theme.muted
-                            font.pixelSize: imagesViewRoot.space(10)
-                        }
-                        Item {
-                            id: imagesViewCaption
-                            anchors {
-                                left: parent.left
-                                right: parent.right
-                                bottom: parent.bottom
-                            }
-                            height: imagesViewRoot.space(43)
                             Text {
-                                id: imagesViewFilename
-                                anchors {
-                                    left: parent.left
-                                    right: parent.right
-                                    top: parent.top
-                                    margins: imagesViewRoot.space(9)
-                                }
-                                text: (modelData.isFolder ? "\uf07b  " : "") + modelData.name
-                                elide: Text.ElideMiddle
-                                color: "#e7e0f4"
+                                anchors.centerIn: parent
+                                visible: imagesViewThumbnail.status === Image.Error
+                                text: "Image unavailable"
+                                color: Theme.muted
                                 font.pixelSize: imagesViewRoot.space(10)
                             }
-                            Text {
-                                anchors {
-                                    left: imagesViewFilename.left
-                                    right: imagesViewFilename.right
-                                    top: imagesViewFilename.bottom
-                                    topMargin: imagesViewRoot.space(3)
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                height: parent.height * 0.6
+                                gradient: Gradient {
+                                    GradientStop { position: 0; color: "transparent" }
+                                    GradientStop { position: 0.55; color: "#a6221c21" }
+                                    GradientStop { position: 1; color: "#f2221c21" }
                                 }
-                                text: modelData.isFolder ? modelData.count + " images" : modelData.name.split(".").pop().toUpperCase() + "  ·  " + (modelData.size > 1048576 ? (modelData.size / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(modelData.size / 1024)) + " KB")
-                                color: Theme.muted
-                                font.pixelSize: imagesViewRoot.space(8)
+                            }
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.margins: imagesViewRoot.space(8)
+                                width: imagesViewBadge.implicitWidth + imagesViewRoot.space(14)
+                                height: imagesViewRoot.space(20)
+                                radius: height / 2
+                                color: "#cc221c21"
+                                border.width: 1
+                                border.color: imagesViewEntry.modelData.isFolder ? Qt.alpha(Theme.accent, 0.5) : Qt.rgba(0.902, 0.843, 0.863, 0.12)
+                                Text {
+                                    id: imagesViewBadge
+                                    anchors.centerIn: parent
+                                    text: imagesViewEntry.modelData.isFolder ? "  " + imagesViewEntry.modelData.count : imagesViewEntry.modelData.name.split(".").pop().toUpperCase()
+                                    color: imagesViewEntry.modelData.isFolder ? Theme.accent : Theme.foreground
+                                    font.family: imagesViewEntry.modelData.isFolder ? "Symbols Nerd Font Mono" : "monospace"
+                                    font.pixelSize: imagesViewRoot.space(9)
+                                    font.weight: Font.Bold
+                                    font.letterSpacing: 0.6
+                                }
+                            }
+                            Column {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                anchors.margins: imagesViewRoot.space(11)
+                                anchors.bottomMargin: imagesViewEntry.hot ? imagesViewRoot.space(13) : imagesViewRoot.space(10)
+                                spacing: imagesViewRoot.space(2)
+                                Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                                Text {
+                                    width: parent.width
+                                    text: imagesViewEntry.modelData.name
+                                    elide: Text.ElideMiddle
+                                    textFormat: Text.PlainText
+                                    color: "#e6d7dc"
+                                    font.pixelSize: imagesViewRoot.space(imagesViewEntry.modelData.isFolder ? 12 : 10)
+                                    font.weight: Font.DemiBold
+                                }
+                                Text {
+                                    width: parent.width
+                                    text: imagesViewEntry.modelData.isFolder ? imagesViewEntry.modelData.count + (imagesViewEntry.modelData.count === 1 ? " image" : " images") : (imagesViewEntry.modelData.size > 1048576 ? (imagesViewEntry.modelData.size / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(imagesViewEntry.modelData.size / 1024)) + " KB")
+                                    color: Qt.alpha("#e6d7dc", 0.6)
+                                    font.family: "monospace"
+                                    font.pixelSize: imagesViewRoot.space(8)
+                                }
+                            }
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: imagesViewRoot.space(16)
+                                color: "transparent"
+                                border.width: 1
+                                border.color: Qt.rgba(0.902, 0.843, 0.863, imagesViewEntry.hot ? 0.18 : 0.08)
                             }
                         }
-                        MouseArea {
-                            id: imagesViewHit
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onEntered: imagesViewRoot.hoveredImage = modelData.isFolder ? "" : modelData.path
-                            onExited: if (imagesViewRoot.hoveredImage === modelData.path)
-                                imagesViewRoot.hoveredImage = ""
-                            Component.onDestruction: if (imagesViewRoot.hoveredImage === modelData.path)
-                                imagesViewRoot.hoveredImage = ""
-                            onClicked: {
-                                if (modelData.isFolder) {
-                                    imagesViewRoot.openFolder(modelData.path);
-                                } else
-                                    imagesViewRoot.selected = modelData.path;
-                            }
+                    }
+                    MouseArea {
+                        id: imagesViewHit
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: imagesViewRoot.hoveredImage = imagesViewEntry.modelData.isFolder ? "" : imagesViewEntry.modelData.path
+                        onExited: if (imagesViewRoot.hoveredImage === imagesViewEntry.modelData.path)
+                            imagesViewRoot.hoveredImage = ""
+                        Component.onDestruction: if (imagesViewRoot.hoveredImage === imagesViewEntry.modelData.path)
+                            imagesViewRoot.hoveredImage = ""
+                        onClicked: {
+                            if (imagesViewEntry.modelData.isFolder) {
+                                imagesViewRoot.openFolder(imagesViewEntry.modelData.path);
+                            } else
+                                imagesViewRoot.selected = imagesViewEntry.modelData.path;
                         }
                     }
                 }
@@ -859,11 +894,39 @@ Item {
                     right: parent.right
                     margins: imagesViewRoot.space(16)
                 }
-                Rectangle {
+                ClippingRectangle {
                     anchors.fill: parent
-                    radius: imagesViewRoot.space(14)
-                    color: Theme.surface
-                    border.color: Theme.border
+                    radius: imagesViewRoot.space(18)
+                    color: "#221c21"
+                    Image {
+                        id: imagesViewAmbient
+                        anchors.fill: parent
+                        anchors.margins: -40
+                        source: imagesViewRoot.current ? imagesViewRoot.current.url : ""
+                        sourceSize.width: 96
+                        sourceSize.height: 96
+                        asynchronous: true
+                        fillMode: Image.PreserveAspectCrop
+                        visible: false
+                    }
+                    MultiEffect {
+                        anchors.fill: imagesViewAmbient
+                        source: imagesViewAmbient
+                        blurEnabled: true
+                        blur: 1.0
+                        blurMax: 64
+                        saturation: 0.2
+                        brightness: -0.35
+                        opacity: imagesViewAmbient.status === Image.Ready ? 0.9 : 0
+                        Behavior on opacity { NumberAnimation { duration: 260 } }
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: imagesViewRoot.space(18)
+                        color: "transparent"
+                        border.width: 1
+                        border.color: Qt.rgba(0.902, 0.843, 0.863, 0.1)
+                    }
                 }
                 Image {
                     id: imagesViewPreview
@@ -913,7 +976,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: imagesViewRoot.current ? (imagesViewRoot.copyStatus || imagesViewRoot.current.name) : imagesViewRoot.error ? imagesViewRoot.error : imagesViewRoot.selectedFolder || "~/Pictures  ·  ~/0/pictures"
                     elide: Text.ElideMiddle
-                    color: imagesViewRoot.copyStatus === "Image copied" ? "#9cdbbb" : imagesViewRoot.error && !imagesViewRoot.current ? "#ff9aaa" : Theme.muted
+                    color: imagesViewRoot.copyStatus === "Image copied" ? "#d69aac" : imagesViewRoot.error && !imagesViewRoot.current ? "#d9737f" : Theme.muted
                     font.pixelSize: imagesViewRoot.space(11)
                 }
                 ImagesViewImageButton {
@@ -936,19 +999,21 @@ Item {
     component InlineVideoPlayerVideoButton: MediaButton {
         id: inlineVideoPlayerVideoButtonButton
         property bool primary: false
+        property bool ghost: false
         implicitWidth: 36
         implicitHeight: 36
-        foreground: primary ? Theme.surface : "#e0d7ec"
+        opacity: enabled ? 1 : 0.35
+        scale: pressed ? 0.9 : hovered && !primary ? 1.08 : 1
+        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+        foreground: primary ? "#221c21" : hovered ? "#e6d7dc" : "#e6d7dc"
         background: Rectangle {
             radius: height / 2
-            color: inlineVideoPlayerVideoButtonButton.primary ? Theme.accent : inlineVideoPlayerVideoButtonButton.hovered ? "#51435f" : "#ca29232f"
-            border.width: 1
-            border.color: inlineVideoPlayerVideoButtonButton.visualFocus ? "#e4dcff" : inlineVideoPlayerVideoButtonButton.primary ? "#e1d9ff" : "#4a4056"
-            Behavior on color {
-                ColorAnimation {
-                    duration: 120
-                }
+            gradient: Gradient {
+                GradientStop { position: 0; color: inlineVideoPlayerVideoButtonButton.primary ? "#d69aac" : inlineVideoPlayerVideoButtonButton.ghost && !inlineVideoPlayerVideoButtonButton.hovered ? "transparent" : inlineVideoPlayerVideoButtonButton.hovered ? "#3de6d7dc" : "#1fe6d7dc" }
+                GradientStop { position: 1; color: inlineVideoPlayerVideoButtonButton.primary ? "#d69aac" : inlineVideoPlayerVideoButtonButton.ghost && !inlineVideoPlayerVideoButtonButton.hovered ? "transparent" : inlineVideoPlayerVideoButtonButton.hovered ? "#26e6d7dc" : "#0de6d7dc" }
             }
+            border.width: inlineVideoPlayerVideoButtonButton.ghost && !inlineVideoPlayerVideoButtonButton.hovered ? 0 : 1
+            border.color: inlineVideoPlayerVideoButtonButton.visualFocus ? "#d69aac" : inlineVideoPlayerVideoButtonButton.primary ? "#eee2e6" : "#33e6d7dc"
         }
     }
 
@@ -958,14 +1023,18 @@ Item {
             x: inlineVideoPlayerVideoSliderSlider.leftPadding
             y: inlineVideoPlayerVideoSliderSlider.topPadding + inlineVideoPlayerVideoSliderSlider.availableHeight / 2 - height / 2
             width: inlineVideoPlayerVideoSliderSlider.availableWidth
-            height: inlineVideoPlayerVideoSliderSlider.hovered || inlineVideoPlayerVideoSliderSlider.pressed ? 5 : 3
+            height: inlineVideoPlayerVideoSliderSlider.hovered || inlineVideoPlayerVideoSliderSlider.pressed ? 6 : 4
             radius: height / 2
-            color: "#51465d"
+            color: "#26e6d7dc"
             Rectangle {
                 width: inlineVideoPlayerVideoSliderSlider.visualPosition * parent.width
                 height: parent.height
                 radius: height / 2
-                color: Theme.accent
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: "#d4a5b5" }
+                    GradientStop { position: 1; color: "#d69aac" }
+                }
             }
             Behavior on height {
                 NumberAnimation {
@@ -976,10 +1045,12 @@ Item {
         handle: Rectangle {
             x: inlineVideoPlayerVideoSliderSlider.leftPadding + inlineVideoPlayerVideoSliderSlider.visualPosition * (inlineVideoPlayerVideoSliderSlider.availableWidth - width)
             y: inlineVideoPlayerVideoSliderSlider.topPadding + inlineVideoPlayerVideoSliderSlider.availableHeight / 2 - height / 2
-            width: 10
-            height: 10
-            radius: 5
-            color: "#e7dfff"
+            width: 14
+            height: 14
+            radius: 7
+            color: "#e6d7dc"
+            border.width: 3
+            border.color: "#d69aac"
             opacity: inlineVideoPlayerVideoSliderSlider.hovered || inlineVideoPlayerVideoSliderSlider.pressed || inlineVideoPlayerVideoSliderSlider.visualFocus ? 1 : 0
             Behavior on opacity {
                 NumberAnimation {
@@ -993,8 +1064,14 @@ Item {
         id: inlineVideoPlayerRoot
         required property url sourceUrl
         property string title: ""
+        property int queueIndex: -1
+        property int queueCount: 0
+        readonly property bool hasPrevious: queueIndex > 0
+        readonly property bool hasNext: queueIndex >= 0 && queueIndex < queueCount - 1
         signal backRequested
         signal nextRequested
+        signal previousRequested
+        signal externalRequested
         signal playbackFinished
         property bool controlsVisible: true
         readonly property bool showControls: controlsVisible || inlineVideoPlayerPlayer.playbackState !== MediaPlayer.PlayingState || inlineVideoPlayerControlsHover.hovered || inlineVideoPlayerHeaderHover.hovered
@@ -1007,7 +1084,7 @@ Item {
             interval: 900
             onTriggered: inlineVideoPlayerRoot.controlsVisible = false
         }
-        color: "#101014"
+        color: "#221c21"
         radius: 12
         focus: true
         function togglePlayback() {
@@ -1085,69 +1162,125 @@ Item {
         Item {
             id: inlineVideoPlayerHeaderControls
             width: parent.width
-            height: 64
+            height: 72
             opacity: inlineVideoPlayerRoot.showControls ? 1 : 0
             visible: opacity > 0
             enabled: inlineVideoPlayerRoot.showControls
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 100
-                }
-            }
+            Behavior on opacity { NumberAnimation { duration: 160 } }
             HoverHandler {
                 id: inlineVideoPlayerHeaderHover
                 onHoveredChanged: if (hovered)
                     inlineVideoPlayerRoot.revealControls()
             }
             Rectangle {
-                anchors.top: parent.top
-                width: parent.width
-                height: 64
+                anchors.fill: parent
                 gradient: Gradient {
-                    GradientStop {
-                        position: 0
-                        color: "#df101014"
-                    }
-                    GradientStop {
-                        position: 1
-                        color: "#00101014"
-                    }
+                    GradientStop { position: 0; color: "#e6221c21" }
+                    GradientStop { position: 1; color: "#00221c21" }
                 }
             }
             InlineVideoPlayerVideoButton {
                 id: inlineVideoPlayerBackButton
                 objectName: "videoBack"
-                x: 14
-                y: 12
-                text: "‹"
-                fontSize: 24
+                x: 16
+                y: 14
+                text: ""
+                fontFamily: "Symbols Nerd Font Mono"
+                fontSize: 13
                 Accessible.name: "Back to videos"
                 onClicked: inlineVideoPlayerRoot.backRequested()
             }
-            Text {
+            Column {
                 anchors.left: inlineVideoPlayerBackButton.right
-                anchors.right: inlineVideoPlayerNextButton.left
+                anchors.right: inlineVideoPlayerQueueBadge.left
                 anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                anchors.verticalCenter: inlineVideoPlayerBackButton.verticalCenter
+                spacing: 2
+                Text {
+                    width: parent.width
+                    text: inlineVideoPlayerRoot.title
+                    textFormat: Text.PlainText
+                    elide: Text.ElideRight
+                    color: "#e6d7dc"
+                    font.family: "sans-serif"
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                }
+                Text {
+                    text: "Space play · ← → seek · P / N previous / next"
+                    color: "#99e6d7dc"
+                    font.family: "sans-serif"
+                    font.pixelSize: 10
+                }
+            }
+            Rectangle {
+                id: inlineVideoPlayerQueueBadge
+                visible: inlineVideoPlayerRoot.queueCount > 1
+                anchors.right: parent.right
                 anchors.rightMargin: 16
                 anchors.verticalCenter: inlineVideoPlayerBackButton.verticalCenter
-                text: inlineVideoPlayerRoot.title
-                textFormat: Text.PlainText
-                elide: Text.ElideRight
-                color: Theme.foreground
-                font.family: "sans-serif"
-                font.pixelSize: 13
-                font.weight: Font.Medium
+                width: visible ? inlineVideoPlayerQueueText.implicitWidth + 20 : 0
+                height: 26
+                radius: 13
+                color: "#cc221c21"
+                border.width: 1
+                border.color: Qt.alpha(Theme.accent, 0.5)
+                Text {
+                    id: inlineVideoPlayerQueueText
+                    anchors.centerIn: parent
+                    text: (inlineVideoPlayerRoot.queueIndex + 1) + " / " + inlineVideoPlayerRoot.queueCount
+                    color: Theme.accent
+                    font.family: "monospace"
+                    font.pixelSize: 11
+                    font.weight: Font.Bold
+                }
             }
-            InlineVideoPlayerVideoButton {
-                id: inlineVideoPlayerNextButton
-                objectName: "videoNext"
-                anchors.right: parent.right
-                anchors.rightMargin: 14
-                y: 12
-                text: "\uf051"
-                fontFamily: "Symbols Nerd Font Mono"
-                Accessible.name: "Next video (N)"
-                onClicked: inlineVideoPlayerRoot.nextRequested()
+        }
+        Repeater {
+            model: [-1, 1]
+            Item {
+                id: inlineVideoPlayerSideNav
+                required property int modelData
+                readonly property bool available: modelData < 0 ? inlineVideoPlayerRoot.hasPrevious : inlineVideoPlayerRoot.hasNext
+                anchors.verticalCenter: parent.verticalCenter
+                x: modelData < 0 ? 18 : parent.width - width - 18
+                width: 52
+                height: 52
+                opacity: inlineVideoPlayerRoot.showControls && available ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: 160 } }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: inlineVideoPlayerSideHit.containsMouse ? "#4d221c21" : "#99221c21"
+                    border.width: 1
+                    border.color: inlineVideoPlayerSideHit.containsMouse ? Qt.alpha(Theme.accent, 0.8) : "#33e6d7dc"
+                    scale: inlineVideoPlayerSideHit.pressed ? 0.9 : inlineVideoPlayerSideHit.containsMouse ? 1.1 : 1
+                    Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                    Behavior on border.color { ColorAnimation { duration: 140 } }
+                    Text {
+                        anchors.centerIn: parent
+                        anchors.horizontalCenterOffset: inlineVideoPlayerSideNav.modelData < 0 ? -1 : 1
+                        text: inlineVideoPlayerSideNav.modelData < 0 ? "" : ""
+                        color: inlineVideoPlayerSideHit.containsMouse ? Theme.accent : "#e6d7dc"
+                        font.family: "Symbols Nerd Font Mono"
+                        font.pixelSize: 18
+                    }
+                }
+                MouseArea {
+                    id: inlineVideoPlayerSideHit
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onEntered: inlineVideoPlayerRoot.revealControls()
+                    onClicked: {
+                        if (inlineVideoPlayerSideNav.modelData < 0)
+                            inlineVideoPlayerRoot.previousRequested();
+                        else
+                            inlineVideoPlayerRoot.nextRequested();
+                    }
+                }
             }
         }
         Rectangle {
@@ -1155,7 +1288,7 @@ Item {
             width: Math.min(parent.width - 40, 460)
             height: inlineVideoPlayerPlaybackError.implicitHeight + 28
             radius: 12
-            color: "#e0201820"
+            color: "#e0221c21"
             visible: inlineVideoPlayerPlayer.error !== MediaPlayer.NoError
             Text {
                 id: inlineVideoPlayerPlaybackError
@@ -1164,7 +1297,7 @@ Item {
                 text: inlineVideoPlayerPlayer.errorString || "Could not play this video."
                 textFormat: Text.PlainText
                 wrapMode: Text.Wrap
-                color: "#e28b9b"
+                color: "#d9737f"
                 font.pixelSize: 12
             }
         }
@@ -1179,11 +1312,7 @@ Item {
             opacity: inlineVideoPlayerRoot.showControls ? 1 : 0
             visible: opacity > 0
             enabled: inlineVideoPlayerRoot.showControls
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 100
-                }
-            }
+            Behavior on opacity { NumberAnimation { duration: 160 } }
             HoverHandler {
                 id: inlineVideoPlayerControlsHover
                 onHoveredChanged: if (hovered)
@@ -1191,95 +1320,167 @@ Item {
             }
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 18
-            width: Math.min(660, parent.width - 36)
-            height: 94
-            radius: 22
-            color: "#ed1c1923"
-            border.color: "#68584d70"
+            anchors.bottomMargin: inlineVideoPlayerRoot.showControls ? 18 : 6
+            Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            width: Math.min(680, parent.width - 36)
+            height: 92
+            radius: 26
+            gradient: Gradient {
+                GradientStop { position: 0; color: "#e62c252b" }
+                GradientStop { position: 1; color: "#f2221c21" }
+            }
+            border.width: 1
+            border.color: "#26e6d7dc"
+            Rectangle {
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width * 0.5
+                height: 1
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: "transparent" }
+                    GradientStop { position: 0.5; color: Qt.alpha(Theme.accent, 0.7) }
+                    GradientStop { position: 1; color: "transparent" }
+                }
+            }
+            Text {
+                id: inlineVideoPlayerElapsed
+                anchors.left: parent.left
+                anchors.leftMargin: 18
+                anchors.verticalCenter: inlineVideoPlayerProgress.verticalCenter
+                text: inlineVideoPlayerRoot.timestamp(inlineVideoPlayerPlayer.position)
+                color: "#e6d7dc"
+                font.family: "monospace"
+                font.pixelSize: 11
+                font.weight: Font.Bold
+            }
+            Text {
+                id: inlineVideoPlayerTotal
+                anchors.right: parent.right
+                anchors.rightMargin: 18
+                anchors.verticalCenter: inlineVideoPlayerProgress.verticalCenter
+                text: inlineVideoPlayerRoot.timestamp(inlineVideoPlayerPlayer.duration)
+                color: "#99e6d7dc"
+                font.family: "monospace"
+                font.pixelSize: 11
+            }
             InlineVideoPlayerVideoSlider {
                 id: inlineVideoPlayerProgress
                 objectName: "videoProgress"
-                x: 18
-                y: 4
-                width: parent.width - 36
-                height: 28
+                anchors.left: inlineVideoPlayerElapsed.right
+                anchors.right: inlineVideoPlayerTotal.left
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                y: 8
+                height: 26
                 from: 0
                 to: Math.max(1, inlineVideoPlayerPlayer.duration)
                 value: inlineVideoPlayerPlayer.position
                 enabled: inlineVideoPlayerPlayer.seekable
                 onMoved: inlineVideoPlayerPlayer.position = value
-                palette.highlight: Theme.accent
+            }
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 40
+                spacing: 8
+                InlineVideoPlayerVideoButton {
+                    objectName: "videoPrevious"
+                    anchors.verticalCenter: parent.verticalCenter
+                    ghost: true
+                    text: ""
+                    fontFamily: "Symbols Nerd Font Mono"
+                    fontSize: 13
+                    enabled: inlineVideoPlayerRoot.hasPrevious
+                    Accessible.name: "Previous video (P)"
+                    onClicked: inlineVideoPlayerRoot.previousRequested()
+                }
+                InlineVideoPlayerVideoButton {
+                    id: inlineVideoPlayerRewindButton
+                    objectName: "videoRewind"
+                    anchors.verticalCenter: parent.verticalCenter
+                    ghost: true
+                    text: "󰝲"
+                    fontFamily: "Symbols Nerd Font Mono"
+                    fontSize: 16
+                    enabled: inlineVideoPlayerPlayer.seekable
+                    Accessible.name: "Rewind 5 seconds"
+                    onClicked: inlineVideoPlayerRoot.seekBy(-5000)
+                }
+                InlineVideoPlayerVideoButton {
+                    id: inlineVideoPlayerPlayButton
+                    objectName: "videoPlayPause"
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitWidth: 44
+                    implicitHeight: 44
+                    primary: true
+                    text: inlineVideoPlayerPlayer.playbackState === MediaPlayer.PlayingState ? "" : ""
+                    fontFamily: "Symbols Nerd Font Mono"
+                    Accessible.name: inlineVideoPlayerPlayer.playbackState === MediaPlayer.PlayingState ? "Pause" : "Play"
+                    onClicked: inlineVideoPlayerRoot.togglePlayback()
+                }
+                InlineVideoPlayerVideoButton {
+                    id: inlineVideoPlayerForwardButton
+                    objectName: "videoForward"
+                    anchors.verticalCenter: parent.verticalCenter
+                    ghost: true
+                    text: "󰝵"
+                    fontFamily: "Symbols Nerd Font Mono"
+                    fontSize: 16
+                    enabled: inlineVideoPlayerPlayer.seekable
+                    Accessible.name: "Forward 5 seconds"
+                    onClicked: inlineVideoPlayerRoot.seekBy(5000)
+                }
+                InlineVideoPlayerVideoButton {
+                    id: inlineVideoPlayerNextButton
+                    objectName: "videoNext"
+                    anchors.verticalCenter: parent.verticalCenter
+                    ghost: true
+                    text: ""
+                    fontFamily: "Symbols Nerd Font Mono"
+                    fontSize: 13
+                    enabled: inlineVideoPlayerRoot.hasNext
+                    Accessible.name: "Next video (N)"
+                    onClicked: inlineVideoPlayerRoot.nextRequested()
+                }
             }
             InlineVideoPlayerVideoButton {
-                id: inlineVideoPlayerPlayButton
-                objectName: "videoPlayPause"
-                x: 16
-                y: 38
-                implicitWidth: 42
-                implicitHeight: 42
-                primary: true
-                text: inlineVideoPlayerPlayer.playbackState === MediaPlayer.PlayingState ? "\uf04c" : "\uf04b"
+                id: inlineVideoPlayerMuteButton
+                objectName: "videoMute"
+                anchors.left: parent.left
+                anchors.leftMargin: 14
+                y: 44
+                ghost: true
+                text: inlineVideoPlayerAudio.muted ? "" : ""
                 fontFamily: "Symbols Nerd Font Mono"
-                Accessible.name: inlineVideoPlayerPlayer.playbackState === MediaPlayer.PlayingState ? "Pause" : "Play"
-                onClicked: inlineVideoPlayerRoot.togglePlayback()
-            }
-            InlineVideoPlayerVideoButton {
-                id: inlineVideoPlayerRewindButton
-                objectName: "videoRewind"
-                anchors.left: inlineVideoPlayerPlayButton.right
-                anchors.leftMargin: 10
-                anchors.verticalCenter: inlineVideoPlayerPlayButton.verticalCenter
-                text: "‹ 5"
-                fontSize: 12
-                enabled: inlineVideoPlayerPlayer.seekable
-                Accessible.name: "Rewind 5 seconds"
-                onClicked: inlineVideoPlayerRoot.seekBy(-5000)
-            }
-            InlineVideoPlayerVideoButton {
-                id: inlineVideoPlayerForwardButton
-                objectName: "videoForward"
-                anchors.left: inlineVideoPlayerRewindButton.right
-                anchors.leftMargin: 6
-                anchors.verticalCenter: inlineVideoPlayerPlayButton.verticalCenter
-                text: "5 ›"
-                fontSize: 12
-                enabled: inlineVideoPlayerPlayer.seekable
-                Accessible.name: "Forward 5 seconds"
-                onClicked: inlineVideoPlayerRoot.seekBy(5000)
-            }
-            Text {
-                anchors.left: inlineVideoPlayerForwardButton.right
-                anchors.leftMargin: 10
-                anchors.verticalCenter: inlineVideoPlayerPlayButton.verticalCenter
-                text: inlineVideoPlayerRoot.timestamp(inlineVideoPlayerPlayer.position) + " / " + inlineVideoPlayerRoot.timestamp(inlineVideoPlayerPlayer.duration)
-                color: "#c7bdd6"
-                font.family: "sans-serif"
-                font.pixelSize: 11
+                fontSize: 13
+                Accessible.name: inlineVideoPlayerAudio.muted ? "Unmute" : "Mute"
+                onClicked: inlineVideoPlayerAudio.muted = !inlineVideoPlayerAudio.muted
             }
             InlineVideoPlayerVideoSlider {
                 id: inlineVideoPlayerVolume
                 objectName: "videoVolume"
-                anchors.right: parent.right
-                anchors.rightMargin: 12
-                anchors.verticalCenter: inlineVideoPlayerPlayButton.verticalCenter
-                width: Math.min(100, parent.width * 0.22)
+                anchors.left: inlineVideoPlayerMuteButton.right
+                anchors.leftMargin: 4
+                anchors.verticalCenter: inlineVideoPlayerMuteButton.verticalCenter
+                width: Math.min(90, parent.width * 0.16)
                 from: 0
                 to: 1
                 value: inlineVideoPlayerAudio.volume
+                opacity: inlineVideoPlayerAudio.muted ? 0.4 : 1
                 onMoved: inlineVideoPlayerAudio.volume = value
-                palette.highlight: Theme.accent
                 Accessible.name: "Video volume"
             }
             InlineVideoPlayerVideoButton {
-                anchors.right: inlineVideoPlayerVolume.left
-                anchors.rightMargin: 6
-                anchors.verticalCenter: inlineVideoPlayerPlayButton.verticalCenter
-                objectName: "videoMute"
-                text: inlineVideoPlayerAudio.muted ? "\uf6a9" : "\uf028"
+                objectName: "videoExternal"
+                anchors.right: parent.right
+                anchors.rightMargin: 14
+                y: 44
+                ghost: true
+                text: ""
                 fontFamily: "Symbols Nerd Font Mono"
-                Accessible.name: inlineVideoPlayerAudio.muted ? "Unmute" : "Mute"
-                onClicked: inlineVideoPlayerAudio.muted = !inlineVideoPlayerAudio.muted
+                fontSize: 12
+                Accessible.name: "Open in mpv (M)"
+                onClicked: inlineVideoPlayerRoot.externalRequested()
             }
         }
     }
@@ -1320,7 +1521,7 @@ Item {
         property real trackHeight: 3
         property real knobSize: 10
         property color fillColor: Theme.accent
-        property color knobColor: "white"
+        property color knobColor: Theme.foreground
         property color trackColor: Theme.track
         readonly property bool dragging: panelSliderSlider.pressed
         readonly property real liveValue: panelSliderSlider.value
@@ -1361,7 +1562,7 @@ Item {
     component PlayerViewArtwork: ClippingRectangle {
         id: playerViewArtworkArtworkRoot
         property url source: ""
-        property color tint: "#473344"
+        property color tint: "#362d34"
         color: tint
         Rectangle {
             anchors.fill: parent
@@ -1380,7 +1581,7 @@ Item {
             anchors.centerIn: parent
             visible: playerViewArtworkArtImage.status !== Image.Ready
             text: "♫"
-            color: "white"
+            color: Theme.foreground
             opacity: 0.55
             font.pixelSize: parent.width * 0.32
         }
@@ -1412,7 +1613,7 @@ Item {
         height: width
         radius: width / 2
         activeFocusOnTab: true
-        color: checked ? "#443553" : primary ? (playerViewIconButtonHit.containsMouse ? Theme.accent : contextRoot.accentColor) : Qt.rgba(1, 1, 1, playerViewIconButtonHit.containsMouse || activeFocus ? 0.09 : 0)
+        color: checked ? "#45393f" : primary ? (playerViewIconButtonHit.containsMouse ? Theme.accent : contextRoot.accentColor) : Qt.rgba(0.902, 0.843, 0.863, playerViewIconButtonHit.containsMouse || activeFocus ? 0.09 : 0)
         scale: playerViewIconButtonHit.pressed ? 0.94 : 1
         Behavior on scale {
             NumberAnimation {
@@ -1428,7 +1629,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: playerViewIconButtonControl.text
-            color: playerViewIconButtonControl.checked ? contextRoot.secondaryColor : playerViewIconButtonControl.primary ? Theme.background : "#ede7ef"
+            color: playerViewIconButtonControl.checked ? contextRoot.secondaryColor : playerViewIconButtonControl.primary ? Theme.background : "#e6d7dc"
             font.family: "Symbols Nerd Font Mono"
             font.pixelSize: contextRoot.space(playerViewIconButtonControl.primary ? 18 : 14)
         }
@@ -1903,7 +2104,7 @@ Item {
                 }
             }
             border.width: 1
-            border.color: Qt.rgba(0.65, 0.82, 1, 0.10)
+            border.color: Qt.rgba(0.878, 0.667, 0.733, 0.10)
             focus: true
             Keys.onEscapePressed: playerViewRoot.dismiss()
             MouseArea {
@@ -1930,7 +2131,7 @@ Item {
                     height: width
                     source: playerViewRoot.state.cover || ""
                     radius: playerViewRoot.space(14)
-                    tint: "#373143"
+                    tint: "#362d34"
                 }
                 Column {
                     anchors.left: parent.left
@@ -1940,7 +2141,7 @@ Item {
                     Text {
                         width: parent.width
                         text: playerViewRoot.state.path ? playerViewRoot.state.title.replace(/\s*\[[A-Za-z0-9_-]{11}\]$/, "") : ""
-                        color: "#ffffff"
+                        color: "#e6d7dc"
                         font.family: "sans-serif"
                         font.pixelSize: playerViewRoot.space(22)
                         font.weight: Font.DemiBold
@@ -2025,7 +2226,7 @@ Item {
                         anchors.rightMargin: playerViewRoot.space(8)
                         anchors.verticalCenter: parent.verticalCenter
                         text: playerViewRoot.filterValue || "Folders"
-                        color: "#e8e4e9"
+                        color: "#e6d7dc"
                         font.family: "sans-serif"
                         font.pixelSize: playerViewRoot.space(18)
                         font.weight: Font.DemiBold
@@ -2049,7 +2250,7 @@ Item {
                         width: playerViewRoot.space(62)
                         height: playerViewRoot.space(28)
                         radius: playerViewRoot.space(8)
-                        color: playerViewRoot.filterType === "all" ? "#493b5e" : playerViewAllHit.containsMouse || activeFocus ? "#35303e" : "#2b2833"
+                        color: playerViewRoot.filterType === "all" ? "#45393f" : playerViewAllHit.containsMouse || activeFocus ? "#2c252b" : "#2c252b"
                         activeFocusOnTab: true
                         Text {
                             anchors.centerIn: parent
@@ -2133,7 +2334,7 @@ Item {
                         anchors.rightMargin: playerViewRoot.space(6)
                         anchors.verticalCenter: parent.verticalCenter
                         color: playerViewRoot.textColor
-                        selectionColor: "#493b5e"
+                        selectionColor: "#45393f"
                         font.family: "sans-serif"
                         font.pixelSize: playerViewRoot.space(11)
                         selectByMouse: true
@@ -2275,9 +2476,9 @@ Item {
                         height: playerViewRoot.space(groupHeader ? 34 : artistRow ? 72 : 62)
                         background: Rectangle {
                             radius: playerViewRoot.space(12)
-                            color: playerViewEntry.groupHeader ? "transparent" : Math.abs(playerViewEntry.swipe.position) > 0 ? Qt.tint("#242126", Qt.rgba(1, 0.1, 0.25, Math.abs(playerViewEntry.swipe.position) * 0.7)) : playerViewEntry.current ? Theme.hover : playerViewEntry.hovered ? Theme.surface : Theme.surface
+                            color: playerViewEntry.groupHeader ? "transparent" : Math.abs(playerViewEntry.swipe.position) > 0 ? Qt.tint("#221c21", Qt.rgba(0.851, 0.451, 0.498, Math.abs(playerViewEntry.swipe.position) * 0.7)) : playerViewEntry.current ? Theme.hover : playerViewEntry.hovered ? Theme.surface : Theme.surface
                             border.width: playerViewEntry.current && !playerViewEntry.groupHeader ? 1 : 0
-                            border.color: "#625471"
+                            border.color: "#45393f"
                             Behavior on color {
                                 ColorAnimation {
                                     duration: 110
@@ -2294,7 +2495,7 @@ Item {
                                 height: width
                                 radius: playerViewRoot.space(playerViewEntry.artistRow ? 12 : 8)
                                 source: playerViewEntry.modelData.cover || ""
-                                tint: "#473441"
+                                tint: "#362d34"
                             }
                             Column {
                                 z: 1
@@ -2307,7 +2508,7 @@ Item {
                                 Text {
                                     width: parent.width
                                     text: playerViewEntry.artistRow ? playerViewEntry.modelData.name : playerViewEntry.modelData.title.replace(/\s*\[[A-Za-z0-9_-]{11}\]$/, "")
-                                    color: playerViewEntry.groupHeader ? "#a29aa9" : playerViewEntry.current && !playerViewEntry.artistRow ? playerViewRoot.accentColor : "#e9e5ee"
+                                    color: playerViewEntry.groupHeader ? "#d69aac" : playerViewEntry.current && !playerViewEntry.artistRow ? playerViewRoot.accentColor : "#e6d7dc"
                                     font.family: "sans-serif"
                                     font.pixelSize: playerViewRoot.space(playerViewEntry.groupHeader ? 10 : playerViewEntry.artistRow ? 14 : 12)
                                     font.weight: playerViewEntry.groupHeader || playerViewEntry.artistRow ? Font.Medium : Font.Normal
@@ -2317,7 +2518,7 @@ Item {
                                     visible: !playerViewEntry.groupHeader && (playerViewEntry.artistRow || !!playerViewEntry.modelData.album || !!playerViewEntry.modelData.artist)
                                     width: parent.width
                                     text: playerViewEntry.artistRow ? playerViewEntry.modelData.count + (playerViewEntry.modelData.count === 1 ? " track" : " tracks") : playerViewEntry.modelData.album || playerViewEntry.modelData.artist || ""
-                                    color: playerViewAlbumHit.containsMouse ? "#e0d9e2" : Theme.dim
+                                    color: playerViewAlbumHit.containsMouse ? "#e6d7dc" : Theme.dim
                                     font.family: "sans-serif"
                                     font.pixelSize: playerViewRoot.space(10)
                                     elide: Text.ElideRight
@@ -2351,7 +2552,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 size: 26
                                 text: "\uf00d"
-                                color: hovered ? "#44242c" : "transparent"
+                                color: hovered ? "#d9737f" : "transparent"
                                 opacity: playerViewEntry.hovered || hovered ? 1 : 0.4
                                 enabled: !playerViewDeleter.running
                                 onClicked: playerViewRoot.deleteTrack(playerViewEntry.modelData)
@@ -2393,7 +2594,7 @@ Item {
                     trackHeight: playerViewRoot.space(3)
                     knobSize: playerViewRoot.space(10)
                     fillColor: playerViewRoot.accentColor
-                    knobColor: "#ffffff"
+                    knobColor: "#e6d7dc"
                     trackColor: Theme.track
                     minimum: 0
                     maximum: Math.max(1, playerViewRoot.state.duration)
@@ -2407,7 +2608,7 @@ Item {
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: playerViewRoot.space(15)
                     text: playerViewRoot.clock(playerViewProgress.dragging ? playerViewProgress.liveValue : playerViewRoot.state.position) + "  /  " + playerViewRoot.clock(playerViewRoot.state.duration)
-                    color: "#a49eaf"
+                    color: "#d69aac"
                     font.family: "sans-serif"
                     font.pixelSize: playerViewRoot.space(11)
                 }
@@ -2459,7 +2660,7 @@ Item {
                     spacing: playerViewRoot.space(9)
                     Text {
                         text: "\uf028"
-                        color: "#a49eaf"
+                        color: "#d69aac"
                         font.family: "Symbols Nerd Font Mono"
                         font.pixelSize: playerViewRoot.space(11)
                         anchors.verticalCenter: parent.verticalCenter
@@ -2490,7 +2691,7 @@ Item {
                 height: playerViewDeletionNotice.implicitHeight + playerViewRoot.space(24)
                 visible: !!playerViewRoot.deletionError || !!playerViewRoot.playbackError
                 radius: playerViewRoot.space(12)
-                color: "#7c2036"
+                color: "#d9737f"
                 z: 20
                 Text {
                     id: playerViewDeletionNotice
@@ -2499,7 +2700,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.margins: playerViewRoot.space(14)
                     text: playerViewRoot.deletionError || playerViewRoot.playbackError
-                    color: "white"
+                    color: Theme.foreground
                     font.family: "sans-serif"
                     font.pixelSize: playerViewRoot.space(11)
                     wrapMode: Text.Wrap
@@ -2642,6 +2843,19 @@ Item {
             }
             stopVideo();
         }
+        function previousVideo() {
+            if (!opened || !playingVideo)
+                return;
+            var index = playbackQueue.indexOf(playingVideo);
+            for (var previous = index - 1; previous >= 0; previous--) {
+                if (videos.some(function (video) {
+                    return video.path === videosViewRoot.playbackQueue[previous];
+                })) {
+                    playVideo(playbackQueue[previous], true);
+                    return;
+                }
+            }
+        }
         function playVideo(path, continueQueue) {
             var video = videos.find(function (video) {
                 return video.path === path;
@@ -2683,6 +2897,13 @@ Item {
             enabled: videosViewRoot.opened && !!videosViewRoot.playingVideo
             autoRepeat: false
             onActivated: videosViewRoot.nextVideo()
+        }
+        Shortcut {
+            sequence: "P"
+            context: Qt.WindowShortcut
+            enabled: videosViewRoot.opened && !!videosViewRoot.playingVideo
+            autoRepeat: false
+            onActivated: videosViewRoot.previousVideo()
         }
         Shortcut {
             sequence: "Delete"
@@ -2808,21 +3029,34 @@ Item {
                 Rectangle {
                     anchors.right: videosViewRefreshButton.left
                     anchors.rightMargin: videosViewRoot.space(8)
-                    width: Math.min(videosViewRoot.space(230), parent.width * 0.5)
+                    width: Math.min(videosViewSearch.activeFocus || videosViewSearch.text ? videosViewRoot.space(280) : videosViewRoot.space(220), parent.width * 0.55)
                     height: parent.height
-                    radius: videosViewRoot.space(4)
-                    color: Theme.surface
+                    radius: height / 2
+                    color: videosViewSearch.activeFocus ? Qt.alpha(Theme.accent, 0.1) : Qt.rgba(0.902, 0.843, 0.863, 0.04)
                     border.width: 1
-                    border.color: videosViewSearch.activeFocus ? Theme.accent : Theme.border
+                    border.color: videosViewSearch.activeFocus ? Qt.alpha(Theme.accent, 0.7) : Qt.rgba(0.902, 0.843, 0.863, 0.1)
+                    Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                    Behavior on border.color { ColorAnimation { duration: 150 } }
+                    Text {
+                        id: videosViewSearchIcon
+                        anchors.left: parent.left
+                        anchors.leftMargin: videosViewRoot.space(12)
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "\uf002"
+                        color: videosViewSearch.activeFocus ? Theme.accent : Theme.muted
+                        font.family: "Symbols Nerd Font Mono"
+                        font.pixelSize: videosViewRoot.space(11)
+                    }
                     TextInput {
                         id: videosViewSearch
                         objectName: "videos-search"
-                        anchors.left: parent.left
+                        anchors.left: videosViewSearchIcon.right
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.margins: videosViewRoot.space(10)
+                        anchors.leftMargin: videosViewRoot.space(8)
+                        anchors.rightMargin: videosViewRoot.space(12)
                         color: Theme.foreground
-                        selectionColor: "#493b5e"
+                        selectionColor: "#45393f"
                         font.family: "sans-serif"
                         font.pixelSize: videosViewRoot.space(11)
                         selectByMouse: true
@@ -2841,8 +3075,10 @@ Item {
                     anchors.right: parent.right
                     width: videosViewRoot.space(34)
                     height: width
-                    radius: videosViewRoot.space(4)
-                    color: videosViewRefreshHit.containsMouse ? Theme.hover : Theme.surface
+                    radius: width / 2
+                    color: videosViewRefreshHit.containsMouse ? Qt.alpha(Theme.accent, 0.16) : Qt.rgba(0.902, 0.843, 0.863, 0.04)
+                    border.width: 1
+                    border.color: videosViewRefreshHit.containsMouse ? Qt.alpha(Theme.accent, 0.6) : Qt.rgba(0.902, 0.843, 0.863, 0.1)
                     enabled: !videosViewQuery.running
                     activeFocusOnTab: true
                     Keys.onReturnPressed: videosViewRoot.refresh()
@@ -2873,7 +3109,7 @@ Item {
                 anchors.bottomMargin: videosViewRoot.space(videosViewRoot.deleteError ? 40 : 12)
                 readonly property int columns: Math.max(1, Math.min(4, Math.floor(width / videosViewRoot.space(260))))
                 cellWidth: width / columns
-                cellHeight: (cellWidth - videosViewRoot.space(12)) * 9 / 16 + videosViewRoot.space(48)
+                cellHeight: (cellWidth - videosViewRoot.space(12)) * 9 / 16 + videosViewRoot.space(12)
                 model: videosViewRoot.galleryEntries
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
@@ -2884,108 +3120,208 @@ Item {
                     id: videosViewEntry
                     objectName: "videos-entry-" + modelData.path
                     required property var modelData
+                    readonly property bool hot: videosViewHit.containsMouse || activeFocus
                     width: videosViewGallery.cellWidth
                     height: videosViewGallery.cellHeight
                     activeFocusOnTab: true
                     Keys.onReturnPressed: videosViewRoot.activateEntry(modelData)
                     Keys.onSpacePressed: videosViewRoot.activateEntry(modelData)
-                    Rectangle {
+                    Repeater {
+                        model: videosViewEntry.modelData.isFolder ? 2 : 0
+                        Rectangle {
+                            required property int index
+                            anchors.fill: parent
+                            anchors.margins: videosViewRoot.space(10) + (index + 1) * 3
+                            anchors.topMargin: videosViewRoot.space(7) - (index + 1) * 4
+                            radius: videosViewRoot.space(16)
+                            color: index === 0 ? "#362d34" : "#2c252b"
+                            border.width: 1
+                            border.color: Qt.rgba(0.902, 0.843, 0.863, 0.06)
+                            z: -1 - index
+                            opacity: videosViewEntry.hot ? 1 : 0.8
+                            anchors.bottomMargin: videosViewEntry.hot ? videosViewRoot.space(14) + index * 3 : videosViewRoot.space(10) + index * 3
+                            Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                        }
+                    }
+                    Item {
                         id: videosViewTile
                         anchors.fill: parent
-                        anchors.margins: videosViewRoot.space(5)
-                        radius: videosViewRoot.space(14)
-                        color: videosViewHit.containsMouse || videosViewEntry.activeFocus ? "#302838" : "#24202b"
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 140
-                            }
-                        }
-                        border.width: 1
-                        border.color: videosViewHit.containsMouse || videosViewEntry.activeFocus ? Theme.accent : Theme.border
+                        anchors.margins: videosViewRoot.space(6)
+                        scale: videosViewEntry.hot ? 1.025 : 1
+                        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                         Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: -3
+                            radius: videosViewRoot.space(19)
+                            color: "transparent"
+                            border.width: 2
+                            border.color: Qt.alpha(Theme.accent, 0.55)
+                            opacity: videosViewEntry.hot ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: 160 } }
+                        }
+                        ClippingRectangle {
                             id: videosViewThumbnail
-                            x: 5
-                            y: 5
-                            width: parent.width - 10
-                            height: width * 9 / 16
-                            color: Theme.background
-                            clip: true
+                            anchors.fill: parent
+                            radius: videosViewRoot.space(16)
+                            color: "#221c21"
                             Text {
                                 anchors.centerIn: parent
-                                text: videosViewEntry.modelData.isFolder ? "\uf07b" : "\uf008"
+                                anchors.verticalCenterOffset: -videosViewRoot.space(10)
+                                text: videosViewEntry.modelData.isFolder ? "" : ""
                                 color: Theme.track
                                 font.family: "Symbols Nerd Font Mono"
-                                font.pixelSize: videosViewRoot.space(28)
+                                font.pixelSize: videosViewRoot.space(30)
                             }
                             Image {
+                                id: videosViewThumbImage
                                 anchors.fill: parent
                                 source: videosViewEntry.modelData.thumbnail
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                                 sourceSize.width: 480
                                 sourceSize.height: 270
+                                scale: videosViewEntry.hot ? 1.08 : 1
+                                opacity: status === Image.Ready ? 1 : 0
+                                Behavior on scale { NumberAnimation { duration: 420; easing.type: Easing.OutCubic } }
+                                Behavior on opacity { NumberAnimation { duration: 240 } }
                             }
                             Rectangle {
-                                visible: videosViewEntry.modelData.duration > 0
+                                anchors.left: parent.left
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
-                                anchors.margins: videosViewRoot.space(6)
-                                width: videosViewDurationText.implicitWidth + videosViewRoot.space(10)
-                                height: videosViewDurationText.implicitHeight + videosViewRoot.space(6)
-                                radius: videosViewRoot.space(7)
-                                color: "#df1c1923"
-                                Text {
-                                    id: videosViewDurationText
-                                    anchors.centerIn: parent
-                                    text: videosViewRoot.duration(videosViewEntry.modelData.duration)
-                                    color: Theme.foreground
-                                    font.family: "sans-serif"
-                                    font.pixelSize: videosViewRoot.space(12)
-                                    font.weight: Font.Medium
+                                height: parent.height * 0.62
+                                gradient: Gradient {
+                                    GradientStop { position: 0; color: "transparent" }
+                                    GradientStop { position: 0.5; color: "#99221c21" }
+                                    GradientStop { position: 1; color: "#f2221c21" }
                                 }
                             }
                             Rectangle {
-                                visible: !videosViewEntry.modelData.isFolder && (videosViewHit.containsMouse || videosViewEntry.activeFocus)
-                                anchors.centerIn: parent
-                                width: videosViewRoot.space(44)
-                                height: width
-                                radius: width / 2
-                                color: "#e8c3b7ff"
+                                visible: !!videosViewEntry.modelData.isFolder
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.margins: videosViewRoot.space(8)
+                                width: videosViewFolderBadge.implicitWidth + videosViewRoot.space(14)
+                                height: videosViewRoot.space(20)
+                                radius: height / 2
+                                color: "#cc221c21"
                                 border.width: 1
-                                border.color: "#e1d9ff"
+                                border.color: Qt.alpha(Theme.accent, 0.5)
                                 Text {
+                                    id: videosViewFolderBadge
                                     anchors.centerIn: parent
-                                    text: "\uf04b"
-                                    color: Theme.surface
+                                    text: "  " + (videosViewEntry.modelData.count || 0)
+                                    color: Theme.accent
                                     font.family: "Symbols Nerd Font Mono"
-                                    font.pixelSize: videosViewRoot.space(13)
+                                    font.pixelSize: videosViewRoot.space(9)
+                                    font.weight: Font.Bold
                                 }
                             }
+                            Item {
+                                visible: !videosViewEntry.modelData.isFolder
+                                anchors.centerIn: parent
+                                anchors.verticalCenterOffset: -videosViewRoot.space(8)
+                                width: videosViewRoot.space(48)
+                                height: width
+                                opacity: videosViewEntry.hot ? 1 : 0
+                                scale: videosViewEntry.hot ? 1 : 0.7
+                                Behavior on opacity { NumberAnimation { duration: 160 } }
+                                Behavior on scale { NumberAnimation { duration: 240; easing.type: Easing.OutBack } }
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: parent.width + videosViewRoot.space(16)
+                                    height: width
+                                    radius: width / 2
+                                    color: Qt.alpha(Theme.accent, 0.35)
+                                    layer.enabled: true
+                                    layer.effect: MultiEffect {
+                                        blurEnabled: true
+                                        blur: 1.0
+                                        blurMax: 24
+                                    }
+                                }
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: width / 2
+                                    gradient: Gradient {
+                                        GradientStop { position: 0; color: "#f2d69aac" }
+                                        GradientStop { position: 1; color: "#f2d69aac" }
+                                    }
+                                    border.width: 1
+                                    border.color: "#e6d7dc"
+                                    Text {
+                                        anchors.centerIn: parent
+                                        anchors.horizontalCenterOffset: 2
+                                        text: ""
+                                        color: "#221c21"
+                                        font.family: "Symbols Nerd Font Mono"
+                                        font.pixelSize: videosViewRoot.space(15)
+                                    }
+                                }
+                            }
+                            Item {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                anchors.margins: videosViewRoot.space(11)
+                                anchors.bottomMargin: videosViewEntry.hot ? videosViewRoot.space(13) : videosViewRoot.space(10)
+                                height: videosViewRoot.space(22)
+                                Behavior on anchors.bottomMargin { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                                Text {
+                                    anchors.left: parent.left
+                                    anchors.right: videosViewDuration.visible ? videosViewDuration.left : parent.right
+                                    anchors.rightMargin: videosViewRoot.space(8)
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: videosViewEntry.modelData.isFolder ? videosViewEntry.modelData.name : videosViewEntry.modelData.name
+                                    elide: Text.ElideRight
+                                    textFormat: Text.PlainText
+                                    color: "#e6d7dc"
+                                    font.family: "sans-serif"
+                                    font.pixelSize: videosViewRoot.space(12)
+                                    font.weight: Font.DemiBold
+                                }
+                                Rectangle {
+                                    id: videosViewDuration
+                                    visible: videosViewEntry.modelData.duration > 0
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: videosViewDurationText.implicitWidth + videosViewRoot.space(12)
+                                    height: videosViewRoot.space(20)
+                                    radius: height / 2
+                                    color: "#cc221c21"
+                                    border.width: 1
+                                    border.color: Qt.rgba(0.902, 0.843, 0.863, 0.14)
+                                    Text {
+                                        id: videosViewDurationText
+                                        anchors.centerIn: parent
+                                        text: videosViewRoot.duration(videosViewEntry.modelData.duration)
+                                        color: Theme.foreground
+                                        font.family: "monospace"
+                                        font.pixelSize: videosViewRoot.space(10)
+                                        font.weight: Font.Bold
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: videosViewRoot.space(16)
+                                color: "transparent"
+                                border.width: 1
+                                border.color: Qt.rgba(0.902, 0.843, 0.863, videosViewEntry.hot ? 0.18 : 0.08)
+                            }
                         }
-                        Text {
-                            x: videosViewRoot.space(9)
-                            y: videosViewThumbnail.height + videosViewRoot.space(15)
-                            width: parent.width - x * 2
-                            text: videosViewEntry.modelData.isFolder ? "\uf07b  " + videosViewEntry.modelData.name + "  ·  " + videosViewEntry.modelData.count + " videos" : videosViewEntry.modelData.name
-                            elide: Text.ElideRight
-                            textFormat: Text.PlainText
-                            color: Theme.foreground
-                            font.family: "sans-serif"
-                            font.pixelSize: videosViewRoot.space(12)
-                            font.weight: Font.Medium
-                        }
-                        MouseArea {
-                            id: videosViewHit
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onEntered: videosViewRoot.hoveredVideo = videosViewEntry.modelData.isFolder ? "" : videosViewEntry.modelData.path
-                            onExited: if (videosViewRoot.hoveredVideo === videosViewEntry.modelData.path)
-                                videosViewRoot.hoveredVideo = ""
-                            Component.onDestruction: if (videosViewRoot.hoveredVideo === videosViewEntry.modelData.path)
-                                videosViewRoot.hoveredVideo = ""
-                            onClicked: videosViewRoot.activateEntry(videosViewEntry.modelData)
-                        }
+                    }
+                    MouseArea {
+                        id: videosViewHit
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: videosViewRoot.hoveredVideo = videosViewEntry.modelData.isFolder ? "" : videosViewEntry.modelData.path
+                        onExited: if (videosViewRoot.hoveredVideo === videosViewEntry.modelData.path)
+                            videosViewRoot.hoveredVideo = ""
+                        Component.onDestruction: if (videosViewRoot.hoveredVideo === videosViewEntry.modelData.path)
+                            videosViewRoot.hoveredVideo = ""
+                        onClicked: videosViewRoot.activateEntry(videosViewEntry.modelData)
                     }
                 }
                 Text {
@@ -3008,6 +3344,8 @@ Item {
                 sourceComponent: InlineVideoPlayer {
                     sourceUrl: videosViewInlinePlayer.playbackSource
                     title: videosViewInlinePlayer.playbackTitle
+                    queueIndex: videosViewRoot.playbackQueue.indexOf(videosViewRoot.playingVideo)
+                    queueCount: videosViewRoot.playbackQueue.length
                 }
                 objectName: "inlineVideoLoader"
                 anchors.fill: parent
@@ -3027,6 +3365,12 @@ Item {
                 function onNextRequested() {
                     videosViewRoot.nextVideo();
                 }
+                function onPreviousRequested() {
+                    videosViewRoot.previousVideo();
+                }
+                function onExternalRequested() {
+                    videosViewRoot.openInMpv();
+                }
                 function onPlaybackFinished() {
                     var finishedVideo = videosViewRoot.playingVideo;
                     Qt.callLater(function () {
@@ -3042,7 +3386,7 @@ Item {
                 anchors.margins: videosViewRoot.space(16)
                 visible: !!videosViewRoot.deleteError
                 text: videosViewRoot.deleteError
-                color: "#bf616a"
+                color: "#d9737f"
                 font.family: "sans-serif"
                 font.pixelSize: videosViewRoot.space(11)
                 elide: Text.ElideRight
@@ -3181,7 +3525,7 @@ Item {
                             id: wallhavenViewSortLabel
                             anchors.verticalCenter: parent.verticalCenter
                             text: wallhavenViewSortTab.modelData.name
-                            color: wallhavenViewSortTab.selected ? "#f1e8fa" : wallhavenViewSortHit.containsMouse ? "#c5b4d3" : "#81748c"
+                            color: wallhavenViewSortTab.selected ? "#eee2e6" : wallhavenViewSortHit.containsMouse ? "#d69aac" : "#45393f"
                             font.pixelSize: 13
                             font.weight: wallhavenViewSortTab.selected ? Font.DemiBold : Font.Normal
                         }
@@ -3215,14 +3559,14 @@ Item {
                 width: Math.max(130, Math.min(300, parent.width - 284))
                 height: 36
                 radius: 12
-                color: "#211d29"
-                border.color: wallhavenViewSearchInput.activeFocus ? "#7c648e" : "#393040"
+                color: "#221c21"
+                border.color: wallhavenViewSearchInput.activeFocus ? "#d4a5b5" : "#362d34"
                 TextInput {
                     id: wallhavenViewSearchInput
                     x: 13
                     width: parent.width - 49
                     anchors.verticalCenter: parent.verticalCenter
-                    color: "#f1e8fa"
+                    color: "#eee2e6"
                     font.pixelSize: 12
                     clip: true
                     selectByMouse: true
@@ -3230,7 +3574,7 @@ Item {
                     Text {
                         visible: !wallhavenViewSearchInput.text
                         text: "Search wallpapers"
-                        color: "#81748c"
+                        color: "#45393f"
                         font: wallhavenViewSearchInput.font
                     }
                 }
@@ -3245,13 +3589,13 @@ Item {
                         text: wallhavenViewLookup.running ? "···" : "\uf002"
                         font.family: "Symbols Nerd Font Mono"
                         font.pixelSize: 12
-                        color: "#beaccd"
+                        color: "#d69aac"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
                         radius: 12
-                        color: parent.hovered ? "#3a2d44" : "transparent"
+                        color: parent.hovered ? "#362d34" : "transparent"
                     }
                 }
             }
@@ -3304,7 +3648,7 @@ Item {
                         radius: 14
                         enabled: !wallhavenViewLookup.running
                         activeFocusOnTab: true
-                        color: selected ? "#c9b4e3" : wallhavenViewTagHit.containsMouse || activeFocus ? Theme.hover : "#24202c"
+                        color: selected ? "#d69aac" : wallhavenViewTagHit.containsMouse || activeFocus ? Theme.hover : "#221c21"
                         Behavior on color {
                             ColorAnimation {
                                 duration: 140
@@ -3319,7 +3663,7 @@ Item {
                             id: wallhavenViewTagLabel
                             anchors.centerIn: parent
                             text: wallhavenViewTag.modelData.charAt(0).toUpperCase() + wallhavenViewTag.modelData.slice(1)
-                            color: wallhavenViewTag.selected ? "#24192f" : "#a99ab5"
+                            color: wallhavenViewTag.selected ? "#221c21" : "#d69aac"
                             font.pixelSize: 10
                             font.weight: Font.Medium
                         }
@@ -3356,7 +3700,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 7
                     radius: 14
-                    color: "#302338"
+                    color: "#2c252b"
                     scale: wallhavenViewTileHit.pressed ? 0.98 : 1
                     Behavior on scale {
                         NumberAnimation {
@@ -3378,7 +3722,7 @@ Item {
                             }
                             GradientStop {
                                 position: 1
-                                color: "#900d0913"
+                                color: "#90221c21"
                             }
                         }
                     }
@@ -3396,7 +3740,7 @@ Item {
                         width: wallhavenViewResolution.implicitWidth + 12
                         height: 22
                         radius: 7
-                        color: "#b918141f"
+                        color: "#b9221c21"
                         opacity: wallhavenViewTileHit.containsMouse ? 1 : 0
                         Behavior on opacity {
                             NumberAnimation {
@@ -3407,7 +3751,7 @@ Item {
                             id: wallhavenViewResolution
                             anchors.centerIn: parent
                             text: wallhavenViewTile.modelData.resolution
-                            color: "#eee4f7"
+                            color: "#eee2e6"
                             font.pixelSize: 10
                         }
                     }
@@ -3431,7 +3775,7 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             visible: !wallhavenViewRoot.images.length
             text: wallhavenViewLookup.running ? "Loading Wallhaven…" : wallhavenViewRoot.message || "No wallpapers found"
-            color: "#cbb7df"
+            color: "#d69aac"
             font.pixelSize: 13
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
@@ -3446,7 +3790,7 @@ Item {
                 visible: !!wallhavenViewRoot.message
                 width: parent.width
                 text: wallhavenViewRoot.message
-                color: "#cbb7df"
+                color: "#d69aac"
                 font.pixelSize: 11
                 wrapMode: Text.Wrap
                 textFormat: Text.PlainText
@@ -3465,7 +3809,7 @@ Item {
                         onClicked: wallhavenViewRoot.search(wallhavenViewRoot.page - 1)
                         contentItem: Text {
                             text: "‹"
-                            color: parent.enabled ? "#c7b4d5" : "#504557"
+                            color: parent.enabled ? "#d69aac" : "#45393f"
                             font.pixelSize: 22
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -3478,7 +3822,7 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: wallhavenViewRoot.page + " / " + wallhavenViewRoot.pages
-                        color: "#92829f"
+                        color: "#d69aac"
                         font.pixelSize: 10
                     }
                     ToolButton {
@@ -3489,7 +3833,7 @@ Item {
                         onClicked: wallhavenViewRoot.search(wallhavenViewRoot.page + 1)
                         contentItem: Text {
                             text: "›"
-                            color: parent.enabled ? "#c7b4d5" : "#504557"
+                            color: parent.enabled ? "#d69aac" : "#45393f"
                             font.pixelSize: 22
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -3689,9 +4033,9 @@ Item {
                 width: Math.min(294, parent.width - 24)
                 height: 46
                 radius: 23
-                color: "#ed1c1923"
+                color: "#ed221c21"
                 border.width: 1
-                border.color: "#66564d69"
+                border.color: "#6645393f"
                 Rectangle {
                     x: 5 + (wallpapersViewRoot.mode === "blur" ? 1 : wallpapersViewRoot.mode === "dark" ? 2 : 0) * (wallpapersViewEffectSelector.width - 10) / 3
                     y: 5
@@ -3700,7 +4044,7 @@ Item {
                     radius: 18
                     color: Theme.accent
                     border.width: 1
-                    border.color: "#e1d9ff"
+                    border.color: "#d69aac"
                     Behavior on x {
                         NumberAnimation {
                             duration: 180
@@ -3757,9 +4101,9 @@ Item {
                             }
                             background: Rectangle {
                                 radius: 18
-                                color: !wallpapersViewEffectButton.selected && wallpapersViewEffectButton.hovered ? "#30c3b7ff" : "transparent"
+                                color: !wallpapersViewEffectButton.selected && wallpapersViewEffectButton.hovered ? "#30d69aac" : "transparent"
                                 border.width: wallpapersViewEffectButton.visualFocus ? 1 : 0
-                                border.color: "#eee9ff"
+                                border.color: "#eee2e6"
                                 Behavior on color {
                                     ColorAnimation {
                                         duration: 120
@@ -3775,7 +4119,7 @@ Item {
                                         text: wallpapersViewEffectButton.modelData.glyph
                                         font.family: "Symbols Nerd Font Mono"
                                         font.pixelSize: 12
-                                        color: wallpapersViewEffectButton.selected ? Theme.surface : "#b9afca"
+                                        color: wallpapersViewEffectButton.selected ? Theme.surface : "#d69aac"
                                         Behavior on color {
                                             ColorAnimation {
                                                 duration: 140
@@ -3787,7 +4131,7 @@ Item {
                                         font.family: "sans-serif"
                                         font.pixelSize: 11
                                         font.weight: wallpapersViewEffectButton.selected ? Font.DemiBold : Font.Medium
-                                        color: wallpapersViewEffectButton.selected ? Theme.surface : "#d8d0e3"
+                                        color: wallpapersViewEffectButton.selected ? Theme.surface : "#e6d7dc"
                                         Behavior on color {
                                             ColorAnimation {
                                                 duration: 140
@@ -3872,7 +4216,7 @@ Item {
                     }
                     GradientStop {
                         position: 1
-                        color: "#b008080c"
+                        color: "#b0221c21"
                     }
                 }
             }
@@ -3884,8 +4228,8 @@ Item {
                 width: parent.width - 32
                 height: Math.min(104, parent.height * 0.32)
                 radius: 14
-                color: "#b018181d"
-                border.color: "#443f494f"
+                color: "#b0221c21"
+                border.color: "#4445393f"
                 visible: wallpapersViewRoot.images.length > 0
                 ListView {
                     id: wallpapersViewGallery
@@ -4009,7 +4353,7 @@ Item {
                 width: Math.min(parent.width - 32, wallpapersViewErrorLabel.implicitWidth + 24)
                 height: wallpapersViewErrorLabel.implicitHeight + 16
                 radius: 10
-                color: "#30212b"
+                color: "#221c21"
                 visible: !!wallpapersViewRoot.error
                 Text {
                     id: wallpapersViewErrorLabel
@@ -4018,7 +4362,7 @@ Item {
                     text: wallpapersViewRoot.error
                     textFormat: Text.PlainText
                     wrapMode: Text.Wrap
-                    color: "#e28b9b"
+                    color: "#d9737f"
                     font.pixelSize: 12
                 }
             }

@@ -2,7 +2,6 @@ import "../controls/PanelTheme.js" as Theme
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
@@ -900,42 +899,20 @@ Item {
             enabled: islandWindowWindow.expanded
             width: islandWindowWindow.expanded ? islandWindowWindow.width - 4 : Math.min(islandWindowWindow.width - 4, islandWindowWindow.controller.playing ? 250 : 196)
             height: !islandWindowWindow.expanded ? 38 : islandWindowWindow.notificationMode ? 202 : islandWindowWindow.mode === "dashboard" || islandWindowWindow.mode === "music" ? Math.min(islandWindowWindow.height - 10, islandWindowPlayerView.implicitHeight + 54) : 106
-            property real radius: 0
+            property real radius: height < 50 ? height / 2 : 24
             clip: true
-            Shape {
+            Rectangle {
                 id: islandSurface
                 anchors.fill: parent
                 z: -1
-                ShapePath {
-                    strokeWidth: 1
-                    strokeColor: "#45475a"
-                    fillColor: "#1e1e2e"
-                    startX: 14
-                    startY: 1
-                    PathLine { x: islandSurface.width - 1; y: 1 }
-                    PathLine { x: islandSurface.width - 1; y: islandSurface.height - 14 }
-                    PathLine { x: islandSurface.width - 14; y: islandSurface.height - 1 }
-                    PathLine { x: 1; y: islandSurface.height - 1 }
-                    PathLine { x: 1; y: 14 }
-                    PathLine { x: 14; y: 1 }
-                }
-                ShapePath {
-                    strokeWidth: 1
-                    strokeColor: "#70cba6f7"
-                    fillColor: "transparent"
-                    startX: 14
-                    startY: 1
-                    PathLine { x: 52; y: 1 }
-                }
-                ShapePath {
-                    strokeWidth: 1
-                    strokeColor: "#70cba6f7"
-                    fillColor: "transparent"
-                    startX: islandSurface.width - 44
-                    startY: islandSurface.height - 1
-                    PathLine { x: islandSurface.width - 14; y: islandSurface.height - 1 }
-                    PathLine { x: islandSurface.width - 1; y: islandSurface.height - 14 }
-                    PathLine { x: islandSurface.width - 1; y: islandSurface.height - 28 }
+                radius: islandWindowPill.radius
+                color: "#f31c192b"
+                border.width: 1
+                border.color: "#7065516f"
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#ed2a2036" }
+                    GradientStop { position: 0.48; color: "#f0211b30" }
+                    GradientStop { position: 1; color: "#f31c192b" }
                 }
             }
             Row {

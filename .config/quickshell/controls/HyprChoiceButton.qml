@@ -16,7 +16,7 @@ Button {
     contentItem: Text {
         id: caption
         text: button.label
-        color: button.selected ? Theme.foreground : button.hovered ? "#e4d1f7" : Theme.muted
+        color: button.selected ? Theme.foreground : button.hovered ? Theme.foreground : Theme.muted
         font.pixelSize: 11
         font.weight: button.selected ? Font.DemiBold : Font.Normal
         horizontalAlignment: Text.AlignHCenter
@@ -24,10 +24,10 @@ Button {
         elide: Text.ElideRight
     }
     background: Rectangle {
-        radius: 9
-        color: button.down ? "#493052" : button.selected ? Theme.selected : button.hovered ? Theme.hover : Theme.surface
+        radius: Theme.controlRadius
+        color: button.down ? Theme.selected : button.selected ? Qt.alpha(Theme.accent, 0.2) : button.hovered ? Theme.hover : Qt.alpha(Theme.foreground, 0.04)
         border.width: 1
-        border.color: button.activeFocus ? Theme.accent : button.selected ? Theme.border : Theme.border
+        border.color: button.activeFocus ? Theme.accent : button.selected ? Qt.alpha(Theme.accent, 0.5) : Qt.alpha(Theme.foreground, 0.08)
         Behavior on color {
             ColorAnimation {
                 duration: 110

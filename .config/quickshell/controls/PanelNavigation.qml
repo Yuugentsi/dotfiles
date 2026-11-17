@@ -33,18 +33,18 @@ Item {
     }
     Rectangle {
         anchors.horizontalCenter: bar.horizontalCenter
-        y: 3
-        width: bar.width + 2
-        height: bar.height + 2
-        radius: 16
-        color: "#50000000"
+        y: 6
+        width: bar.width + 8
+        height: bar.height + 6
+        radius: height / 2
+        color: "#40000000"
     }
     Rectangle {
         id: bar
         anchors.horizontalCenter: parent.horizontalCenter
-        width: Math.min(root.width, buttons.width + 16)
+        width: Math.min(root.width, buttons.width + 14)
         height: root.height
-        radius: 14
+        radius: height / 2
         gradient: Gradient {
             GradientStop {
                 position: 0
@@ -61,18 +61,46 @@ Item {
         }
         border.width: 1
         border.color: Theme.border
+        PanelAura { radius: bar.radius; intensity: 0.3 }
         Flickable {
-            x: 8
+            id: strip
+            x: 7
             y: 5
-            width: Math.max(0, parent.width - 16)
+            width: Math.max(0, parent.width - 14)
             height: parent.height - 10
             contentWidth: buttons.width
             contentHeight: height
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+            Rectangle {
+                id: indicator
+                property Item target: null
+                visible: target !== null
+                x: target ? target.x : 0
+                width: target ? target.width : 0
+                height: strip.height
+                radius: height / 2
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: Qt.alpha(Theme.accent, 0.16) }
+                    GradientStop { position: 1; color: Qt.alpha(Theme.accentAlt, 0.16) }
+                }
+                border.width: 1
+                border.color: Qt.alpha(Theme.accent, 0.25)
+                Behavior on x { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+                Behavior on width { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.topMargin: 1
+                    width: parent.width * 0.6
+                    height: 1
+                    color: Qt.alpha(Theme.foreground, 0.08)
+                }
+            }
             Row {
                 id: buttons
-                spacing: 3
+                spacing: 2
                 Repeater {
                     model: root.options
                     Rectangle {
@@ -80,49 +108,44 @@ Item {
                         objectName: "panel-" + modelData.key
                         required property var modelData
                         readonly property bool active: root.currentPanel === modelData.key
-                        width: caption.implicitWidth + 28
+                        onActiveChanged: if (active) indicator.target = button
+                        Component.onCompleted: if (active) indicator.target = button
+                        width: caption.implicitWidth + 30
                         height: 32
-                        radius: 10
-                        color: active ? Theme.selected : hit.containsMouse || activeFocus ? Theme.hover : "transparent"
+                        radius: height / 2
+                        color: !active && (hit.containsMouse || activeFocus) ? Qt.alpha(Theme.hover, 0.7) : "transparent"
                         Behavior on color {
                             ColorAnimation {
                                 duration: 140
                             }
                         }
-                        border.width: active || activeFocus ? 1 : 0
+                        border.width: activeFocus && !active ? 1 : 0
                         border.color: Theme.border
                         activeFocusOnTab: true
                         Accessible.role: Accessible.Button
                         Accessible.name: modelData.label
                         Keys.onReturnPressed: root.selected(modelData.key)
                         Keys.onSpacePressed: root.selected(modelData.key)
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: 16
-                            height: 2
-                            radius: 1
-                            color: Theme.accent
-                            visible: button.active
-                        }
                         Row {
                             id: caption
                             anchors.centerIn: parent
                             spacing: 7
                             Text {
                                 text: button.modelData.icon
-                                color: button.active ? Theme.accent : Theme.accent
+                                color: button.active ? Theme.accent : hit.containsMouse ? Theme.foreground : Theme.muted
                                 font.family: "JetBrainsMono Nerd Font"
                                 font.pixelSize: 15
                                 anchors.verticalCenter: parent.verticalCenter
+                                Behavior on color { ColorAnimation { duration: 140 } }
                             }
                             Text {
                                 text: button.modelData.label
-                                color: button.active ? Theme.foreground : Theme.accent
+                                color: button.active || hit.containsMouse ? Theme.foreground : Theme.muted
                                 font.family: "sans-serif"
                                 font.pixelSize: 11
-                                font.weight: button.active ? Font.DemiBold : Font.Normal
+                                font.weight: button.active ? Font.DemiBold : Font.Medium
                                 anchors.verticalCenter: parent.verticalCenter
+                                Behavior on color { ColorAnimation { duration: 140 } }
                             }
                         }
                         Timer {

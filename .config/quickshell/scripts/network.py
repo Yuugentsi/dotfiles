@@ -108,6 +108,61 @@ def recent_profile():
     return max(candidates)[1] if candidates else ""
 
 
+def wifi_profiles():
+    result = run(["-t", "-f", "UUID,TYPE,TIMESTAMP", "connection", "show"])
+    if result.returncode:
+        return []
+    profiles = []
+    for line in result.stdout.splitlines():
+        row = fields(line)
+        if len(row) != 3 or row[1] not in ("wifi", "802-11-wireless"):
+            continue
+        detail = run(["-s", "-g", "802-11-wireless.ssid,802-11-wireless-security.psk,802-11-wireless-security.key-mgmt", "connection", "show", "uuid", row[0]])
+        if detail.returncode:
+            continue
+        values = detail.stdout.splitlines()
+        ssid = values[0] if values else ""
+        if not ssid:
+            continue
+        profiles.append({
+            "uuid": row[0],
+            "ssid": ssid,
+            "secret": len(values) > 1 and values[1] not in ("", "--"),
+            "keymgmt": values[2] if len(values) > 2 else "",
+            "stamp": int(row[2]) if row[2].isdigit() else 0,
+        })
+    return profiles
+
+
+def saved_profile(ssid):
+    if not ssid:
+        return ""
+    usable = [profile for profile in wifi_profiles() if profile["ssid"] == ssid and (profile["secret"] or profile["keymgmt"] in ("", "--", "none"))]
+    return max(usable, key=lambda profile: (profile["secret"], profile["stamp"]))["uuid"] if usable else ""
+
+
+def saved_names():
+    return {profile["ssid"] for profile in wifi_profiles()}
+
+
+def forget_profiles(ssid):
+    uuids = [profile["uuid"] for profile in wifi_profiles() if profile["ssid"] == ssid]
+    if not uuids:
+        raise NetworkError("This network is not saved on this computer.")
+    for uuid in uuids:
+        result = run(["connection", "delete", "uuid", uuid])
+        if result.returncode:
+            raise NetworkError("NetworkManager could not forget this network.")
+
+
+def device_address(device):
+    result = run(["-g", "IP4.ADDRESS", "device", "show", device])
+    if result.returncode:
+        return ""
+    values = [value for value in result.stdout.splitlines() if value and value != "--"]
+    return values[0].split("/")[0] if values else ""
+
+
 def snapshot(preferred_uuid="", rescan=False):
     radio = run(["-t", "-f", "WIFI-HW,WIFI", "general"])
     if radio.returncode:
@@ -116,7 +171,7 @@ def snapshot(preferred_uuid="", rescan=False):
     blocked = len(flags) > 0 and flags[0] != "enabled"
     enabled = len(flags) > 1 and flags[1] == "enabled"
     device = device_for()
-    state = {"available": device is not None, "enabled": enabled, "blocked": blocked, "device": device[0] if device else "", "connected": "", "networks": [], "bandMode": "", "actualBand": "", "availableBands": [], "dnsMode": "automatic", "profileUuid": ""}
+    state = {"available": device is not None, "enabled": enabled, "blocked": blocked, "device": device[0] if device else "", "connected": "", "ipv4": "", "networks": [], "bandMode": "", "actualBand": "", "availableBands": [], "dnsMode": "automatic", "profileUuid": ""}
     if device is None:
         return state
     uuid = active_uuid(device[0])
@@ -125,9 +180,13 @@ def snapshot(preferred_uuid="", rescan=False):
         if result.returncode:
             raise NetworkError("Could not read available Wi-Fi networks.")
         state["networks"] = network_rows(result.stdout)
+        known = saved_names()
+        for item in state["networks"]:
+            item["known"] = item["ssid"] in known
         active = next((item for item in state["networks"] if item["active"]), None)
         if active:
             state["connected"] = active["ssid"]
+            state["ipv4"] = device_address(device[0])
             state["actualBand"] = active["band"]
             state["availableBands"] = active["bands"]
     if not uuid:
@@ -282,6 +341,12 @@ def perform(request):
             result = run(["device", "wifi", "rescan", "ifname", device[0]])
         elif action == "disconnect":
             result = run(["device", "disconnect", device[0]])
+        elif action == "forget":
+            ssid = str(request.get("ssid", ""))
+            if not ssid:
+                raise NetworkError("Select a saved network to forget.")
+            forget_profiles(ssid)
+            return {"ok": True}
         elif action == "connect":
             bssid = str(request.get("bssid", ""))
             if not re.fullmatch(r"(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}", bssid):
@@ -289,6 +354,12 @@ def perform(request):
             password = request.get("password")
             if password is not None and (not isinstance(password, str) or "\n" in password or "\r" in password or len(password) > 256):
                 raise NetworkError("Enter a valid network password.")
+            if password is None:
+                uuid = saved_profile(str(request.get("ssid", "")))
+                if uuid:
+                    reused = run(["connection", "up", "uuid", uuid, "ifname", device[0]], wait=25)
+                    if reused.returncode == 0:
+                        return {"ok": True}
             result = run(["device", "wifi", "connect", bssid, "ifname", device[0]], password=password, wait=25)
             if result.returncode:
                 detail = (result.stdout + result.stderr).lower()

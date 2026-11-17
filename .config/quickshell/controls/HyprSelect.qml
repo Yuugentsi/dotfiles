@@ -12,7 +12,7 @@ ComboBox {
     rightPadding: 24
     contentItem: Text {
         text: root.labels[root.currentIndex] || root.currentText
-        color: "#e7d6f5"
+        color: "#d69aac"
         font: root.font
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
@@ -26,7 +26,7 @@ ComboBox {
     }
     background: Rectangle {
         radius: 9
-        color: root.hovered ? Theme.hover : "#211728"
+        color: root.hovered ? Theme.hover : "#221c21"
         border.width: 1
         border.color: root.activeFocus ? Theme.accent : Theme.border
     }
@@ -39,14 +39,14 @@ ComboBox {
         highlighted: root.highlightedIndex === index
         contentItem: Text {
             text: root.labels[option.index] || String(option.modelData)
-            color: "#e7d6f5"
+            color: "#d69aac"
             font: root.font
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
         background: Rectangle {
             radius: 6
-            color: option.highlighted ? "#45304f" : "transparent"
+            color: option.highlighted ? "#362d34" : "transparent"
         }
     }
     popup: Popup {
@@ -63,9 +63,9 @@ ComboBox {
         }
         background: Rectangle {
             radius: 10
-            color: "#251b30"
+            color: "#221c21"
             border.width: 1
-            border.color: "#67477c"
+            border.color: "#45393f"
         }
     }
     HoverHandler {

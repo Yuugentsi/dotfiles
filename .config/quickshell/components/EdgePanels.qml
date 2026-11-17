@@ -46,8 +46,8 @@ Item {
                     visible: dock.expanded
                     ShapePath {
                         strokeWidth: 1
-                        strokeColor: "#45475a"
-                        fillColor: "#1e1e2e"
+                        strokeColor: "#45393f"
+                        fillColor: "#221c21"
                         startX: 9
                         startY: 1
                         PathLine { x: edgeFrame.width - 1; y: 1 }
@@ -63,7 +63,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 2
                     height: 20
-                    color: "#50b4befe"
+                    color: "#50d69aac"
                     visible: !dock.expanded
                 }
                 HoverHandler {
@@ -93,7 +93,7 @@ Item {
                             width: buttons.width
                             height: 28
                             radius: 2
-                            color: hit.containsMouse ? "#80313244" : "transparent"
+                            color: hit.containsMouse ? "#80362d34" : "transparent"
                             Accessible.role: Accessible.Button
                             Accessible.name: modelData.label
                             Behavior on color { ColorAnimation { duration: 120 } }
@@ -103,7 +103,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 2
                                 height: hit.containsMouse ? 16 : 6
-                                color: "#b4befe"
+                                color: "#d69aac"
                                 opacity: hit.containsMouse ? 0.55 : 0
                                 Behavior on height { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                 Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -113,15 +113,15 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 20
                                 height: 20
-                                color: hit.containsMouse ? "#0ccba6f7" : "transparent"
+                                color: hit.containsMouse ? "#0cd69aac" : "transparent"
                                 border.width: 1
-                                border.color: hit.containsMouse ? "#30b4befe" : "#40313244"
+                                border.color: hit.containsMouse ? "#30d69aac" : "#40362d34"
                                 Behavior on color { ColorAnimation { duration: 120 } }
                                 Behavior on border.color { ColorAnimation { duration: 120 } }
                                 Text {
                                     anchors.centerIn: parent
                                     text: button.modelData.icon
-                                    color: hit.containsMouse ? "#b4befe" : "#a6adc8"
+                                    color: hit.containsMouse ? "#d69aac" : "#d69aac"
                                     font.family: "JetBrainsMono Nerd Font"
                                     font.pixelSize: 13
                                     Behavior on color { ColorAnimation { duration: 120 } }
@@ -132,7 +132,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: button.modelData.label
                                 textFormat: Text.PlainText
-                                color: hit.containsMouse ? "#cdd6f4" : "#bac2de"
+                                color: hit.containsMouse ? "#d69aac" : "#e6d7dc"
                                 font.family: "JetBrains Mono"
                                 font.pixelSize: 10
                                 font.weight: Font.Normal
@@ -145,7 +145,7 @@ Item {
                                 text: "\uf105"
                                 font.family: "Symbols Nerd Font Mono"
                                 font.pixelSize: 10
-                                color: "#b4befe"
+                                color: "#d69aac"
                                 opacity: hit.containsMouse ? 0.7 : 0
                                 Behavior on opacity { NumberAnimation { duration: 120 } }
                             }

@@ -1,64 +1,63 @@
+pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Shapes
 
 Item {
     id: root
     property bool hud: false
-    property color accentColor: "#cba6f7"
+    property color accentColor: "#a99aad"
+    property string title: "System"
+    default property alias contentData: content.data
 
-    Rectangle {
+    property Item frame: Canvas {
+        parent: root
         anchors.fill: parent
-        visible: !root.hud
-        radius: 4
-        gradient: Gradient {
-            GradientStop { position: 0; color: "#1e1e2e" }
-            GradientStop { position: 1; color: "#181825" }
-        }
-        border.width: 1
-        border.color: "#45475a"
-        Rectangle {
-            x: 10
-            anchors.bottom: parent.bottom
-            width: parent.width - 20
-            height: 1
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0; color: "#cba6f7" }
-                GradientStop { position: 1; color: "#b4befe" }
-            }
-        }
-    }
-    Shape {
-        anchors.fill: parent
-        visible: root.hud
-        ShapePath {
-            strokeWidth: 1
-            strokeColor: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.45)
-            fillColor: "#11111b"
-            startX: 11
-            startY: 1
-            PathLine { x: root.width - 1; y: 1 }
-            PathLine { x: root.width - 1; y: root.height - 11 }
-            PathLine { x: root.width - 11; y: root.height - 1 }
-            PathLine { x: 1; y: root.height - 1 }
-            PathLine { x: 1; y: 11 }
-            PathLine { x: 11; y: 1 }
+        antialiasing: true
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+        onPaint: {
+            const ctx = getContext("2d");
+            ctx.reset();
+            if (width < 20 || height < 20)
+                return;
+            ctx.beginPath();
+            ctx.moveTo(1, 1);
+            ctx.lineTo(width - 11, 1);
+            ctx.lineTo(width - 1, 11);
+            ctx.lineTo(width - 11, height - 1);
+            ctx.lineTo(1, height - 1);
+            ctx.closePath();
+            const fill = ctx.createLinearGradient(0, 0, width, height);
+            fill.addColorStop(0, "#f5191820");
+            fill.addColorStop(1, "#f5141a20");
+            ctx.fillStyle = fill;
+            ctx.fill();
+            ctx.strokeStyle = "#88a99aad";
+            ctx.lineWidth = 0.7;
+            ctx.stroke();
+            ctx.strokeStyle = "#668d91ad";
+            ctx.beginPath();
+            ctx.moveTo(8, height - 4);
+            ctx.lineTo(33, height - 4);
+            ctx.stroke();
         }
     }
-    Rectangle {
-        visible: root.hud
-        x: 14
-        y: 1
-        width: 36
-        height: 2
-        color: root.accentColor
+
+    property Item caption: Text {
+        parent: root
+        x: 12; y: 6; width: root.width - 32
+        text: root.title
+        textFormat: Text.PlainText
+        color: "#8d91ad"
+        font.family: "JetBrains Mono"
+        font.pixelSize: 9
+        elide: Text.ElideRight
     }
-    Rectangle {
-        visible: root.hud
-        x: parent.width - 40
-        y: parent.height - 3
-        width: 24
-        height: 2
-        color: "#cba6f7"
+
+    property Item contentItem: Item {
+        id: content
+        parent: root
+        x: 0; y: 22
+        width: root.width
+        height: Math.max(0, root.height - 22)
     }
 }

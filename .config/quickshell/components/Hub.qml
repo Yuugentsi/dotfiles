@@ -1,239 +1,108 @@
-import "../controls/PanelTheme.js" as Theme
-import "../controls"
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Widgets
+import "../controls/PanelTheme.js" as Theme
+import "../controls"
+import "hub"
 
 Item {
     id: root
+
     signal backRequested
     signal panelRequested(string panel)
-    function space(value) {
-        return value;
-    }
+
     IpcHandler {
         target: "hub"
         function toggle(): void {
             root.toggle();
         }
         function open(section: string): void {
-            root.open(JSON.stringify({
-                section: section
-            }));
+            root.open(JSON.stringify({ section: section }));
         }
         function close(): void {
             root.dismiss();
         }
     }
+
     property var shell: null
     property var manifest: null
     property bool opened: false
-    property var bots: []
-    property string section: "fish"
-    function backendFor(sectionName) {
-        return Quickshell.env("HOME") + "/.config/quickshell/scripts/" + (sectionName === "fish" ? "fish.py" : "bots.py");
-    }
-    function refresh() {
-        if (section === "ytdlp" || section === "nyaa")
-            return;
-        if (query.running)
-            return;
-        query.requestedSection = section;
-        query.running = true;
-    }
-    function selectSection(name) {
-        if (section === name)
-            return;
-        section = name;
-        bots = [];
-        botSignature = "";
-        logView = "";
-        contentScroll.contentY = 0;
-        refresh();
-        if (section === "nyaa")
-            Qt.callLater(function () {
-                nyaaView.focusSearch();
-            });
-        if (section === "ytdlp")
-            Qt.callLater(function () {
-                downloadsView.focusUrl();
-            });
-    }
-    property string logView: ""
-    property string logFilter: "all"
-    property var logData: ({
-            entries: [],
-            counts: {}
-        })
-    property string logSignature: ""
-    readonly property var visibleLogs: logData.entries.filter(function (entry) {
-        return (root.logFilter === "all" || entry.kind === root.logFilter) && (!logSearch.text || (entry.title + " " + entry.detail + " " + entry.label).toLowerCase().indexOf(logSearch.text.toLowerCase()) >= 0);
-    })
-    function showLogs(name) {
-        logView = name;
-        logFilter = "all";
-        logData = {
-            entries: [],
-            counts: {}
-        };
-        logSignature = "";
-        logList.positionViewAtBeginning();
-        logSearch.text = "";
-        if (!logQuery.running)
-            logQuery.running = true;
-    }
-    function logColor(kind) {
-        return kind === "error" ? "#bf616a" : kind === "downloaded" ? "#a3be8c" : kind === "skipped" ? Theme.muted : kind === "warning" ? "#ebcb8b" : Theme.muted;
-    }
-    readonly property string script: backendFor(section)
+
+    readonly property string scriptsDir: Quickshell.env("HOME") + "/.config/quickshell/scripts"
+    readonly property color onAccent: "#221c21"
+    readonly property var sections: [
+        { id: "watchers", label: "Watchers", icon: "󰈺", hint: "Fish background watchers" },
+        { id: "bots", label: "Bots", icon: "󰚩", hint: "Systemd bot services" },
+        { id: "downloads", label: "Downloads", icon: "󰇚", hint: "Grab media with yt-dlp" },
+        { id: "nyaa", label: "Nyaa", icon: "󰊓", hint: "Anime release torrents" }
+    ]
+
     function open(payloadJson) {
         try {
             var payload = JSON.parse(payloadJson || "{}");
-            if (payload.section === "bots" || payload.section === "fish" || payload.section === "ytdlp" || payload.section === "nyaa")
-                selectSection(payload.section);
+            if (payload.section) {
+                var s = payload.section === "fish" ? "watchers" : payload.section === "ytdlp" ? "downloads" : payload.section;
+                hubContent.currentSection = s;
+            }
         } catch (e) {}
         opened = true;
-        root.refresh();
-        if (logView && !logQuery.running)
-            logQuery.running = true;
-        Qt.callLater(function () {
-            if (root.section === "ytdlp")
-                downloadsView.focusUrl();
-            else if (root.section === "nyaa")
-                nyaaView.focusSearch();
-            else
-                card.forceActiveFocus();
+        hubContent.refreshSection();
+        Qt.callLater(function() {
+            card.forceActiveFocus();
         });
     }
+
     function close() {
         opened = false;
     }
+
     function dismiss() {
         opened = false;
         if (shell)
             shell.hide("y.hub");
     }
+
     function toggle() {
         if (opened)
             dismiss();
         else
             open("{}");
     }
+
     Shortcut {
         sequence: "Escape"
         context: Qt.WindowShortcut
         enabled: root.opened
         onActivated: root.dismiss()
     }
-    Process {
-        id: action
-        onExited: {
-            root.refresh();
-        }
-    }
-    Process {
-        id: logQuery
-        command: ["python3", root.script, root.section === "bots" ? "activity" : "logs", root.logView]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    var data = JSON.parse(text);
-                    if (data.name === root.logView && text !== root.logSignature) {
-                        root.logSignature = text;
-                        root.logData = data;
-                    }
-                } catch (e) {}
-            }
-        }
-    }
-    Process {
-        id: query
-        property string requestedSection: "fish"
-        command: ["python3", root.backendFor(requestedSection), "list"]
-        onExited: if (requestedSection !== root.section)
-            Qt.callLater(function () {
-                root.refresh();
-            })
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    if (query.requestedSection === root.section && text !== root.botSignature) {
-                        root.botSignature = text;
-                        root.bots = JSON.parse(text);
-                    }
-                } catch (e) {}
-            }
-        }
-    }
-    Timer {
-        interval: 1000
-        running: root.opened && root.section !== "ytdlp" && root.section !== "nyaa"
-        repeat: true
-        onTriggered: {
-            root.refresh();
-            if (root.logView && !logQuery.running && !clearAction.running)
-                logQuery.running = true;
-        }
-    }
 
-    property string botSignature: ""
-    readonly property color ink: Theme.foreground
-    readonly property color muted: Theme.muted
-    readonly property color mint: Theme.accent
-    readonly property int activeCount: bots.filter(function (bot) {
-        return bot.running;
-    }).length
-    readonly property int transferCount: bots.reduce(function (total, bot) {
-        return total + (bot.downloads || []).length;
-    }, 0)
-    readonly property int queueCount: bots.reduce(function (total, bot) {
-        return total + (bot.queued || 0);
-    }, 0)
-    function activate(bot) {
-        if (action.running)
-            return;
-        action.command = ["python3", script, bot.running ? "stop" : "start", bot.name];
-        action.running = true;
-    }
-    Process {
-        id: clearAction
-        command: ["python3", root.script, "clear-logs", root.logView]
-        onExited: function (code) {
-            if (code === 0) {
-                root.logSignature = "";
-                root.logData = {
-                    entries: [],
-                    counts: {}
-                };
-                if (!logQuery.running)
-                    logQuery.running = true;
-            }
-        }
-    }
     PanelWindow {
         id: panel
+
         Shortcut {
             sequence: "B"
             context: Qt.WindowShortcut
-            enabled: root.opened && root.section !== "nyaa" && root.section !== "ytdlp"
+            enabled: root.opened
             onActivated: {
                 root.close();
                 root.backRequested();
             }
         }
+
         PanelNavigation {
             x: 16
             y: 8
             width: parent.width - 32
             z: 100
             currentPanel: "hub"
-            onSelected: function (panel) {
-                root.panelRequested(panel);
+            onSelected: function (p) {
+                root.panelRequested(p);
             }
         }
+
         visible: root.opened
         anchors {
             top: true
@@ -246,2086 +115,1064 @@ Item {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         exclusionMode: ExclusionMode.Ignore
+
         Rectangle {
             anchors.fill: parent
-            color: Theme.scrim
+            color: Qt.rgba(0.00, 0.00, 0.00, 0.45)
         }
+
         MouseArea {
             anchors.fill: parent
             onClicked: root.dismiss()
         }
+
+        Rectangle {
+            anchors.fill: card
+            anchors.topMargin: 6
+            anchors.bottomMargin: -10
+            anchors.leftMargin: -2
+            anchors.rightMargin: -2
+            radius: card.radius + 2
+            color: "#55000000"
+            opacity: card.opacity
+            scale: card.scale
+        }
+
         Rectangle {
             id: card
             anchors.centerIn: parent
-            width: Math.max(0, Math.min(root.section === "ytdlp" ? 660 : root.section === "nyaa" ? 560 : 440, panel.width - 32))
-            height: Math.max(0, Math.min(panel.height - 112, root.logView ? 490 : 148 + (root.section === "ytdlp" ? downloadsView.implicitHeight : root.section === "nyaa" ? Math.min(520, nyaaView.implicitHeight) : homeContent.implicitHeight)))
-            radius: root.section === "nyaa" || root.section === "ytdlp" ? 20 : 14
-            color: Theme.background
-            gradient: musicGradient
-            Gradient {
-                id: musicGradient
-                GradientStop {
-                    position: 0
-                    color: Theme.gradientTop
-                }
-                GradientStop {
-                    position: 0.45
-                    color: Theme.gradientMiddle
-                }
-                GradientStop {
-                    position: 1
-                    color: Theme.gradientBottom
-                }
-            }
-            border.width: 1
+            width: Math.min(620, panel.width - 32)
+            height: Math.min(520, panel.height - 112, hubMainColumn.implicitHeight + 36)
+            radius: Theme.panelRadius
+            Behavior on height { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+            gradient: PanelGradient {}
             border.color: Theme.border
-            Rectangle {
-                visible: root.section !== "nyaa" && root.section !== "ytdlp"
-                anchors.fill: parent
-                anchors.margins: -3
-                radius: 17
-                color: "transparent"
-                border.width: 1
-                border.color: "#20c3b7ff"
-            }
-            Item {
-                anchors.fill: parent
-                anchors.margins: 10
-                clip: true
-                Repeater {
-                    model: root.section === "nyaa" || root.section === "ytdlp" ? 0 : Math.max(0, Math.floor(card.height / 28))
-                    Rectangle {
-                        required property int index
-                        y: index * 28
-                        width: parent.width
-                        height: 1
-                        color: "#04c3b7ff"
-                    }
-                }
-            }
-            NeonCorner {
-                visible: root.section !== "nyaa" && root.section !== "ytdlp"
-                x: 8
-                y: 8
-            }
-            NeonCorner {
-                visible: root.section !== "nyaa" && root.section !== "ytdlp"
-                x: parent.width - width - 8
-                y: 8
-                rotation: 90
-            }
-            NeonCorner {
-                visible: root.section !== "nyaa" && root.section !== "ytdlp"
-                x: parent.width - width - 8
-                y: parent.height - height - 8
-                rotation: 180
-            }
-            NeonCorner {
-                visible: root.section !== "nyaa" && root.section !== "ytdlp"
-                x: 8
-                y: parent.height - height - 8
-                rotation: 270
-            }
+            border.width: 1
+            PanelAura { radius: parent.radius }
+            clip: true
+            opacity: root.opened ? 1 : 0
+            scale: root.opened ? 1 : 0.97
+            Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+
             focus: true
-            Keys.onEscapePressed: {
-                if (root.logView)
-                    root.logView = "";
-                else
-                    root.dismiss();
-            }
+            Keys.onEscapePressed: root.dismiss()
+
             MouseArea {
                 anchors.fill: parent
-                onClicked: {}
+                onClicked: card.forceActiveFocus()
             }
+
             Item {
-                id: header
-                x: 20
-                y: 18
-                width: parent.width - 40
-                height: 44
-                Rectangle {
-                    width: 40
-                    height: 40
-                    radius: 9
-                    color: Theme.selected
-                    border.width: 1
-                    border.color: Theme.border
-                    Caption {
-                        contextRoot: root
-                        anchors.centerIn: parent
-                        text: root.logView ? "\uf03a" : "\uf1b3"
-                        color: root.mint
-                        font.family: "Symbols Nerd Font Mono"
-                        font.pixelSize: 18
+                id: hubContent
+                anchors.fill: parent
+                anchors.margins: 18
+
+                property string currentSection: "watchers"
+                property var watchersList: []
+                property var botsList: []
+                property string activeLogName: ""
+                property string activeLogType: "watchers"
+                property var activeLogEntries: []
+
+                property string downloadUrl: ""
+                property string downloadFormat: "video"
+                property string ytQuery: ""
+                property bool ytSearching: false
+                property bool ytLoadingMore: false
+                property int ytPage: 1
+                property bool ytHasMore: false
+                property string ytActiveQuery: ""
+                property string ytKind: "videos"
+                property var ytPlaylist: null
+                property var ytPlaylistCache: null
+                property bool downloadPlaylist: false
+                readonly property bool urlIsPlaylist: /[?&]list=[A-Za-z0-9_-]+/.test(downloadUrl)
+                property var liveDownload: null
+
+                ListModel { id: ytModel }
+
+                property string nyaaQuery: ""
+                property var nyaaResults: []
+                property bool nyaaSearching: false
+
+                property string toast: ""
+                property int downloadsView: 0
+                property var expandedDownloads: ({})
+                property int activeDownloadsCount: 0
+
+                ListModel { id: downloadsModel }
+
+                readonly property int activeWatchersCount: watchersList.filter(item => item && item.running).length
+                readonly property int activeBotsCount: botsList.filter(item => item && item.running).length
+                readonly property int sectionIndex: Math.max(0, root.sections.map(s => s.id).indexOf(currentSection))
+                readonly property var sectionInfo: root.sections[sectionIndex]
+                readonly property bool serviceSection: currentSection === "watchers" || currentSection === "bots"
+                readonly property bool refreshing: watchersProc.running || botsProc.running || actionProc.running
+
+                function formatMemory(mem) {
+                    if (!mem) return "";
+                    if (typeof mem === "string") return mem;
+                    if (typeof mem === "number") return (mem / (1024 * 1024)).toFixed(1) + " MB";
+                    return String(mem);
+                }
+
+                function notify(message) {
+                    toast = message;
+                    toastTimer.restart();
+                }
+
+                function refreshSection() {
+                    if (currentSection === "watchers") {
+                        watchersProc.running = false;
+                        watchersProc.running = true;
+                    } else if (currentSection === "bots") {
+                        botsProc.running = false;
+                        botsProc.running = true;
                     }
                 }
-                Caption {
-                    contextRoot: root
-                    x: 52
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - x - headerActions.width - 12
-                    text: root.logView || (root.section === "nyaa" ? "Nyaa" : "HUB")
-                    color: root.ink
-                    font.pixelSize: 20
-                    font.weight: Font.DemiBold
-                    font.family: root.section === "nyaa" ? "sans-serif" : "monospace"
-                    font.letterSpacing: root.section === "nyaa" ? -0.6 : 1.5
-                    elide: Text.ElideRight
+
+                function toggleWatcher(name, running) {
+                    actionProc.command = ["python3", root.scriptsDir + "/fish.py", running ? "stop" : "start", name];
+                    actionProc.running = false;
+                    actionProc.running = true;
                 }
-                Row {
-                    id: headerActions
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 5
-                    IconAction {
-                        contextRoot: root
-                        visible: !!root.logView
-                        glyph: "\uf104"
-                        onClicked: root.logView = ""
+
+                function toggleBot(name, running) {
+                    actionProc.command = ["python3", root.scriptsDir + "/bots.py", running ? "stop" : "start", name];
+                    actionProc.running = false;
+                    actionProc.running = true;
+                }
+
+                function viewLogs(name, type) {
+                    activeLogName = name;
+                    activeLogType = type;
+                    activeLogEntries = [];
+                    logsProc.command = ["python3", root.scriptsDir + (type === "watchers" ? "/fish.py" : "/bots.py"), type === "watchers" ? "logs" : "activity", name];
+                    logsProc.running = false;
+                    logsProc.running = true;
+                }
+
+                function triggerDownload(url, mode) {
+                    if (!url || url.trim() === "") return;
+                    mode = mode || downloadFormat;
+                    Quickshell.execDetached(["python3", root.scriptsDir + "/download.py", mode, url.trim()]);
+                    notify((mode.indexOf("playlist") === 0 ? "Playlist " : "") + (mode.indexOf("audio") >= 0 ? "audio" : "video") + " download started");
+                    downloadsKick.restart();
+                }
+
+                function pollDownloads() {
+                    if (!downloadsProc.running)
+                        downloadsProc.running = true;
+                }
+
+                function toggleDownloadLog(id) {
+                    var next = Object.assign({}, expandedDownloads);
+                    next[id] = !next[id];
+                    expandedDownloads = next;
+                }
+
+                function clearDownloads() {
+                    Quickshell.execDetached(["python3", root.scriptsDir + "/downloads_status.py", "clear"]);
+                    downloadsKick.restart();
+                }
+
+                function syncDownloads(items, nowSeconds) {
+                    var ids = items.map(item => item.id);
+                    for (var i = downloadsModel.count - 1; i >= 0; i--) {
+                        if (ids.indexOf(downloadsModel.get(i).downloadId) < 0)
+                            downloadsModel.remove(i);
                     }
-                    IconAction {
-                        contextRoot: root
-                        visible: !!root.logView && root.section !== "bots"
-                        glyph: "\uf1f8"
-                        tint: "#f38b92"
-                        enabled: !clearAction.running && !logQuery.running && root.logData.entries.length > 0
-                        onClicked: clearAction.running = true
+                    var running = 0;
+                    for (var j = 0; j < items.length; j++) {
+                        var item = items[j];
+                        if (item.running)
+                            running++;
+                        var entry = {
+                            downloadId: item.id,
+                            title: item.title || "",
+                            url: item.url || "",
+                            mode: item.mode || "video",
+                            status: item.status || "starting",
+                            percent: typeof item.percent === "number" ? item.percent : -1,
+                            speed: item.speed || "",
+                            eta: item.eta || "",
+                            folder: item.folder || "",
+                            linesText: (item.lines || []).join("\n"),
+                            playlist: !!item.playlist,
+                            phase: item.phase || "",
+                            playlistTitle: item.playlistTitle || "",
+                            item: item.item || 0,
+                            total: item.total || 0,
+                            failedItems: item.failedItems || 0,
+                            checked: item.checked || 0,
+                            checkTotal: item.checkTotal || 0,
+                            skipped: item.skipped || 0,
+                            alreadyDownloaded: item.alreadyDownloaded || 0
+                        };
+                        var found = -1;
+                        for (var k = 0; k < downloadsModel.count; k++) {
+                            if (downloadsModel.get(k).downloadId === item.id) {
+                                found = k;
+                                break;
+                            }
+                        }
+                        if (found < 0) {
+                            downloadsModel.insert(Math.min(j, downloadsModel.count), entry);
+                        } else {
+                            if (found !== j)
+                                downloadsModel.move(found, j, 1);
+                            downloadsModel.set(j, entry);
+                        }
                     }
-                    IconAction {
-                        contextRoot: root
-                        glyph: "\uf00d"
-                        onClicked: root.dismiss()
+                    activeDownloadsCount = running;
+                    var live = null;
+                    for (var r = 0; r < items.length; r++) {
+                        if (items[r].running) {
+                            live = items[r];
+                            break;
+                        }
+                    }
+                    if (!live && items.length > 0 && nowSeconds - (items[0].updated || 0) < 12)
+                        live = items[0];
+                    liveDownload = live;
+                }
+
+                function searchYoutube() {
+                    if (!ytQuery || ytQuery.trim() === "") return;
+                    ytActiveQuery = ytQuery.trim();
+                    ytPlaylist = null;
+                    ytPlaylistCache = null;
+                    ytSearching = true;
+                    ytLoadingMore = false;
+                    ytHasMore = false;
+                    ytModel.clear();
+                    fetchYoutubePage(1);
+                }
+
+                function loadMoreYoutube() {
+                    if (!ytHasMore || ytSearching || ytLoadingMore || ytActiveQuery === "") return;
+                    ytLoadingMore = true;
+                    fetchYoutubePage(ytPage + 1);
+                }
+
+                function setYoutubeKind(kind) {
+                    if (ytKind === kind && !ytPlaylist) return;
+                    ytKind = kind;
+                    ytPlaylist = null;
+                    ytPlaylistCache = null;
+                    ytModel.clear();
+                    ytHasMore = false;
+                    if (ytQuery.trim() !== "")
+                        searchYoutube();
+                }
+
+                function snapshotYoutube() {
+                    var items = [];
+                    for (var i = 0; i < ytModel.count; i++) {
+                        var row = ytModel.get(i);
+                        items.push({ url: row.url, title: row.title, channel: row.channel, thumbnail: row.thumbnail, duration: row.duration, isPlaylist: row.isPlaylist });
+                    }
+                    return items;
+                }
+
+                function openPlaylist(url, title) {
+                    if (!ytPlaylist)
+                        ytPlaylistCache = { items: snapshotYoutube(), page: ytPage, hasMore: ytHasMore };
+                    ytPlaylist = { url: url, title: title };
+                    ytModel.clear();
+                    ytHasMore = false;
+                    ytLoadingMore = false;
+                    ytSearching = true;
+                    fetchYoutubePage(1);
+                }
+
+                function closePlaylist() {
+                    var cache = ytPlaylistCache;
+                    ytPlaylist = null;
+                    ytPlaylistCache = null;
+                    ytSearchProc.running = false;
+                    ytSearching = false;
+                    ytLoadingMore = false;
+                    ytModel.clear();
+                    if (cache) {
+                        appendYoutube(cache.items, true);
+                        ytPage = cache.page;
+                        ytHasMore = cache.hasMore;
                     }
                 }
-            }
-            Rectangle {
-                id: sections
-                x: 20
-                y: 78
-                width: parent.width - 40
-                height: 36
-                radius: 8
-                color: Theme.background
-                border.width: 1
-                border.color: Theme.border
-                Rectangle {
-                    x: 3 + (root.section === "bots" ? 1 : root.section === "ytdlp" ? 2 : root.section === "nyaa" ? 3 : 0) * (sections.width - 3) / 4
-                    y: 3
-                    width: (sections.width - 15) / 4
-                    height: 30
-                    radius: 6
-                    color: Theme.selected
-                    border.width: 1
-                    border.color: Theme.border
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: parent.width * 0.35
-                        height: 2
-                        color: Theme.accent
+
+                function fetchYoutubePage(page) {
+                    ytPage = page;
+                    var kind = ytPlaylist ? "tracks" : ytKind;
+                    var query = ytPlaylist ? ytPlaylist.url : ytActiveQuery;
+                    ytSearchProc.command = ["python3", root.scriptsDir + "/youtube.py", query, String(page), kind];
+                    ytSearchProc.running = false;
+                    ytSearchProc.running = true;
+                }
+
+                function appendYoutube(items, playlists) {
+                    var seen = {};
+                    for (var i = 0; i < ytModel.count; i++)
+                        seen[ytModel.get(i).url] = true;
+                    for (var j = 0; j < items.length; j++) {
+                        var item = items[j] || {};
+                        if (!item.url || seen[item.url]) continue;
+                        seen[item.url] = true;
+                        ytModel.append({
+                            url: item.url,
+                            title: item.title || "",
+                            channel: item.uploader || item.channel || "",
+                            thumbnail: item.thumbnail || "",
+                            duration: String(item.duration || item.duration_string || ""),
+                            isPlaylist: item.isPlaylist !== undefined ? !!item.isPlaylist : !!playlists
+                        });
                     }
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: 170
-                            easing.type: Easing.OutCubic
+                }
+
+                function searchNyaa() {
+                    if (!nyaaQuery || nyaaQuery.trim() === "") return;
+                    nyaaSearching = true;
+                    nyaaProc.command = ["python3", root.scriptsDir + "/nyaa.py", nyaaQuery.trim()];
+                    nyaaProc.running = false;
+                    nyaaProc.running = true;
+                }
+
+                function downloadTorrent(magnet) {
+                    if (!magnet) return;
+                    Quickshell.execDetached(["python3", root.scriptsDir + "/nyaa.py", "--download", magnet]);
+                    notify("Torrent sent to client");
+                }
+
+                Component.onCompleted: refreshSection()
+
+                onCurrentSectionChanged: {
+                    activeLogName = "";
+                    refreshSection();
+                }
+
+                Timer {
+                    id: downloadsKick
+                    interval: 700
+                    onTriggered: hubContent.pollDownloads()
+                }
+
+                Timer {
+                    interval: hubContent.activeDownloadsCount > 0 ? 600 : 4000
+                    repeat: true
+                    triggeredOnStart: true
+                    running: root.opened && hubContent.currentSection === "downloads"
+                    onTriggered: hubContent.pollDownloads()
+                }
+
+                Process {
+                    id: downloadsProc
+                    command: ["python3", root.scriptsDir + "/downloads_status.py"]
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            try {
+                                var data = JSON.parse(text || "{}");
+                                hubContent.syncDownloads(data.items || [], data.now || 0);
+                            } catch (e) {}
                         }
                     }
                 }
-                Row {
-                    anchors.fill: parent
-                    anchors.margins: 3
-                    spacing: 3
-                    Repeater {
-                        model: [
-                            {
-                                key: "fish",
-                                label: "Watchers"
-                            },
-                            {
-                                key: "bots",
-                                label: "Bots"
-                            },
-                            {
-                                key: "ytdlp",
-                                label: "Downloads"
-                            },
-                            {
-                                key: "nyaa",
-                                label: "Nyaa"
+
+                Timer {
+                    id: toastTimer
+                    interval: 2400
+                    onTriggered: hubContent.toast = ""
+                }
+
+                Process {
+                    id: watchersProc
+                    command: ["python3", root.scriptsDir + "/fish.py", "list"]
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            try {
+                                hubContent.watchersList = JSON.parse(text || "[]");
+                            } catch (e) {
+                                hubContent.watchersList = [];
                             }
-                        ]
+                        }
+                    }
+                }
+
+                Process {
+                    id: botsProc
+                    command: ["python3", root.scriptsDir + "/bots.py", "list"]
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            try {
+                                hubContent.botsList = JSON.parse(text || "[]");
+                            } catch (e) {
+                                hubContent.botsList = [];
+                            }
+                        }
+                    }
+                }
+
+                Process {
+                    id: actionProc
+                    onExited: code => hubContent.refreshSection()
+                }
+
+                Process {
+                    id: logsProc
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            try {
+                                var data = JSON.parse(text || "{}");
+                                hubContent.activeLogEntries = data.entries || [];
+                            } catch (e) {
+                                hubContent.activeLogEntries = [];
+                            }
+                        }
+                    }
+                }
+
+                Process {
+                    id: ytSearchProc
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            var hasMore = false;
+                            try {
+                                var data = JSON.parse(text || "{}");
+                                var items = Array.isArray(data) ? data : (data.results || data.entries || []);
+                                hubContent.appendYoutube(items, hubContent.ytKind === "playlists" && !hubContent.ytPlaylist);
+                                hasMore = !Array.isArray(data) && !!data.hasMore;
+                            } catch (e) {}
+                            hubContent.ytHasMore = hasMore;
+                            hubContent.ytSearching = false;
+                            hubContent.ytLoadingMore = false;
+                        }
+                    }
+                }
+
+                Process {
+                    id: nyaaProc
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            hubContent.nyaaSearching = false;
+                            try {
+                                var data = JSON.parse(text || "{}");
+                                hubContent.nyaaResults = data.results || [];
+                            } catch (e) {
+                                hubContent.nyaaResults = [];
+                            }
+                        }
+                    }
+                }
+
+                readonly property real fitHeight: activeLogName !== "" ? 2000 : currentSection === "watchers" ? watchersHubList.fitHeight : currentSection === "bots" ? botsHubList.fitHeight : currentSection === "downloads" ? downloadsColumn.implicitHeight : currentSection === "nyaa" ? nyaaColumn.implicitHeight : 2000
+
+                ColumnLayout {
+                    id: hubMainColumn
+                    anchors.fill: parent
+                    spacing: 14
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+
                         Rectangle {
-                            id: sectionButton
-                            required property var modelData
-                            readonly property bool selected: root.section === modelData.key
-                            objectName: "hub-section-" + modelData.key
-                            width: (sections.width - 15) / 4
-                            height: 30
-                            radius: 6
-                            color: !selected && sectionHit.containsMouse ? Theme.hover : "transparent"
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 120
-                                }
+                            Layout.preferredWidth: 40
+                            Layout.preferredHeight: 40
+                            radius: 13
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: Qt.alpha(Theme.accent, 0.32) }
+                                GradientStop { position: 1; color: Qt.alpha(Theme.accent, 0.1) }
                             }
-                            activeFocusOnTab: true
-                            function choose() {
-                                root.logView = "";
-                                root.selectSection(modelData.key);
-                            }
-                            Keys.onReturnPressed: choose()
-                            Keys.onSpacePressed: choose()
-                            Caption {
-                                contextRoot: root
-                                anchors.centerIn: parent
-                                text: sectionButton.modelData.label
-                                color: sectionButton.selected ? Theme.foreground : Theme.accent
-                                font.pixelSize: 11
-                                font.weight: sectionButton.selected ? Font.DemiBold : Font.Normal
-                            }
-                            Timer {
-                                interval: 180
-                                running: root.opened && sectionHit.containsMouse && (!sectionButton.selected || !!root.logView)
-                                onTriggered: sectionButton.choose()
-                            }
-                            MouseArea {
-                                id: sectionHit
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: sectionButton.choose()
-                            }
-                        }
-                    }
-                }
-            }
-            Item {
-                anchors.top: sections.bottom
-                anchors.bottom: parent.bottom
-                anchors.topMargin: 14
-                anchors.bottomMargin: 20
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 20
-                anchors.rightMargin: 20
-                Flickable {
-                    id: contentScroll
-                    anchors.fill: parent
-                    visible: !root.logView && root.section !== "ytdlp" && root.section !== "nyaa"
-                    contentHeight: homeContent.implicitHeight
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    ScrollBar.vertical: ScrollBar {
-                        policy: ScrollBar.AsNeeded
-                    }
-                    Column {
-                        id: homeContent
-                        width: parent.width
-                        spacing: root.space(14)
-                        Column {
-                            width: parent.width
-                            spacing: root.space(10)
-                            Repeater {
-                                model: root.bots
-                                ServiceCard {
-                                    contextAction: action
-                                    contextRoot: root
-                                    required property var modelData
-                                    bot: modelData
-                                    width: homeContent.width
-                                }
-                            }
-                        }
-                        Caption {
-                            contextRoot: root
-                            visible: !root.bots.length
-                            text: query.running ? "Loading…" : root.section === "fish" ? "No watchers available" : "No bots found"
-                        }
-                    }
-                }
-                Flickable {
-                    anchors.fill: parent
-                    visible: root.section === "ytdlp" && !root.logView
-                    contentHeight: downloadsView.implicitHeight
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    ScrollBar.vertical: ScrollBar {
-                        policy: ScrollBar.AsNeeded
-                    }
-                    YtdlpView {
-                        id: downloadsView
-                        width: parent.width
-                    }
-                }
-                Flickable {
-                    anchors.fill: parent
-                    visible: root.section === "nyaa" && !root.logView
-                    contentHeight: nyaaView.implicitHeight
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    ScrollBar.vertical: ScrollBar {
-                        policy: ScrollBar.AsNeeded
-                    }
-                    NyaaView {
-                        id: nyaaView
-                        width: parent.width
-                    }
-                }
-                Column {
-                    id: activityContent
-                    anchors.fill: parent
-                    visible: !!root.logView
-                    spacing: root.space(12)
-                    Rectangle {
-                        width: parent.width
-                        height: root.space(36)
-                        radius: root.space(4)
-                        color: Theme.background
-                        border.width: 1
-                        border.color: logSearch.activeFocus ? Theme.accent : Theme.border
-                        Caption {
-                            contextRoot: root
-                            x: root.space(14)
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "\uf002"
-                            font.family: "Symbols Nerd Font Mono"
-                            font.pixelSize: root.space(12)
-                        }
-                        TextInput {
-                            id: logSearch
-                            x: root.space(38)
-                            width: parent.width - x - root.space(14)
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: root.ink
-                            selectionColor: Theme.hover
-                            selectedTextColor: root.ink
-                            font.family: "sans-serif"
-                            font.pixelSize: root.space(11)
-                            clip: true
-                            selectByMouse: true
-                            onTextChanged: logList.positionViewAtBeginning()
-                            Caption {
-                                contextRoot: root
-                                visible: !logSearch.text && !logSearch.activeFocus
-                                text: "Search"
-                                font.pixelSize: root.space(11)
-                            }
-                        }
-                    }
-                    Flow {
-                        id: filters
-                        width: parent.width
-                        spacing: root.space(6)
-                        Repeater {
-                            model: root.section === "bots" ? [
-                                {
-                                    key: "all",
-                                    label: "All"
-                                },
-                                {
-                                    key: "info",
-                                    label: "Info"
-                                },
-                                {
-                                    key: "warning",
-                                    label: "Warnings"
-                                },
-                                {
-                                    key: "error",
-                                    label: "Errors"
-                                }
-                            ] : [
-                                {
-                                    key: "all",
-                                    label: "All events"
-                                },
-                                {
-                                    key: "downloaded",
-                                    label: "Downloaded"
-                                },
-                                {
-                                    key: "skipped",
-                                    label: "Already downloaded"
-                                },
-                                {
-                                    key: "error",
-                                    label: "Failed"
-                                }
-                            ]
-                            Rectangle {
-                                id: chip
-                                required property var modelData
-                                readonly property bool selected: root.logFilter === modelData.key
-                                readonly property color tint: modelData.key === "all" ? root.mint : root.logColor(modelData.key)
-                                width: filterLabel.implicitWidth + root.space(22)
-                                height: root.space(28)
-                                radius: root.space(4)
-                                color: selected ? Qt.rgba(tint.r, tint.g, tint.b, 0.13) : "transparent"
-                                border.width: 1
-                                border.color: selected ? Qt.rgba(tint.r, tint.g, tint.b, 0.32) : Theme.border
-                                activeFocusOnTab: true
-                                function choose() {
-                                    root.logFilter = modelData.key;
-                                    logList.positionViewAtBeginning();
-                                }
-                                Keys.onReturnPressed: choose()
-                                Caption {
-                                    id: filterLabel
-                                    contextRoot: root
-                                    anchors.centerIn: parent
-                                    text: chip.modelData.label
-                                    color: chip.selected ? chip.tint : root.muted
-                                    font.pixelSize: root.space(9)
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: chip.choose()
-                                }
-                            }
-                        }
-                    }
-                    ListView {
-                        id: logList
-                        width: parent.width
-                        height: Math.max(0, activityContent.height - y)
-                        clip: true
-                        spacing: root.space(7)
-                        model: root.visibleLogs
-                        boundsBehavior: Flickable.StopAtBounds
-                        ScrollBar.vertical: ScrollBar {
-                            policy: ScrollBar.AsNeeded
-                        }
-                        delegate: Rectangle {
-                            id: eventRow
-                            required property var modelData
-                            readonly property color tint: root.logColor(modelData.kind)
-                            width: logList.width
-                            height: Math.max(root.space(70), eventText.implicitHeight + root.space(28))
-                            radius: root.space(5)
-                            color: Theme.surface
                             border.width: 1
-                            border.color: Theme.border
-                            Rectangle {
-                                x: 0
-                                y: root.space(18)
-                                width: root.space(2)
-                                height: parent.height - y * 2
-                                radius: 1
-                                color: eventRow.tint
-                                opacity: 0.7
-                            }
-                            Rectangle {
-                                x: root.space(14)
-                                y: root.space(17)
-                                width: root.space(28)
-                                height: width
-                                radius: width / 2
-                                color: Qt.rgba(eventRow.tint.r, eventRow.tint.g, eventRow.tint.b, 0.09)
-                                Caption {
-                                    contextRoot: root
-                                    anchors.centerIn: parent
-                                    color: eventRow.tint
-                                    text: eventRow.modelData.kind === "error" ? "!" : eventRow.modelData.kind === "downloaded" ? "✓" : eventRow.modelData.kind === "skipped" ? "↻" : "·"
-                                    font.pixelSize: root.space(14)
-                                }
-                            }
-                            Column {
-                                id: eventText
-                                x: root.space(54)
-                                y: root.space(14)
-                                width: parent.width - x - root.space(16)
-                                spacing: root.space(5)
-                                Caption {
-                                    contextRoot: root
-                                    text: eventRow.modelData.label
-                                    color: eventRow.tint
-                                    font.pixelSize: root.space(8)
-                                    font.letterSpacing: 0.6
-                                    font.weight: Font.Bold
-                                }
-                                Caption {
-                                    contextRoot: root
-                                    width: parent.width
-                                    text: eventRow.modelData.title
-                                    color: root.ink
-                                    font.pixelSize: root.space(11)
-                                    wrapMode: Text.Wrap
-                                    textFormat: Text.PlainText
-                                }
-                                Caption {
-                                    contextRoot: root
-                                    width: parent.width
-                                    visible: !!eventRow.modelData.detail
-                                    text: eventRow.modelData.detail
-                                    font.pixelSize: root.space(10)
-                                    wrapMode: Text.Wrap
-                                    textFormat: Text.PlainText
-                                }
-                            }
-                        }
-                        Column {
-                            visible: logList.count === 0
-                            anchors.centerIn: parent
-                            spacing: root.space(12)
-                            Caption {
-                                contextRoot: root
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: "≋"
-                                color: root.mint
-                                font.pixelSize: root.space(38)
-                            }
-                            Caption {
-                                contextRoot: root
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: logQuery.running ? "Loading…" : logSearch.text ? "No matching events" : "No activity"
-                                color: root.ink
-                                font.pixelSize: root.space(15)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+                            border.color: Qt.alpha(Theme.accent, 0.4)
 
-    component NeonCorner: Item {
-
-        width: 10
-        height: 10
-        Rectangle {
-            width: 10
-            height: 1
-            color: Theme.accent
-        }
-        Rectangle {
-            width: 1
-            height: 10
-            color: Theme.accent
-        }
-    }
-
-    component Caption: Text {
-        id: captionOwnerContext
-
-        required property var contextRoot
-        color: contextRoot.muted
-        font.family: "sans-serif"
-        font.pixelSize: contextRoot.space(11)
-        textFormat: Text.PlainText
-    }
-
-    component IconAction: Rectangle {
-        id: iconActionIconButton
-        required property var contextRoot
-        property string glyph: ""
-        property color tint: contextRoot.muted
-        property bool quiet: false
-        signal clicked
-        width: contextRoot.space(34)
-        height: width
-        radius: width / 2
-        activeFocusOnTab: true
-        color: iconActionIconHit.containsMouse || activeFocus ? Qt.rgba(tint.r, tint.g, tint.b, 0.12) : quiet ? "transparent" : Theme.hover
-        opacity: enabled ? 1 : 0.3
-        scale: iconActionIconHit.pressed ? 0.92 : 1
-        Behavior on scale {
-            NumberAnimation {
-                duration: 100
-            }
-        }
-        Keys.onReturnPressed: clicked()
-        Keys.onSpacePressed: clicked()
-        Caption {
-            contextRoot: iconActionIconButton.contextRoot
-            anchors.centerIn: parent
-            text: iconActionIconButton.glyph
-            color: iconActionIconButton.tint
-            font.family: "Symbols Nerd Font Mono"
-            font.pixelSize: contextRoot.space(13)
-        }
-        MouseArea {
-            id: iconActionIconHit
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: iconActionIconButton.clicked()
-        }
-    }
-
-    component ServiceCard: Rectangle {
-        id: serviceCardService
-        required property var contextAction
-        required property var contextRoot
-        required property var bot
-        objectName: "hub-service-" + bot.name
-        readonly property var downloads: bot.downloads || []
-        readonly property bool hasTransfers: bot.running && (downloads.length > 0 || (bot.queued || 0) > 0)
-        width: parent.width
-        height: 72 + (serviceCardBotPreview.visible ? serviceCardBotPreview.height + 12 : 0) + (hasTransfers ? serviceCardTransferDetails.implicitHeight + 12 : 0)
-        radius: 10
-        color: Qt.tint(Theme.background, Qt.rgba(1, 1, 1, bot.running ? 0.035 : 0.015))
-        border.width: 1
-        border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, bot.running ? 0.12 : 0.06)
-        Rectangle {
-            x: 0
-            y: 19
-            width: 2
-            height: 32
-            radius: 1
-            color: contextRoot.mint
-            visible: !!serviceCardService.bot.running
-        }
-        Rectangle {
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            y: 0
-            width: 25
-            height: 1
-            color: Theme.accent
-            visible: !!serviceCardService.bot.running
-        }
-        Behavior on color {
-            ColorAnimation {
-                duration: 140
-            }
-        }
-        Rectangle {
-            x: 12
-            y: 16
-            width: 38
-            height: 38
-            radius: 8
-            color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, serviceCardService.bot.running ? 0.08 : 0.035)
-            border.width: 1
-            border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.08)
-            Caption {
-                contextRoot: serviceCardService.contextRoot
-                anchors.centerIn: parent
-                text: contextRoot.section === "bots" ? "\uf121" : serviceCardService.bot.name === "MP3" ? "\uf001" : "\uf16a"
-                color: serviceCardService.bot.running ? contextRoot.mint : "#a297ac"
-                font.family: "Symbols Nerd Font Mono"
-                font.pixelSize: 17
-            }
-        }
-        Caption {
-            contextRoot: serviceCardService.contextRoot
-            x: 62
-            y: serviceCardService.bot.running ? 17 : 27
-            width: parent.width - x - 94
-            text: serviceCardService.bot.name
-            elide: Text.ElideRight
-            color: contextRoot.ink
-            font.pixelSize: 13
-            font.weight: Font.DemiBold
-        }
-        Rectangle {
-            x: 62
-            y: 43
-            width: 4
-            height: 4
-            radius: 2
-            visible: !!serviceCardService.bot.running
-            color: serviceCardService.bot.running ? contextRoot.mint : "#716777"
-        }
-        Caption {
-            contextRoot: serviceCardService.contextRoot
-            x: 72
-            y: 39
-            width: parent.width - x - 94
-            visible: !!serviceCardService.bot.running
-            text: serviceCardService.downloads.length ? "Downloading" : contextRoot.section === "bots" ? "Running" : "Listening"
-            color: serviceCardService.bot.running ? contextRoot.mint : Theme.dim
-            font.pixelSize: 10
-        }
-        Row {
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            anchors.top: parent.top
-            anchors.topMargin: 19
-            spacing: 7
-            IconAction {
-                contextRoot: serviceCardService.contextRoot
-                quiet: true
-                objectName: "hub-logs-" + serviceCardService.bot.name
-                glyph: "\uf03a"
-                onClicked: contextRoot.showLogs(serviceCardService.bot.name)
-            }
-            ToggleSwitch {
-                objectName: "hub-toggle-" + serviceCardService.bot.name
-                anchors.verticalCenter: parent.verticalCenter
-                checked: !!serviceCardService.bot.running
-                enabled: !contextAction.running
-                opacity: enabled ? 1 : 0.4
-                activeFocusOnTab: true
-                Accessible.role: Accessible.CheckBox
-                Accessible.name: serviceCardService.bot.name
-                Accessible.checked: checked
-                Keys.onReturnPressed: contextRoot.activate(serviceCardService.bot)
-                Keys.onSpacePressed: contextRoot.activate(serviceCardService.bot)
-                onToggled: contextRoot.activate(serviceCardService.bot)
-            }
-        }
-        Caption {
-            contextRoot: serviceCardService.contextRoot
-            objectName: "hub-memory-" + serviceCardService.bot.name
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            y: 56
-            visible: !!serviceCardService.bot.running && !!serviceCardService.bot.memory
-            text: serviceCardService.bot.memory || ""
-            color: "#b9a2d4"
-            font.family: "monospace"
-            font.pixelSize: 9
-        }
-        Rectangle {
-            id: serviceCardBotPreview
-            objectName: "hub-preview-" + serviceCardService.bot.name
-            x: 12
-            y: 72
-            width: parent.width - 24
-            height: serviceCardLatestMessage.implicitHeight + 20
-            visible: contextRoot.section === "bots" && !!serviceCardService.bot.last_log
-            radius: 6
-            color: Theme.background
-            border.width: 1
-            border.color: Theme.border
-            Rectangle {
-                x: 0
-                y: 8
-                width: 2
-                height: parent.height - 16
-                color: "#8f70bf"
-            }
-            Caption {
-                id: serviceCardLatestMessage
-                contextRoot: serviceCardService.contextRoot
-                x: 10
-                y: 10
-                width: parent.width - 20
-                text: serviceCardService.bot.last_log || ""
-                font.family: "monospace"
-                font.pixelSize: 10
-                color: "#bcb1ca"
-                wrapMode: Text.WrapAnywhere
-                maximumLineCount: 3
-                elide: Text.ElideRight
-            }
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: contextRoot.showLogs(serviceCardService.bot.name)
-            }
-        }
-        Column {
-            id: serviceCardTransferDetails
-            x: 12
-            y: serviceCardBotPreview.visible ? serviceCardBotPreview.y + serviceCardBotPreview.height + 12 : 72
-            width: parent.width - 24
-            visible: serviceCardService.hasTransfers
-            spacing: 8
-            Repeater {
-                model: serviceCardService.downloads
-                Column {
-                    id: serviceCardTransfer
-                    required property var modelData
-                    width: serviceCardTransferDetails.width
-                    spacing: 8
-                    Row {
-                        width: parent.width
-                        spacing: 8
-                        Caption {
-                            contextRoot: serviceCardService.contextRoot
-                            width: parent.width - serviceCardProgressValue.width - 8
-                            text: serviceCardTransfer.modelData.title
-                            color: contextRoot.ink
-                            font.pixelSize: 11
-                            elide: Text.ElideRight
-                        }
-                        Caption {
-                            id: serviceCardProgressValue
-                            contextRoot: serviceCardService.contextRoot
-                            text: serviceCardTransfer.modelData.percent === null ? "…" : Math.round(serviceCardTransfer.modelData.percent) + "%"
-                            color: contextRoot.mint
-                            font.pixelSize: 11
-                        }
-                    }
-                    Rectangle {
-                        width: parent.width
-                        height: 3
-                        radius: 2
-                        color: "#44384f"
-                        clip: true
-                        Rectangle {
-                            width: parent.width * Math.max(0, Math.min(100, serviceCardTransfer.modelData.percent === null ? 15 : serviceCardTransfer.modelData.percent)) / 100
-                            height: parent.height
-                            radius: 2
-                            color: contextRoot.mint
-                            Behavior on width {
-                                NumberAnimation {
-                                    duration: 350
-                                }
-                            }
-                        }
-                    }
-                    Caption {
-                        contextRoot: serviceCardService.contextRoot
-                        width: parent.width
-                        text: serviceCardTransfer.modelData.phase + (serviceCardTransfer.modelData.details ? " · " + serviceCardTransfer.modelData.details : "")
-                        font.pixelSize: 9
-                        elide: Text.ElideRight
-                    }
-                }
-            }
-            Caption {
-                contextRoot: serviceCardService.contextRoot
-                visible: (serviceCardService.bot.queued || 0) > 0
-                text: serviceCardService.bot.queued + " queued"
-                font.pixelSize: 9
-            }
-        }
-    }
-
-    component NyaaActionButton: Rectangle {
-        id: nyaaActionButtonButton
-        property string label: ""
-        signal clicked
-        width: nyaaActionButtonButtonText.implicitWidth + 24
-        height: 36
-        radius: 11
-        color: nyaaActionButtonHit.containsMouse || activeFocus ? Theme.selected : Theme.selected
-        border.width: 1
-        border.color: Theme.border
-        scale: nyaaActionButtonHit.pressed ? 0.94 : 1
-        Behavior on scale {
-            NumberAnimation {
-                duration: 120
-                easing.type: Easing.OutCubic
-            }
-        }
-        Behavior on color {
-            ColorAnimation {
-                duration: 160
-            }
-        }
-        Accessible.role: Accessible.Button
-        Accessible.name: label
-        opacity: enabled ? 1 : 0.4
-        activeFocusOnTab: true
-        Keys.onReturnPressed: clicked()
-        Keys.onSpacePressed: clicked()
-        Text {
-            id: nyaaActionButtonButtonText
-            anchors.centerIn: parent
-            text: nyaaActionButtonButton.label
-            color: "#f0dfff"
-            font.pixelSize: 11
-            font.weight: Font.DemiBold
-        }
-        MouseArea {
-            id: nyaaActionButtonHit
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: nyaaActionButtonButton.clicked()
-        }
-    }
-
-    component NyaaView: Column {
-        id: nyaaViewRoot
-        spacing: 14
-        property var results: []
-        property string selectedRelease: ""
-        function releaseKey(item) {
-            return JSON.stringify([item.series, item.group]);
-        }
-        readonly property var releaseGroups: {
-            var groups = [];
-            var seen = {};
-            results.forEach(function (item) {
-                var key = nyaaViewRoot.releaseKey(item);
-                if (seen[key] === undefined) {
-                    seen[key] = groups.length;
-                    groups.push({
-                        key: key,
-                        series: item.series,
-                        group: item.group,
-                        count: 0,
-                        episodes: {},
-                        episodeCount: 0
-                    });
-                }
-                groups[seen[key]].count++;
-                if (item.episode) {
-                    var episode = String(Number(item.episode));
-                    if (!groups[seen[key]].episodes[episode]) {
-                        groups[seen[key]].episodes[episode] = true;
-                        groups[seen[key]].episodeCount++;
-                    }
-                }
-            });
-            return groups.sort(function (a, b) {
-                return b.episodeCount - a.episodeCount || b.count - a.count || a.series.localeCompare(b.series) || a.group.localeCompare(b.group);
-            });
-        }
-        readonly property var visibleResults: selectedRelease ? results.filter(function (item) {
-            return nyaaViewRoot.releaseKey(item) === nyaaViewRoot.selectedRelease;
-        }) : []
-        property string message: ""
-        property string transferTitle: ""
-        property string activeMagnet: ""
-        property var downloadQueue: []
-        function isQueued(item) {
-            return downloadQueue.some(function (entry) {
-                return entry.magnet === item.magnet;
-            });
-        }
-        property string transferStatus: ""
-        property string logPath: ""
-        property string logText: ""
-        property real progress: 0
-        property bool logsVisible: false
-        property bool failed: false
-        readonly property string backend: Quickshell.env("HOME") + "/.config/quickshell/scripts/nyaa.py"
-        function focusSearch() {
-            nyaaViewSearchInput.forceActiveFocus();
-        }
-        function search() {
-            if (nyaaViewLookup.running || !nyaaViewSearchInput.text.trim())
-                return;
-            results = [];
-            selectedRelease = "";
-            failed = false;
-            message = "Searching Nyaa.si…";
-            nyaaViewLookup.command = ["python3", nyaaViewRoot.backend, nyaaViewSearchInput.text.trim()];
-            nyaaViewLookup.running = true;
-        }
-        function startTransfer(item) {
-            if (activeMagnet === item.magnet || isQueued(item))
-                return;
-            downloadQueue = downloadQueue.concat([item]);
-            startNextTransfer();
-        }
-        function startNextTransfer() {
-            if (nyaaViewDownload.running || activeMagnet || !downloadQueue.length)
-                return;
-            var item = downloadQueue[0];
-            downloadQueue = downloadQueue.slice(1);
-            activeMagnet = item.magnet;
-            transferTitle = item.title;
-            transferStatus = "Connecting to peers · waiting for metadata";
-            logText = "";
-            logPath = "";
-            progress = 0;
-            nyaaViewDownload.command = ["python3", "-u", nyaaViewRoot.backend, "--download", item.magnet];
-            nyaaViewDownload.running = true;
-        }
-        Process {
-            id: nyaaViewLookup
-            stdout: StdioCollector {
-                onStreamFinished: {
-                    try {
-                        var response = JSON.parse(text);
-                        nyaaViewRoot.results = response.results || [];
-                        nyaaViewRoot.selectedRelease = "";
-                        if (response.limited)
-                            nyaaViewRoot.message = "Showing the first 10 pages. Narrow your search for more results.";
-                        nyaaViewRoot.failed = !!response.error;
-                        nyaaViewRoot.message = response.error || (nyaaViewRoot.results.length ? nyaaViewRoot.results.length + " releases · grouped by title · episode order" + (response.limited ? " · first 10 pages" : "") : "No matching releases. Try another title.");
-                    } catch (error) {
-                        nyaaViewRoot.failed = true;
-                        nyaaViewRoot.message = "Unable to read search response";
-                    }
-                }
-            }
-        }
-        Process {
-            id: nyaaViewDownload
-            stdout: SplitParser {
-                onRead: function (data) {
-                    try {
-                        var entry = JSON.parse(data);
-                        if (entry.log)
-                            nyaaViewRoot.logPath = entry.log;
-                        var line = entry.line || entry.error || "";
-                        if (!line)
-                            return;
-                        nyaaViewRoot.logText = (nyaaViewRoot.logText + line + "\n").slice(-24000);
-                        nyaaViewRoot.transferStatus = line;
-                        var match = line.match(/\((\d+)%\)/);
-                        if (match)
-                            nyaaViewRoot.progress = Number(match[1]) / 100;
-                    } catch (error) {}
-                }
-            }
-            onExited: function (code) {
-                nyaaViewRoot.transferStatus = code === 0 ? "Download complete" : "Download failed · exit code " + code + " · see logs";
-                if (code === 0)
-                    nyaaViewRoot.progress = 1;
-                nyaaViewRoot.activeMagnet = "";
-                Qt.callLater(function () {
-                    nyaaViewRoot.startNextTransfer();
-                });
-            }
-        }
-        Item {
-            width: parent.width
-            height: 46
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 16
-                Text {
-                    text: String(nyaaViewRoot.releaseGroups.length).padStart(2, "0")
-                    color: Theme.foreground
-                    font.pixelSize: 32
-                    font.weight: Font.Light
-                    font.letterSpacing: -1
-                }
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 4
-                    Text {
-                        text: "TITLES"
-                        color: Theme.muted
-                        font.pixelSize: 9
-                        font.letterSpacing: 2
-                    }
-                    Rectangle {
-                        width: 24
-                        height: 2
-                        radius: 1
-                        color: "#ff9c66"
-                    }
-                }
-            }
-            Text {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: nyaaViewRoot.results.length + " releases"
-                color: Theme.muted
-                font.pixelSize: 11
-            }
-        }
-        Row {
-            width: parent.width
-            spacing: 8
-            Rectangle {
-                width: parent.width - nyaaViewSearchButton.width - 8
-                height: 44
-                radius: 9
-                color: Theme.surface
-                border.color: nyaaViewSearchInput.activeFocus ? Theme.border : Theme.border
-                TextInput {
-                    id: nyaaViewSearchInput
-                    anchors.fill: parent
-                    anchors.margins: 13
-                    color: Theme.foreground
-                    font.pixelSize: 12
-                    verticalAlignment: TextInput.AlignVCenter
-                    selectByMouse: true
-                    clip: true
-                    onAccepted: nyaaViewRoot.search()
-                    Text {
-                        visible: !nyaaViewSearchInput.text
-                        text: "[Erai-raws] Yani Neko"
-                        color: "#9e83b0"
-                        font: nyaaViewSearchInput.font
-                    }
-                }
-            }
-            NyaaActionButton {
-                id: nyaaViewSearchButton
-                label: nyaaViewLookup.running ? "Searching…" : "Search"
-                enabled: !nyaaViewLookup.running && !!nyaaViewSearchInput.text.trim()
-                onClicked: nyaaViewRoot.search()
-            }
-        }
-        Text {
-            visible: !!nyaaViewRoot.message && (nyaaViewRoot.failed || nyaaViewLookup.running || !nyaaViewRoot.results.length)
-            width: parent.width
-            text: nyaaViewRoot.message
-            color: nyaaViewRoot.failed ? "#f38b92" : Theme.muted
-            wrapMode: Text.Wrap
-            textFormat: Text.PlainText
-            font.pixelSize: 11
-        }
-        Rectangle {
-            visible: !!nyaaViewRoot.transferTitle
-            width: parent.width
-            height: nyaaViewTransferContent.implicitHeight + 32
-            radius: 18
-            color: Theme.background
-            border.color: Theme.border
-            Column {
-                id: nyaaViewTransferContent
-                x: 16
-                y: 16
-                width: parent.width - 32
-                spacing: 12
-                Text {
-                    text: nyaaViewDownload.running ? "ACTIVE TRANSFER" : "TRANSFER"
-                    color: Theme.accent
-                    font.pixelSize: 9
-                    font.letterSpacing: 1.5
-                    font.bold: true
-                }
-                Text {
-                    width: parent.width
-                    text: nyaaViewRoot.transferTitle
-                    color: Theme.foreground
-                    font.pixelSize: 12
-                    wrapMode: Text.Wrap
-                    textFormat: Text.PlainText
-                }
-                Rectangle {
-                    width: parent.width
-                    height: 4
-                    radius: 2
-                    color: "#393044"
-                    Rectangle {
-                        width: parent.width * nyaaViewRoot.progress
-                        height: 4
-                        radius: 2
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop {
-                                position: 0
-                                color: "#ff9c66"
-                            }
-                            GradientStop {
-                                position: 0.5
-                                color: "#cf8dbc"
-                            }
-                            GradientStop {
-                                position: 1
+                            Text {
+                                anchors.centerIn: parent
+                                text: hubContent.sectionInfo.icon
+                                font.family: Theme.iconFont
+                                font.pixelSize: 20
                                 color: Theme.accent
                             }
                         }
-                        Behavior on width {
-                            NumberAnimation {
-                                duration: 300
-                            }
-                        }
-                    }
-                }
-                Text {
-                    width: parent.width
-                    text: nyaaViewRoot.transferStatus
-                    color: "#b6a0c5"
-                    font.family: "monospace"
-                    font.pixelSize: 10
-                    wrapMode: Text.WrapAnywhere
-                    textFormat: Text.PlainText
-                }
-                Row {
-                    spacing: 8
-                    NyaaActionButton {
-                        label: nyaaViewRoot.logsVisible ? "Hide logs" : "Show logs"
-                        onClicked: nyaaViewRoot.logsVisible = !nyaaViewRoot.logsVisible
-                    }
-                    NyaaActionButton {
-                        label: "Open log"
-                        enabled: !!nyaaViewRoot.logPath
-                        onClicked: Quickshell.execDetached(["xdg-open", nyaaViewRoot.logPath])
-                    }
-                }
-                Rectangle {
-                    visible: nyaaViewRoot.logsVisible
-                    width: parent.width
-                    height: 170
-                    radius: 6
-                    color: Theme.background
-                    Flickable {
-                        id: nyaaViewLogScroll
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        clip: true
-                        contentWidth: width
-                        contentHeight: nyaaViewLogOutput.height
-                        onContentHeightChanged: contentY = Math.max(0, contentHeight - height)
-                        ScrollBar.vertical: ScrollBar {}
-                        TextEdit {
-                            id: nyaaViewLogOutput
-                            width: nyaaViewLogScroll.width
-                            height: implicitHeight
-                            text: nyaaViewRoot.logText || "Waiting for aria2 output…"
-                            readOnly: true
-                            selectByMouse: true
-                            wrapMode: TextEdit.WrapAnywhere
-                            color: "#b6a0c5"
-                            font.family: "monospace"
-                            font.pixelSize: 10
-                            textFormat: TextEdit.PlainText
-                        }
-                    }
-                }
-            }
-        }
 
-        Column {
-            width: parent.width
-            visible: nyaaViewRoot.downloadQueue.length > 0
-            spacing: 8
-            Text {
-                text: "UP NEXT · " + nyaaViewRoot.downloadQueue.length + " queued"
-                color: Theme.accent
-                font.pixelSize: 10
-                font.bold: true
-            }
-            Repeater {
-                model: nyaaViewRoot.downloadQueue
-                Text {
-                    required property var modelData
-                    required property int index
-                    width: nyaaViewRoot.width
-                    text: (index + 1) + ". " + modelData.title
-                    color: Theme.muted
-                    font.pixelSize: 11
-                    wrapMode: Text.Wrap
-                    textFormat: Text.PlainText
-                }
-            }
-        }
-        Row {
-            visible: !!nyaaViewRoot.selectedRelease
-            spacing: 10
-            NyaaActionButton {
-                label: "‹ All titles"
-                onClicked: nyaaViewRoot.selectedRelease = ""
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: nyaaViewRoot.visibleResults.length + " releases · episode order"
-                color: Theme.muted
-                font.pixelSize: 10
-            }
-        }
-        Repeater {
-            model: nyaaViewRoot.selectedRelease ? [] : nyaaViewRoot.releaseGroups
-            Rectangle {
-                id: nyaaViewGroupButton
-                required property var modelData
-                width: nyaaViewRoot.width
-                height: Math.max(104, nyaaViewGroupContent.implicitHeight + 40)
-                radius: 18
-                color: nyaaViewGroupHit.containsMouse || activeFocus ? Theme.hover : Theme.hover
-                border.width: 1
-                border.color: nyaaViewGroupHit.containsMouse || activeFocus ? Theme.border : Theme.border
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 110
-                    }
-                }
-                scale: nyaaViewGroupHit.pressed ? 0.985 : 1
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: 120
-                    }
-                }
-                activeFocusOnTab: true
-                function choose() {
-                    nyaaViewRoot.selectedRelease = modelData.key;
-                }
-                Keys.onReturnPressed: choose()
-                Keys.onSpacePressed: choose()
-                Rectangle {
-                    x: 0
-                    y: 22
-                    width: 3
-                    height: parent.height - 44
-                    radius: 2
-                    gradient: Gradient {
-                        GradientStop {
-                            position: 0
-                            color: "#ff9c66"
-                        }
-                        GradientStop {
-                            position: 1
-                            color: Theme.accent
-                        }
-                    }
-                }
-                Column {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 22
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2
-                    Text {
-                        anchors.right: parent.right
-                        text: String(nyaaViewGroupButton.modelData.episodeCount).padStart(2, "0")
-                        color: nyaaViewGroupHit.containsMouse ? "#ffb98f" : "#d9c2ed"
-                        font.pixelSize: 38
-                        font.weight: Font.Light
-                        font.letterSpacing: -2
-                    }
-                    Text {
-                        anchors.right: parent.right
-                        text: "EPISODES"
-                        color: Theme.muted
-                        font.pixelSize: 8
-                        font.letterSpacing: 1.2
-                    }
-                }
-                Column {
-                    id: nyaaViewGroupContent
-                    x: 22
-                    y: 20
-                    width: parent.width - 132
-                    spacing: 9
-                    Text {
-                        width: parent.width
-                        text: nyaaViewGroupButton.modelData.series
-                        color: Theme.foreground
-                        font.pixelSize: 18
-                        font.weight: Font.Medium
-                        font.letterSpacing: -0.4
-                        wrapMode: Text.Wrap
-                        textFormat: Text.PlainText
-                    }
-                    Text {
-                        width: parent.width
-                        text: nyaaViewGroupButton.modelData.group + " · " + nyaaViewGroupButton.modelData.count + " releases"
-                        color: Theme.accent
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        textFormat: Text.PlainText
-                    }
-                }
-                MouseArea {
-                    id: nyaaViewGroupHit
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: nyaaViewGroupButton.choose()
-                }
-            }
-        }
-        Repeater {
-            model: nyaaViewRoot.visibleResults
-            SwipeDelegate {
-                id: nyaaViewResultRow
-                required property var modelData
-                required property int index
-                readonly property bool current: nyaaViewRoot.activeMagnet === modelData.magnet
-                readonly property bool queued: nyaaViewRoot.isQueued(modelData)
-                width: nyaaViewRoot.width
-                height: nyaaViewDetails.implicitHeight + 28
-                padding: 0
-                hoverEnabled: true
-                activeFocusOnTab: true
-                Accessible.name: modelData.title
-                Accessible.description: "Swipe left or press Enter to download or add to queue"
-                function enqueue() {
-                    if (!current && !queued)
-                        nyaaViewRoot.startTransfer(modelData);
-                }
-                Keys.onReturnPressed: enqueue()
-                Keys.onSpacePressed: enqueue()
-                swipe.enabled: !current && !queued
-                swipe.transition: Transition {
-                    SmoothedAnimation {
-                        velocity: 4
-                        easing.type: Easing.OutCubic
-                    }
-                }
-                swipe.onCompleted: {
-                    enqueue();
-                    Qt.callLater(function () {
-                        nyaaViewResultRow.swipe.close();
-                    });
-                }
-                swipe.right: Rectangle {
-                    width: nyaaViewResultRow.width * 0.6
-                    height: nyaaViewResultRow.height
-                    anchors.right: parent.right
-                    radius: 17
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop {
-                            position: 0
-                            color: "#493053"
-                        }
-                        GradientStop {
-                            position: 1
-                            color: "#80515b"
-                        }
-                    }
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 7
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: "\uf019"
-                            font.family: "Symbols Nerd Font Mono"
-                            font.pixelSize: 24
-                            color: "#ffb98e"
-                        }
-                    }
-                }
-                background: Rectangle {
-                    radius: 17
-                    color: Math.abs(nyaaViewResultRow.swipe.position) > 0 ? Theme.selected : nyaaViewResultRow.current ? Theme.selected : nyaaViewResultRow.hovered || nyaaViewResultRow.activeFocus ? Theme.hover : Theme.surface
-                    border.width: 1
-                    border.color: Theme.border
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 110
-                        }
-                    }
-                }
-                contentItem: Item {
-                    Column {
-                        id: nyaaViewDetails
-                        x: 14
-                        y: 14
-                        width: parent.width - 28
-                        spacing: 12
-                        Text {
-                            visible: nyaaViewResultRow.index === 0
-                            width: parent.width
-                            text: nyaaViewResultRow.modelData.series + " / " + nyaaViewResultRow.modelData.group
-                            color: Theme.accent
-                            font.pixelSize: 11
-                            font.bold: true
-                            wrapMode: Text.Wrap
-                            textFormat: Text.PlainText
-                        }
-                        Text {
-                            visible: !!nyaaViewResultRow.modelData.episode
-                            text: "EPISODE " + nyaaViewResultRow.modelData.episode
-                            color: Theme.muted
-                            font.pixelSize: 9
-                            font.letterSpacing: 1
-                        }
-                        Text {
-                            width: parent.width
-                            text: nyaaViewResultRow.modelData.title
-                            textFormat: Text.PlainText
-                            color: nyaaViewResultRow.current ? Theme.accent : Theme.foreground
-                            wrapMode: Text.Wrap
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
-                        }
-                        Row {
-                            width: parent.width
-                            spacing: 10
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 1
+
                             Text {
-                                width: parent.width - nyaaViewTransferLabel.implicitWidth - 10
-                                text: "↑ " + nyaaViewResultRow.modelData.seeds + " seeds   ·   " + nyaaViewResultRow.modelData.size
-                                color: nyaaViewResultRow.modelData.seeds > 0 ? "#a3be8c" : Theme.muted
-                                font.pixelSize: 10
+                                visible: hubContent.currentSection !== "downloads"
+                                text: hubContent.sectionInfo.label
+                                font.pixelSize: 17
+                                font.weight: Font.Bold
+                                color: Theme.foreground
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                visible: hubContent.currentSection !== "downloads"
+                                text: hubContent.toast !== "" ? "󰄬  " + hubContent.toast : hubContent.sectionInfo.hint
+                                font.pixelSize: 11
+                                color: hubContent.toast !== "" ? Theme.success : Theme.dim
                                 elide: Text.ElideRight
+                                Behavior on color { ColorAnimation { duration: 160 } }
                             }
-                            Text {
-                                id: nyaaViewTransferLabel
-                                visible: nyaaViewResultRow.current || nyaaViewResultRow.queued
-                                text: nyaaViewResultRow.current ? "Downloading…" : "Queued"
-                                color: nyaaViewResultRow.current || nyaaViewResultRow.queued ? Theme.accent : Theme.muted
-                                font.pixelSize: 10
+
+                            ColumnLayout {
+                                id: headerProgress
+                                readonly property var item: hubContent.liveDownload
+                                readonly property real trackPercent: item && typeof item.percent === "number" ? item.percent : -1
+                                readonly property bool isPlaylist: !!item && !!item.playlist && (item.total || 0) > 0
+                                readonly property real percent: isPlaylist ? Math.min(100, ((Math.max(1, item.item) - 1) + (item.status === "done" ? 1 : trackPercent >= 0 ? trackPercent / 100 : 0)) / item.total * 100) : trackPercent
+                                readonly property color tint: item && item.status === "failed" ? Theme.danger : item && item.status === "done" ? Theme.success : Theme.accent
+                                readonly property string statusText: {
+                                    if (!item) return "";
+                                    if (item.status === "done") return "✓ Done";
+                                    if (item.status === "failed") return "✗ Failed";
+                                    var glyph = item.status === "downloading" ? "↓" : item.status === "converting" ? "♫" : item.status === "processing" ? "◈" : item.status === "checking" ? "⌕" : "◌";
+                                    var parts = [glyph + " " + (item.phase || "Starting")];
+                                    if (item.status === "checking" && item.checkTotal) parts.push(item.checked + "/" + item.checkTotal);
+                                    else if (isPlaylist) parts.push(item.item + "/" + item.total);
+                                    if (item.playlist && (item.skipped || 0) + (item.failedItems || 0) > 0) parts.push(((item.skipped || 0) + (item.failedItems || 0)) + " unavailable");
+                                    if (trackPercent >= 0 && item.status !== "checking") parts.push(trackPercent.toFixed(0) + "%");
+                                    if (item.speed) parts.push(item.speed);
+                                    if (item.eta) parts.push(item.eta);
+                                    return parts.join(" · ");
+                                }
+                                Layout.fillWidth: true
+                                visible: hubContent.currentSection === "downloads"
+                                spacing: 6
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: hubContent.toast !== "" ? hubContent.toast : headerProgress.item ? (headerProgress.item.playlist ? "󰲸  " + (headerProgress.item.playlistTitle || "Playlist") + (headerProgress.item.title ? "  ·  " + headerProgress.item.title : "") : (headerProgress.item.title || "Preparing download…")) : "Nothing downloading"
+                                    font.pixelSize: 14
+                                    font.weight: Font.DemiBold
+                                    color: hubContent.toast !== "" ? Theme.success : headerProgress.item ? Theme.foreground : Theme.muted
+                                    elide: Text.ElideRight
+                                    Behavior on color { ColorAnimation { duration: 160 } }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 10
+
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 5
+                                        radius: 3
+                                        color: Qt.alpha(Theme.foreground, 0.08)
+                                        clip: true
+
+                                        Rectangle {
+                                            visible: headerProgress.percent >= 0 || (headerProgress.item && headerProgress.item.status === "done")
+                                            height: parent.height
+                                            width: headerProgress.item && headerProgress.item.status === "done" ? parent.width : parent.width * Math.max(0, Math.min(100, headerProgress.percent)) / 100
+                                            radius: 3
+                                            gradient: Gradient {
+                                                orientation: Gradient.Horizontal
+                                                GradientStop { position: 0; color: Qt.alpha(headerProgress.tint, 0.55) }
+                                                GradientStop { position: 1; color: headerProgress.tint }
+                                            }
+                                            Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+                                        }
+
+                                        Rectangle {
+                                            id: sweep
+                                            visible: headerProgress.item !== null && headerProgress.percent < 0 && headerProgress.item.status !== "done"
+                                            height: parent.height
+                                            width: parent.width * 0.25
+                                            radius: 3
+                                            color: headerProgress.tint
+                                            SequentialAnimation on x {
+                                                running: sweep.visible
+                                                loops: Animation.Infinite
+                                                NumberAnimation { from: -sweep.width; to: sweep.parent.width; duration: 1200; easing.type: Easing.InOutQuad }
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        visible: headerProgress.item !== null
+                                        text: headerProgress.statusText
+                                        font.family: "JetBrains Mono"
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                        color: headerProgress.tint
+                                    }
+                                }
+
+                                TapHandler {
+                                    enabled: headerProgress.item !== null
+                                    onTapped: hubContent.downloadsView = 1
+                                }
+
+                                HoverHandler {
+                                    enabled: headerProgress.item !== null
+                                    cursorShape: Qt.PointingHandCursor
+                                }
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
 
-    component YoutubeResult: SwipeDelegate {
-        id: youtubeResultRoot
-        required property var entry
-        property bool playlist: false
-        property bool available: true
-        signal opened
-        signal downloadRequested(string format)
-        padding: 0
-        height: youtubeResultPoster.height + 84
-        hoverEnabled: true
-        activeFocusOnTab: true
-        Accessible.name: entry.title
-        Accessible.description: playlist ? "Open playlist. Drag left for MP4, right for MP3." : "Drag left for 720p, right for MP3."
-        onClicked: if (playlist && !entry.wholePlaylist)
-            opened()
-        Keys.onReturnPressed: if (playlist && !entry.wholePlaylist)
-            opened()
-        Keys.onPressed: function (event) {
-            if (!available)
-                return;
-            if (event.key === Qt.Key_M) {
-                downloadRequested("audio");
-                event.accepted = true;
-            }
-            if (event.key === Qt.Key_V) {
-                downloadRequested("video");
-                event.accepted = true;
-            }
-        }
-        swipe.enabled: available
-        swipe.transition: Transition {
-            SmoothedAnimation {
-                velocity: 4
-                easing.type: Easing.OutCubic
-            }
-        }
-        swipe.onCompleted: {
-            downloadRequested(swipe.position > 0 ? "audio" : "video");
-            Qt.callLater(function () {
-                youtubeResultRoot.swipe.close();
-            });
-        }
-        swipe.left: Rectangle {
-            width: youtubeResultRoot.width * 0.65
-            height: youtubeResultRoot.height
-            radius: 16
-            color: "#634449"
-            Column {
-                anchors.centerIn: parent
-                spacing: 10
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "\uf001"
-                    font.family: "Symbols Nerd Font Mono"
-                    font.pixelSize: 24
-                    color: "#ffc9a3"
-                }
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: youtubeResultRoot.playlist ? "All · MP3" : "MP3"
-                    color: "#fff1e6"
-                    font.pixelSize: 12
-                }
-            }
-        }
-        swipe.right: Rectangle {
-            anchors.right: parent.right
-            width: youtubeResultRoot.width * 0.65
-            height: youtubeResultRoot.height
-            radius: 16
-            color: "#4d3c66"
-            Column {
-                anchors.centerIn: parent
-                spacing: 10
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "\uf008"
-                    font.family: "Symbols Nerd Font Mono"
-                    font.pixelSize: 24
-                    color: "#d8c2ff"
-                }
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: youtubeResultRoot.playlist ? "All · MP4" : "720p"
-                    color: Theme.foreground
-                    font.pixelSize: 12
-                }
-            }
-        }
-        background: Rectangle {
-            radius: 16
-            color: youtubeResultRoot.hovered || youtubeResultRoot.activeFocus ? Theme.hover : Theme.hover
-            border.color: youtubeResultRoot.activeFocus ? "#b4a0d5" : youtubeResultRoot.hovered ? Theme.border : Theme.border
-            Behavior on color {
-                ColorAnimation {
-                    duration: 140
-                }
-            }
-        }
-        contentItem: Item {
-            ClippingRectangle {
-                id: youtubeResultPoster
-                x: 7
-                y: 7
-                width: parent.width - 14
-                height: width * 9 / 16
-                radius: 11
-                color: "#302837"
-                Rectangle {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop {
-                            position: 0
-                            color: "#44334d"
-                        }
-                        GradientStop {
-                            position: 1
-                            color: "#241e30"
-                        }
-                    }
-                }
-                Text {
-                    visible: youtubeResultArtwork.status !== Image.Ready
-                    anchors.centerIn: parent
-                    text: youtubeResultRoot.playlist ? "\uf03a" : "\uf16a"
-                    color: "#ba9cd2"
-                    font.family: "Symbols Nerd Font Mono"
-                    font.pixelSize: 32
-                }
-                Image {
-                    id: youtubeResultArtwork
-                    anchors.fill: parent
-                    source: youtubeResultRoot.entry.thumbnail || ""
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    sourceSize.width: 640
-                    sourceSize.height: 360
-                    visible: status === Image.Ready
-                }
-                Rectangle {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop {
-                            position: 0.5
-                            color: "transparent"
-                        }
-                        GradientStop {
-                            position: 1
-                            color: "#990d0b12"
-                        }
-                    }
-                }
-                Rectangle {
-                    visible: youtubeResultRoot.playlist || !!youtubeResultRoot.entry.duration
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.margins: 9
-                    width: youtubeResultBadge.implicitWidth + 14
-                    height: 23
-                    radius: 7
-                    color: "#d91a1422"
-                    Text {
-                        id: youtubeResultBadge
-                        anchors.centerIn: parent
-                        text: youtubeResultRoot.entry.wholePlaylist ? "Entire playlist" : youtubeResultRoot.playlist ? (youtubeResultRoot.entry.duration ? youtubeResultRoot.entry.duration + " tracks" : "Playlist") : youtubeResultRoot.entry.duration || ""
-                        color: "#eee4f7"
-                        font.pixelSize: 10
-                        font.weight: Font.Medium
-                    }
-                }
-            }
-            Column {
-                x: 13
-                y: youtubeResultPoster.height + 18
-                width: parent.width - 26
-                spacing: 7
-                Text {
-                    width: parent.width
-                    height: 34
-                    text: youtubeResultRoot.entry.title
-                    color: "#f0edf4"
-                    textFormat: Text.PlainText
-                    font.family: "sans-serif"
-                    font.pixelSize: 12
-                    font.weight: Font.Medium
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
-                }
-                Text {
-                    width: parent.width
-                    text: youtubeResultRoot.entry.channel || ""
-                    color: "#9d91a8"
-                    font.pixelSize: 10
-                    elide: Text.ElideRight
-                    textFormat: Text.PlainText
-                }
-            }
-        }
-    }
+                        Rectangle {
+                            visible: hubContent.serviceSection
+                            Layout.preferredHeight: 32
+                            Layout.preferredWidth: statsRow.implicitWidth + 24
+                            radius: 10
+                            color: Qt.alpha(Theme.foreground, 0.04)
+                            border.width: 1
+                            border.color: Qt.alpha(Theme.foreground, 0.08)
 
-    component YtdlpView: Column {
-        id: ytdlpViewRoot
-        function space(value) {
-            return value;
-        }
-        property string mode: "video"
-        property string message: ""
-        property bool failed: false
-        property bool youtubeMode: true
-        property bool playlistMode: false
-        property var selectedPlaylist: null
-        property int playlistSearchPage: 1
-        property int searchPage: 1
-        property bool hasMore: false
-        property string searchQuery: ""
-        property var videos: []
-        spacing: 16
-
-        function focusUrl() {
-            ytdlpViewUrlInput.forceActiveFocus();
-        }
-        function startDownload(downloadMode) {
-            if (ytdlpViewCooldown.running)
-                return;
-            mode = downloadMode;
-            var url = ytdlpViewUrlInput.text.trim();
-            if (!/^https?:\/\/[^\s/?#]+(?:[/?#][^\s]*)?$/i.test(url)) {
-                failed = true;
-                message = "Enter a valid HTTP or HTTPS URL";
-                focusUrl();
-                return;
-            }
-            Quickshell.execDetached(["python3", Quickshell.env("HOME") + "/.config/quickshell/scripts/download.py", mode, url]);
-            failed = false;
-            message = "";
-            ytdlpViewUrlInput.text = "";
-            ytdlpViewCooldown.restart();
-        }
-        function searchYoutube(page) {
-            if (ytdlpViewYoutubeSearch.running || (!selectedPlaylist && !ytdlpViewUrlInput.text.trim()))
-                return;
-            var requestedPage = page || 1;
-            if (requestedPage === 1 && !selectedPlaylist)
-                searchQuery = ytdlpViewUrlInput.text.trim();
-            videos = [];
-            failed = false;
-            message = "Searching…";
-            ytdlpViewYoutubeSearch.command = ["python3", Quickshell.env("HOME") + "/.config/quickshell/scripts/youtube.py", selectedPlaylist ? selectedPlaylist.url : searchQuery, String(requestedPage), selectedPlaylist ? "tracks" : playlistMode ? "playlists" : "videos"];
-            ytdlpViewYoutubeSearch.running = true;
-        }
-        function openPlaylist(item) {
-            if (ytdlpViewYoutubeSearch.running)
-                return;
-            playlistSearchPage = searchPage;
-            selectedPlaylist = item;
-            searchYoutube(1);
-        }
-        function backToPlaylists() {
-            if (ytdlpViewYoutubeSearch.running)
-                return;
-            selectedPlaylist = null;
-            searchYoutube(playlistSearchPage);
-        }
-        function setSearchKind(playlists) {
-            if (ytdlpViewYoutubeSearch.running)
-                return;
-            playlistMode = playlists;
-            selectedPlaylist = null;
-            videos = [];
-            searchPage = 1;
-            hasMore = false;
-            if (ytdlpViewUrlInput.text.trim())
-                searchYoutube(1);
-        }
-        function downloadVideo(video, downloadMode) {
-            if (ytdlpViewCooldown.running)
-                return;
-            Quickshell.execDetached(["python3", Quickshell.env("HOME") + "/.config/quickshell/scripts/download.py", downloadMode, video.url]);
-            failed = false;
-            message = "Started: " + video.title + " · " + (downloadMode.indexOf("audio") >= 0 ? "MP3" : "MP4 · 720p");
-            ytdlpViewCooldown.restart();
-        }
-        Process {
-            id: ytdlpViewYoutubeSearch
-            stdout: StdioCollector {
-                onStreamFinished: {
-                    try {
-                        var response = JSON.parse(text);
-                        ytdlpViewRoot.videos = response.results || [];
-                        if (!response.error)
-                            ytdlpViewRoot.searchPage = response.page || 1;
-                        ytdlpViewRoot.hasMore = !!response.hasMore;
-                        ytdlpViewRoot.failed = !!response.error;
-                        ytdlpViewRoot.message = response.error || (ytdlpViewRoot.videos.length ? "" : "No videos found");
-                    } catch (error) {
-                        ytdlpViewRoot.failed = true;
-                        ytdlpViewRoot.message = "Unable to read search results";
-                    }
-                }
-            }
-        }
-
-        Timer {
-            id: ytdlpViewCooldown
-            interval: 1500
-        }
-
-        readonly property bool linkMode: /^https?:\/\//i.test(ytdlpViewUrlInput.text.trim())
-        readonly property int gridColumns: width >= 500 ? 2 : 1
-        readonly property var resultEntries: linkMode && !selectedPlaylist ? [
-            {
-                title: ytdlpViewUrlInput.text.trim(),
-                channel: "",
-                url: ytdlpViewUrlInput.text.trim(),
-                thumbnail: "",
-                duration: "",
-                directLink: true
-            }
-        ] : selectedPlaylist ? [Object.assign({}, selectedPlaylist, {
-                wholePlaylist: true,
-                channel: selectedPlaylist.channel || ""
-            })].concat(videos) : videos
-
-        Rectangle {
-            width: parent.width
-            height: 52
-            radius: 16
-            color: Theme.background
-            border.color: ytdlpViewUrlInput.activeFocus ? Theme.border : Theme.border
-            Behavior on border.color {
-                ColorAnimation {
-                    duration: 150
-                }
-            }
-            Text {
-                x: 16
-                anchors.verticalCenter: parent.verticalCenter
-                text: "\uf16a"
-                font.family: "Symbols Nerd Font Mono"
-                font.pixelSize: 19
-                color: "#d8b8ca"
-            }
-            TextInput {
-                id: ytdlpViewUrlInput
-                objectName: "downloadUrl"
-                x: 49
-                width: parent.width - x - 49
-                anchors.verticalCenter: parent.verticalCenter
-                color: "#f0edf4"
-                font.family: "sans-serif"
-                font.pixelSize: 13
-                selectionColor: "#53415f"
-                selectByMouse: true
-                clip: true
-                Accessible.name: "Search YouTube or paste a link"
-                onAccepted: if (!ytdlpViewRoot.linkMode) {
-                    ytdlpViewRoot.selectedPlaylist = null;
-                    ytdlpViewRoot.searchYoutube();
-                }
-                onTextEdited: {
-                    ytdlpViewRoot.message = "";
-                    if (ytdlpViewRoot.linkMode)
-                        ytdlpViewRoot.selectedPlaylist = null;
-                }
-                Text {
-                    visible: !ytdlpViewUrlInput.text
-                    text: "Search or paste a link"
-                    color: "#8d8198"
-                    font: ytdlpViewUrlInput.font
-                }
-            }
-            ToolButton {
-                anchors.right: parent.right
-                anchors.rightMargin: 8
-                anchors.verticalCenter: parent.verticalCenter
-                width: 34
-                height: 34
-                enabled: !ytdlpViewYoutubeSearch.running && !!ytdlpViewUrlInput.text.trim() && !ytdlpViewRoot.linkMode
-                Accessible.name: "Search"
-                onClicked: {
-                    ytdlpViewRoot.selectedPlaylist = null;
-                    ytdlpViewRoot.searchYoutube();
-                }
-                contentItem: Text {
-                    text: ytdlpViewYoutubeSearch.running ? "···" : "\uf002"
-                    font.family: "Symbols Nerd Font Mono"
-                    color: "#ddd0ee"
-                    font.pixelSize: 13
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    radius: 11
-                    color: parent.hovered ? "#483453" : "#302638"
-                    opacity: parent.enabled ? 1 : 0.4
-                }
-            }
-        }
-
-        Item {
-            width: parent.width
-            height: 30
-            Rectangle {
-                visible: !ytdlpViewRoot.selectedPlaylist && !ytdlpViewRoot.linkMode
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 82
-                height: 30
-                radius: 11
-                color: Theme.background
-                Rectangle {
-                    x: ytdlpViewRoot.playlistMode ? 42 : 3
-                    y: 3
-                    width: 37
-                    height: 24
-                    radius: 8
-                    color: "#483653"
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: 160
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                }
-                Row {
-                    x: 3
-                    y: 3
-                    spacing: 2
-                    Repeater {
-                        model: [
-                            {
-                                playlist: false,
-                                icon: "\uf008",
-                                label: "Videos"
-                            },
-                            {
-                                playlist: true,
-                                icon: "\uf03a",
-                                label: "Playlists"
-                            }
-                        ]
-                        Item {
-                            id: ytdlpViewKindButton
-                            required property var modelData
-                            width: 37
-                            height: 24
-                            enabled: !ytdlpViewYoutubeSearch.running
-                            activeFocusOnTab: true
-                            Accessible.role: Accessible.RadioButton
-                            Accessible.name: modelData.label
-                            Accessible.checked: ytdlpViewRoot.playlistMode === modelData.playlist
-                            function choose() {
-                                if (ytdlpViewRoot.playlistMode !== modelData.playlist)
-                                    ytdlpViewRoot.setSearchKind(modelData.playlist);
-                            }
-                            Keys.onReturnPressed: choose()
-                            Keys.onSpacePressed: choose()
-                            Text {
+                            Row {
+                                id: statsRow
+                                readonly property int activeCount: hubContent.currentSection === "watchers" ? hubContent.activeWatchersCount : hubContent.activeBotsCount
+                                readonly property int totalCount: hubContent.currentSection === "watchers" ? hubContent.watchersList.length : hubContent.botsList.length
                                 anchors.centerIn: parent
-                                text: ytdlpViewKindButton.modelData.icon
-                                font.family: "Symbols Nerd Font Mono"
-                                font.pixelSize: 12
-                                color: ytdlpViewRoot.playlistMode === ytdlpViewKindButton.modelData.playlist ? "#ead5ff" : "#8d8198"
+                                spacing: 8
+
+                                StatusDot {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    live: statsRow.activeCount > 0
+                                }
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: statsRow.activeCount + "/" + statsRow.totalCount + (hubContent.currentSection === "watchers" ? " active" : " online")
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                    color: Theme.foreground
+                                }
                             }
-                            PanelToolTip {
-                                visible: ytdlpViewKindHit.containsMouse
-                                text: ytdlpViewKindButton.modelData.label
-                            }
-                            Timer {
-                                interval: 220
-                                running: ytdlpViewKindHit.containsMouse && ytdlpViewKindButton.enabled && ytdlpViewRoot.playlistMode !== ytdlpViewKindButton.modelData.playlist
-                                onTriggered: ytdlpViewKindButton.choose()
-                            }
-                            MouseArea {
-                                id: ytdlpViewKindHit
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: ytdlpViewKindButton.choose()
+                        }
+
+                        HubButton {
+                            visible: hubContent.serviceSection
+                            icon: "󰑐"
+                            spinning: hubContent.refreshing
+                            onClicked: hubContent.refreshSection()
+                        }
+                    }
+
+                    Rectangle {
+                        id: tabBar
+                        readonly property real tabWidth: (width - 8) / root.sections.length
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        radius: 13
+                        color: Qt.alpha(Theme.foreground, 0.035)
+                        border.width: 1
+                        border.color: Qt.alpha(Theme.foreground, 0.07)
+
+                        Rectangle {
+                            y: 4
+                            x: 4 + hubContent.sectionIndex * tabBar.tabWidth
+                            width: tabBar.tabWidth
+                            height: parent.height - 8
+                            radius: 10
+                            color: Qt.alpha(Theme.accent, 0.2)
+                            border.width: 1
+                            border.color: Qt.alpha(Theme.accent, 0.45)
+                            Behavior on x { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+                        }
+
+                        Row {
+                            x: 4
+                            y: 4
+
+                            Repeater {
+                                model: root.sections
+
+                                delegate: Item {
+                                    id: tab
+                                    readonly property bool selected: hubContent.currentSection === modelData.id
+                                    width: tabBar.tabWidth
+                                    height: tabBar.height - 8
+
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 7
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: modelData.icon
+                                            font.family: Theme.iconFont
+                                            font.pixelSize: 15
+                                            color: tab.selected ? Theme.accent : tabMouse.containsMouse ? Theme.foreground : Theme.muted
+                                            Behavior on color { ColorAnimation { duration: 140 } }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: modelData.label
+                                            font.pixelSize: 12
+                                            font.weight: tab.selected ? Font.Bold : Font.Medium
+                                            color: tab.selected ? Theme.foreground : tabMouse.containsMouse ? Theme.foreground : Theme.muted
+                                            Behavior on color { ColorAnimation { duration: 140 } }
+                                        }
+                                    }
+
+                                    Timer {
+                                        interval: 180
+                                        running: root.opened && tabMouse.containsMouse && !tab.selected
+                                        onTriggered: hubContent.currentSection = modelData.id
+                                    }
+
+                                    MouseArea {
+                                        id: tabMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: hubContent.currentSection = modelData.id
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-            ToolButton {
-                visible: !!ytdlpViewRoot.selectedPlaylist
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 32
-                height: 30
-                enabled: !ytdlpViewYoutubeSearch.running
-                Accessible.name: "Back to playlists"
-                onClicked: ytdlpViewRoot.backToPlaylists()
-                contentItem: Text {
-                    text: "\uf104"
-                    font.family: "Symbols Nerd Font Mono"
-                    color: "#cbb7df"
-                    font.pixelSize: 17
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    radius: 10
-                    color: parent.hovered ? Theme.hover : "transparent"
-                }
-            }
-            Text {
-                visible: !!ytdlpViewRoot.selectedPlaylist
-                x: 40
-                width: parent.width - 150
-                anchors.verticalCenter: parent.verticalCenter
-                text: ytdlpViewRoot.selectedPlaylist ? ytdlpViewRoot.selectedPlaylist.title : ""
-                color: "#e8dfef"
-                font.pixelSize: 12
-                elide: Text.ElideRight
-                textFormat: Text.PlainText
-            }
-            Row {
-                visible: !ytdlpViewRoot.linkMode && (ytdlpViewRoot.videos.length > 0 || ytdlpViewRoot.searchPage > 1)
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 6
-                ToolButton {
-                    width: 28
-                    height: 28
-                    enabled: ytdlpViewRoot.searchPage > 1 && !ytdlpViewYoutubeSearch.running
-                    Accessible.name: "Previous page"
-                    onClicked: ytdlpViewRoot.searchYoutube(ytdlpViewRoot.searchPage - 1)
-                    contentItem: Text {
-                        text: "‹"
-                        font.pixelSize: 22
-                        color: parent.enabled ? "#ddd0ee" : "#51465c"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    background: Rectangle {
-                        radius: 9
-                        color: parent.hovered ? Theme.hover : "transparent"
-                    }
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: String(ytdlpViewRoot.searchPage).padStart(2, "0")
-                    color: "#b7a5c6"
-                    font.pixelSize: 11
-                }
-                ToolButton {
-                    width: 28
-                    height: 28
-                    enabled: ytdlpViewRoot.hasMore && !ytdlpViewYoutubeSearch.running
-                    Accessible.name: "Next page"
-                    onClicked: ytdlpViewRoot.searchYoutube(ytdlpViewRoot.searchPage + 1)
-                    contentItem: Text {
-                        text: "›"
-                        font.pixelSize: 22
-                        color: parent.enabled ? "#ddd0ee" : "#51465c"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    background: Rectangle {
-                        radius: 9
-                        color: parent.hovered ? Theme.hover : "transparent"
-                    }
-                }
-            }
-        }
 
-        Text {
-            visible: !!ytdlpViewRoot.message
-            width: parent.width
-            text: ytdlpViewRoot.message
-            color: ytdlpViewRoot.failed ? "#f0a1ac" : "#b7a5c6"
-            font.pixelSize: 11
-            wrapMode: Text.Wrap
-            textFormat: Text.PlainText
-        }
-        Grid {
-            width: parent.width
-            columns: ytdlpViewRoot.gridColumns
-            spacing: 12
-            Repeater {
-                model: ytdlpViewRoot.resultEntries
-                YoutubeResult {
-                    required property var modelData
-                    width: (ytdlpViewRoot.width - (ytdlpViewRoot.gridColumns - 1) * 12) / ytdlpViewRoot.gridColumns
-                    entry: modelData
-                    playlist: !!modelData.wholePlaylist || (!modelData.directLink && ytdlpViewRoot.playlistMode && !ytdlpViewRoot.selectedPlaylist)
-                    available: !ytdlpViewCooldown.running
-                    onOpened: ytdlpViewRoot.openPlaylist(modelData)
-                    onDownloadRequested: function (format) {
-                        if (modelData.directLink)
-                            ytdlpViewRoot.startDownload(format);
-                        else
-                            ytdlpViewRoot.downloadVideo(modelData, (playlist ? "playlist-" : "") + format);
+                    StackLayout {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.preferredHeight: hubContent.fitHeight
+                        currentIndex: hubContent.sectionIndex
+
+                        Item {
+                            HubList {
+                                id: watchersHubList
+                                anchors.fill: parent
+                                visible: hubContent.activeLogName === ""
+                                model: hubContent.watchersList
+                                emptyGlyph: "󰈺"
+                                emptyTitle: watchersProc.running ? "Loading watchers…" : "No watchers found"
+                                emptyHint: "Fish watcher functions will appear here"
+                                rowDelegate: ServiceRow {
+                                    item: modelData
+                                    glyph: "󰈺"
+                                    onLabel: "ACTIVE"
+                                    offLabel: "STOPPED"
+                                    detail: running && modelData.memory ? hubContent.formatMemory(modelData.memory) + " · fish daemon" : "Fish function"
+                                    onLogsRequested: hubContent.viewLogs(modelData.name, "watchers")
+                                    onToggleRequested: hubContent.toggleWatcher(modelData.name, modelData.running)
+                                }
+                            }
+
+                            LogPane {
+                                anchors.fill: parent
+                                visible: hubContent.activeLogName !== ""
+                                title: hubContent.activeLogName
+                                entries: hubContent.activeLogEntries
+                                fallbackLabel: "Log"
+                                onBack: hubContent.activeLogName = ""
+                            }
+                        }
+
+                        Item {
+                            HubList {
+                                id: botsHubList
+                                anchors.fill: parent
+                                visible: hubContent.activeLogName === ""
+                                model: hubContent.botsList
+                                emptyGlyph: "󰚩"
+                                emptyTitle: botsProc.running ? "Loading bots…" : "No bots found"
+                                emptyHint: "Bots in ~/0/bots will appear here"
+                                rowDelegate: ServiceRow {
+                                    item: modelData
+                                    glyph: "󰚩"
+                                    onLabel: "ONLINE"
+                                    offLabel: "OFFLINE"
+                                    detail: running && modelData.memory ? hubContent.formatMemory(modelData.memory) + " · systemd" : (modelData.entry || "main.py") + " · ~/0/bots"
+                                    onLogsRequested: hubContent.viewLogs(modelData.name, "bots")
+                                    onToggleRequested: hubContent.toggleBot(modelData.name, modelData.running)
+                                }
+                            }
+
+                            LogPane {
+                                anchors.fill: parent
+                                visible: hubContent.activeLogName !== ""
+                                title: hubContent.activeLogName
+                                entries: hubContent.activeLogEntries
+                                fallbackLabel: "Activity"
+                                onBack: hubContent.activeLogName = ""
+                            }
+                        }
+
+                        ColumnLayout {
+                            id: downloadsColumn
+                            spacing: 10
+
+                            SearchField {
+                                id: urlField
+                                Layout.fillWidth: true
+                                glyph: "󰌹"
+                                placeholder: "Paste a YouTube, SoundCloud or media link…"
+                                actionIcon: "󰇚"
+                                actionLabel: "Download"
+                                text: hubContent.downloadUrl
+                                onTextChanged: hubContent.downloadUrl = text
+                                onSubmitted: {
+                                    hubContent.triggerDownload(urlField.text, (hubContent.urlIsPlaylist && hubContent.downloadPlaylist ? "playlist-" : "") + hubContent.downloadFormat);
+                                    urlField.text = "";
+                                }
+
+                                HubButton {
+                                    visible: hubContent.urlIsPlaylist
+                                    icon: "󰲸"
+                                    label: "Playlist"
+                                    active: hubContent.downloadPlaylist
+                                    onClicked: hubContent.downloadPlaylist = !hubContent.downloadPlaylist
+                                }
+
+                                HubButton {
+                                    icon: "󰎆"
+                                    label: "MP3"
+                                    active: hubContent.downloadFormat === "audio"
+                                    onClicked: hubContent.downloadFormat = hubContent.downloadFormat === "audio" ? "video" : "audio"
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                HubButton {
+                                    icon: "󰗃"
+                                    label: "YouTube"
+                                    active: hubContent.downloadsView === 0
+                                    onClicked: hubContent.downloadsView = 0
+                                }
+
+                                HubButton {
+                                    icon: hubContent.activeDownloadsCount > 0 ? "󰑓" : "󰇚"
+                                    spinning: hubContent.activeDownloadsCount > 0
+                                    label: hubContent.activeDownloadsCount > 0 ? "Activity · " + hubContent.activeDownloadsCount : "Activity"
+                                    active: hubContent.downloadsView === 1
+                                    onClicked: {
+                                        hubContent.downloadsView = 1;
+                                        hubContent.pollDownloads();
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                HubButton {
+                                    visible: hubContent.downloadsView === 1 && downloadsModel.count > hubContent.activeDownloadsCount
+                                    icon: "󰃢"
+                                    label: "Clear finished"
+                                    onClicked: hubContent.clearDownloads()
+                                }
+                            }
+
+                            HubList {
+                                id: downloadsHubList
+                                visible: hubContent.downloadsView === 1
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.preferredHeight: fitHeight
+                                model: downloadsModel
+                                emptyGlyph: "󰇚"
+                                emptyTitle: "No downloads yet"
+                                emptyHint: "Progress and logs will show up here"
+                                rowDelegate: DownloadRow {
+                                    title: model.title
+                                    url: model.url
+                                    mode: model.mode
+                                    status: model.status
+                                    percent: model.percent
+                                    speed: model.speed
+                                    eta: model.eta
+                                    folder: model.folder
+                                    linesText: model.linesText
+                                    playlist: model.playlist
+                                    phase: model.phase
+                                    playlistTitle: model.playlistTitle
+                                    item: model.item
+                                    total: model.total
+                                    failedItems: model.failedItems
+                                    checked: model.checked
+                                    checkTotal: model.checkTotal
+                                    skipped: model.skipped
+                                    alreadyDownloaded: model.alreadyDownloaded
+                                    expanded: !!hubContent.expandedDownloads[model.downloadId]
+                                    onToggleLog: hubContent.toggleDownloadLog(model.downloadId)
+                                }
+                            }
+
+                            SearchField {
+                                visible: hubContent.downloadsView === 0
+                                Layout.fillWidth: true
+                                glyph: "󰗃"
+                                placeholder: hubContent.ytKind === "playlists" ? "Search playlists…" : "Search videos…"
+                                busy: hubContent.ytSearching
+                                text: hubContent.ytQuery
+                                onTextChanged: hubContent.ytQuery = text
+                                onSubmitted: hubContent.searchYoutube()
+
+                                HubButton {
+                                    icon: "󰲸"
+                                    label: "Playlists"
+                                    active: hubContent.ytKind === "playlists"
+                                    onClicked: hubContent.setYoutubeKind(hubContent.ytKind === "playlists" ? "videos" : "playlists")
+                                }
+                            }
+
+                            RowLayout {
+                                visible: hubContent.downloadsView === 0 && hubContent.ytPlaylist !== null
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                HubButton {
+                                    icon: "󰁍"
+                                    label: "Back"
+                                    onClicked: hubContent.closePlaylist()
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: "󰲸  " + (hubContent.ytPlaylist ? hubContent.ytPlaylist.title : "")
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: 13
+                                    font.weight: Font.DemiBold
+                                    color: Theme.foreground
+                                    elide: Text.ElideRight
+                                }
+
+                                HubButton {
+                                    icon: "󰎆"
+                                    label: "All MP3"
+                                    tint: Theme.success
+                                    onClicked: hubContent.triggerDownload(hubContent.ytPlaylist.url, "playlist-audio")
+                                }
+
+                                HubButton {
+                                    icon: "󰕧"
+                                    label: "All MP4"
+                                    onClicked: hubContent.triggerDownload(hubContent.ytPlaylist.url, "playlist-video")
+                                }
+                            }
+
+                            HubList {
+                                id: ytHubList
+                                visible: hubContent.downloadsView === 0
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.preferredHeight: fitHeight
+                                model: ytModel
+                                busy: hubContent.ytSearching
+                                hasMore: hubContent.ytHasMore
+                                loadingMore: hubContent.ytLoadingMore
+                                onEndReached: hubContent.loadMoreYoutube()
+                                emptyGlyph: "󰗃"
+                                emptyTitle: "Nothing here yet"
+                                emptyHint: "Drag right for MP3, left for MP4"
+                                rowDelegate: VideoRow {
+                                    videoTitle: model.title
+                                    channel: model.channel
+                                    thumbnail: model.thumbnail
+                                    duration: model.duration
+                                    playlist: model.isPlaylist
+                                    onOpened: hubContent.openPlaylist(model.url, model.title)
+                                    onAudioRequested: hubContent.triggerDownload(model.url, model.isPlaylist ? "playlist-audio" : "audio")
+                                    onVideoRequested: hubContent.triggerDownload(model.url, model.isPlaylist ? "playlist-video" : "video")
+                                }
+                            }
+                        }
+
+                        ColumnLayout {
+                            id: nyaaColumn
+                            spacing: 10
+
+                            SearchField {
+                                Layout.fillWidth: true
+                                glyph: "󰊓"
+                                placeholder: "Search Nyaa releases & anime torrents…"
+                                busy: hubContent.nyaaSearching
+                                text: hubContent.nyaaQuery
+                                onTextChanged: hubContent.nyaaQuery = text
+                                onSubmitted: hubContent.searchNyaa()
+                            }
+
+                            HubList {
+                                id: nyaaHubList
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.preferredHeight: fitHeight
+                                model: hubContent.nyaaResults
+                                busy: hubContent.nyaaSearching
+                                emptyGlyph: "󰊓"
+                                emptyTitle: "No releases yet"
+                                emptyHint: "Drag a result left to download it"
+                                rowDelegate: SwipeRow {
+                                    height: 66
+                                    allowRight: false
+                                    leftIcon: "󰇚"
+                                    leftLabel: "Download"
+                                    leftTint: Theme.accent
+                                    onSwipedLeft: hubContent.downloadTorrent(modelData.magnet)
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 16
+                                        anchors.rightMargin: 12
+                                        spacing: 12
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 6
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: modelData.title || ""
+                                                font.pixelSize: 13
+                                                font.weight: Font.DemiBold
+                                                color: Theme.foreground
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Row {
+                                                spacing: 10
+
+                                                Rectangle {
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    width: sizeText.implicitWidth + 12
+                                                    height: 18
+                                                    radius: 6
+                                                    color: Qt.alpha(Theme.accent, 0.15)
+                                                    Text {
+                                                        id: sizeText
+                                                        anchors.centerIn: parent
+                                                        text: modelData.size || "?"
+                                                        font.pixelSize: 10
+                                                        font.weight: Font.Bold
+                                                        color: Theme.accent
+                                                    }
+                                                }
+
+                                                Text {
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    text: "󰁝 " + (modelData.seeders || "0")
+                                                    font.family: Theme.iconFont
+                                                    font.pixelSize: 11
+                                                    font.weight: Font.DemiBold
+                                                    color: Number(modelData.seeders || 0) > 0 ? Theme.success : Theme.dim
+                                                }
+
+                                                Text {
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    visible: !!modelData.date
+                                                    text: modelData.date || ""
+                                                    font.pixelSize: 11
+                                                    color: Theme.dim
+                                                }
+                                            }
+                                        }
+
+                                        HubButton {
+                                            icon: "󰇚"
+                                            label: "Get"
+                                            onClicked: hubContent.downloadTorrent(modelData.magnet)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

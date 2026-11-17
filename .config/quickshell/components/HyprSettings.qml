@@ -45,7 +45,7 @@ Rectangle {
     readonly property var visiblePresets: {
         var available = settings.presets || [];
         var selected = [];
-        for (var mode of ["preferred", "1400x1050", "1920x1080"]) {
+        for (var mode of ["preferred", "1400x1050", "1920x1080", "1024x768"]) {
             var preset = available.find(function (item) {
                 return item.mode.split("@")[0] === mode;
             });
@@ -53,7 +53,7 @@ Rectangle {
                 selected.push(preset);
         }
         for (var item of available) {
-            if (selected.length >= 3)
+            if (selected.length >= 4)
                 break;
             if (selected.indexOf(item) < 0)
                 selected.push(item);
@@ -299,7 +299,7 @@ Rectangle {
                     radius: 4
                     color: "transparent"
                     border.width: 1
-                    border.color: "#b9a3d1"
+                    border.color: "#d69aac"
                 }
                 Rectangle {
                     x: 8
@@ -468,7 +468,7 @@ Rectangle {
                         width: 3
                         height: root.displayedPreset === index ? 12 : 3
                         radius: 2
-                        color: root.displayedPreset === index ? Theme.accent : "#6d587e"
+                        color: root.displayedPreset === index ? Theme.accent : "#45393f"
                         Behavior on height {
                             NumberAnimation {
                                 duration: 140
@@ -492,7 +492,7 @@ Rectangle {
             }
             Text {
                 text: String(root.displayedPreset + 1).padStart(2, "0") + " / " + String(root.visiblePresets.length).padStart(2, "0")
-                color: "#8e7da2"
+                color: "#d4a5b5"
                 font.pixelSize: 10
                 font.letterSpacing: 1
             }
@@ -509,7 +509,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: "#3d3248"
+            color: "#362d34"
         }
         Item {
             id: scaleCard
@@ -586,7 +586,7 @@ Rectangle {
                     width: scaleSlider.availableWidth
                     height: 3
                     radius: 2
-                    color: "#3a3045"
+                    color: "#362d34"
                     Rectangle {
                         width: scaleSlider.visualPosition * parent.width
                         height: parent.height
@@ -602,7 +602,7 @@ Rectangle {
                             width: 2
                             height: 3
                             radius: 1
-                            color: index === root.scaleIndex ? Theme.accent : "#554560"
+                            color: index === root.scaleIndex ? Theme.accent : "#45393f"
                         }
                     }
                 }
@@ -612,7 +612,7 @@ Rectangle {
                     width: 12
                     height: 12
                     radius: 6
-                    color: scaleSlider.pressed ? "#ffffff" : "#e0ccf9"
+                    color: scaleSlider.pressed ? "#e6d7dc" : "#d69aac"
                 }
             }
             Text {
@@ -635,7 +635,7 @@ Rectangle {
             visible: root.failed && root.message.length > 0
             text: root.message
             textFormat: Text.PlainText
-            color: "#ffac8c"
+            color: "#d9737f"
             wrapMode: Text.Wrap
             font.pixelSize: 10
         }

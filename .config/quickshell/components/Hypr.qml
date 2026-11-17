@@ -86,8 +86,8 @@ Scope {
             top: 16
             right: 16
         }
-        implicitWidth: Math.min(Math.ceil(volumeContent.implicitWidth) + 24, screen.width - 32)
-        implicitHeight: 34
+        implicitWidth: volumeContent.implicitWidth
+        implicitHeight: volumeContent.implicitHeight
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
@@ -95,18 +95,13 @@ Scope {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        HyprNoticeSurface {
+        CyberNoticeVariants {
+            id: volumeContent
             anchors.fill: parent
-            hud: true
-            accentColor: root.muted ? "#f38ba8" : "#cba6f7"
-            HyprLevelIndicator {
-                id: volumeContent
-                x: 12
-                anchors.verticalCenter: parent.verticalCenter
-                value: root.volume
-                muted: root.muted
-                symbol: root.muted ? "󰖁" : root.volume < 0.4 ? "󰖀" : "󰕾"
-            }
+            variant: 5
+            heading: root.muted ? "Volume - Muted" : "Volume"
+            level: root.volume
+            muted: root.muted
         }
     }
 
@@ -138,7 +133,7 @@ Scope {
             right: 16
         }
         implicitWidth: Math.min(Math.max(120, Math.ceil(Math.max(headingMeasurement.implicitWidth, detailMeasurement.implicitWidth)) + textOffset + 18), screen.width - 32)
-        implicitHeight: Math.max(38, workspaceText.implicitHeight + 18)
+        implicitHeight: Math.max(38, workspaceText.implicitHeight + 18) + 22
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
@@ -207,26 +202,27 @@ Scope {
         }
 
         HyprNoticeSurface {
+            title: "Workspace"
             anchors.fill: parent
             hud: true
-            accentColor: "#cba6f7"
+            accentColor: "#a99aad"
             Rectangle {
                 x: 12
                 anchors.verticalCenter: parent.verticalCenter
                 width: 24
                 height: 24
-                color: "#14cba6f7"
+                color: "#1c1b24"
                 border.width: 1
-                border.color: "#40cba6f7"
-                Rectangle { width: 7; height: 1; color: "#cba6f7" }
-                Rectangle { width: 1; height: 7; color: "#cba6f7" }
+                border.color: "#484351"
+                Rectangle { width: 7; height: 1; color: "#a99aad" }
+                Rectangle { width: 1; height: 7; color: "#a99aad" }
                 Text {
                     anchors.centerIn: parent
                     text: popup.workspaceNumber ? popup.workspaceNumber.padStart(2, "0") : "󰖲"
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
-                    color: "#cba6f7"
+                    color: "#a99aad"
                 }
             }
             Rectangle {
@@ -234,8 +230,8 @@ Scope {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 1
                 height: 14
-                rotation: 12
-                color: "#585b70"
+                rotation: 0
+                color: "#484351"
             }
             Image {
                 x: 54
@@ -260,9 +256,9 @@ Scope {
                     text: popup.heading
                     textFormat: Text.PlainText
                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                    font.family: "JetBrains Mono"
+                    font.family: "Noto Sans"
                     font.pixelSize: 12
-                    color: "#cdd6f4"
+                    color: "#d4d5d8"
                 }
                 Text {
                     id: workspaceDetail
@@ -271,9 +267,9 @@ Scope {
                     text: popup.details
                     textFormat: Text.PlainText
                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                    font.family: "JetBrains Mono"
+                    font.family: "Noto Sans"
                     font.pixelSize: 10
-                    color: "#bac2de"
+                    color: "#b4b4be"
                 }
             }
         }
@@ -297,7 +293,7 @@ Scope {
             right: 12
         }
         implicitWidth: Math.min(650, screen.width - 24)
-        implicitHeight: Math.min(content.implicitHeight + 36, screen.height - 24)
+        implicitHeight: Math.min(content.implicitHeight + 58, screen.height - 24)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
@@ -334,6 +330,7 @@ Scope {
         }
 
         HyprNoticeSurface {
+            title: popup.heading
             anchors.fill: parent
             clip: true
 
@@ -350,14 +347,14 @@ Scope {
                     Rectangle {
                         width: 44
                         height: 44
-                        radius: 4
-                        color: "#24b4befe"
+                        radius: 0
+                        color: "#25242f"
                         Text {
                             anchors.centerIn: parent
                             text: "󰌌"
                             font.family: "JetBrainsMono Nerd Font"
                             font.pixelSize: 24
-                            color: "#b4befe"
+                            color: "#a99aad"
                         }
                     }
                     Text {
@@ -367,27 +364,27 @@ Scope {
                         text: popup.heading
                         textFormat: Text.PlainText
                         elide: Text.ElideRight
-                        font.family: "JetBrains Mono"
+                        font.family: "Noto Sans"
                         font.pixelSize: 16
                         font.weight: Font.DemiBold
-                        color: "#cdd6f4"
+                        color: "#d4d5d8"
                     }
                     Text {
                         x: 58
                         y: 26
                         text: "Navigation & image controls"
-                        font.family: "JetBrains Mono"
+                        font.family: "Noto Sans"
                         font.pixelSize: 10
-                        color: "#a6adc8"
+                        color: "#91919e"
                     }
                     Text {
                         anchors.right: parent.right
                         y: 8
                         text: popup.rows.length + " KEYS"
-                        font.family: "JetBrains Mono"
+                        font.family: "Noto Sans"
                         font.pixelSize: 9
                         font.letterSpacing: 1
-                        color: "#b4befe"
+                        color: "#a99aad"
                     }
                 }
 
@@ -410,8 +407,8 @@ Scope {
 
                             Rectangle {
                                 anchors.fill: parent
-                                radius: 3
-                                color: "#08cdd6f4"
+                                radius: 0
+                                color: "#1e1d27"
                             }
                             Rectangle {
                                 id: keycap
@@ -419,10 +416,10 @@ Scope {
                                 y: 2
                                 width: Math.min(126, keyLabel.implicitWidth + 14)
                                 height: parent.height - 4
-                                radius: 3
-                                color: "#313244"
+                                radius: 0
+                                color: "#25242f"
                                 border.width: 1
-                                border.color: "#80585b70"
+                                border.color: "#484351"
                                 Text {
                                     id: keyLabel
                                     anchors.centerIn: parent
@@ -430,7 +427,7 @@ Scope {
                                     textFormat: Text.PlainText
                                     font.family: "JetBrainsMono Nerd Font"
                                     font.pixelSize: 9
-                                    color: "#cdd6f4"
+                                    color: "#d4d5d8"
                                 }
                             }
                             Text {
@@ -440,9 +437,9 @@ Scope {
                                 text: shortcut.description
                                 textFormat: Text.PlainText
                                 elide: Text.ElideRight
-                                font.family: "JetBrains Mono"
+                                font.family: "Noto Sans"
                                 font.pixelSize: 11
-                                color: "#bac2de"
+                                color: "#b4b4be"
                             }
                         }
                     }
@@ -458,7 +455,7 @@ Scope {
         property string heading: "System"
         property string details: ""
         property string glyph: "󰋽"
-        property color accent: "#b4befe"
+        property color accent: "#a99aad"
         property real level: -1
         property var quickSettings: []
         readonly property bool compactLevel: !quickSettings.length && level >= 0
@@ -472,8 +469,8 @@ Scope {
             top: 16
             right: 16
         }
-        implicitWidth: compactLevel ? Math.min(Math.ceil(systemLevelContent.implicitWidth) + 24, screen.width - 32) : compactText ? Math.min(Math.max(54, Math.ceil(noticeMeasurement.implicitWidth) + 38), screen.width - 32) : Math.min(quickSettings.length ? 250 : 360, screen.width - 32)
-        implicitHeight: compactLevel ? 34 : compactText ? Math.max(38, Math.ceil(body.implicitHeight) + 22) : quickSettings.length ? 22 + quickSettings.length * 30 : level >= 0 ? 120 : Math.max(98, Math.min(180, body.implicitHeight + 62))
+        implicitWidth: compactText ? Math.min(textContent.implicitWidth, screen.width - 32) : compactLevel ? Math.min(Math.ceil(systemLevelContent.implicitWidth) + 24, screen.width - 32) : Math.min(250, screen.width - 32)
+        implicitHeight: compactText ? textContent.implicitHeight : compactLevel ? 56 : 44 + quickSettings.length * 30
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
@@ -513,7 +510,7 @@ Scope {
             if (raw.includes("󰕾") && raw.includes("󰃟")) {
                 heading = "Quick settings";
                 const fields = [
-                    { glyph: "󰕾", label: "Volume", accent: "#b4befe", pattern: /󰕾\s*([\d.]+%)/ },
+                    { glyph: "󰕾", label: "Volume", accent: "#a99aad", pattern: /󰕾\s*([\d.]+%)/ },
                     { glyph: "󰃟", label: "Brightness", accent: "#f9e2af", pattern: /󰃟\s*([\d.]+%)/ },
                     { glyph: "󰍛", label: "Memory", accent: "#a6e3a1", pattern: /󰘚\s*([\d.]+\s*GB)/ }
                 ];
@@ -531,7 +528,7 @@ Scope {
             const temperature = details.match(/^(\d+)K$/);
             level = percent ? Math.max(0, Math.min(1, Number(percent[1]) / 100)) : temperature ? Math.max(0, Math.min(1, (Number(temperature[1]) - 1200) / 1500)) : -1;
             const match = color.match(/^rgb\(([0-9a-fA-F]{6})\)$/);
-            accent = match ? "#" + match[1] : "#b4befe";
+            accent = match ? "#" + match[1] : "#a99aad";
             const monitor = Hyprland.focusedMonitor;
             const target = Quickshell.screens.find(screen => monitor && screen.name === monitor.name);
             if (target)
@@ -555,7 +552,21 @@ Scope {
             renderType: body.renderType
         }
 
+        CyberNoticeVariants {
+            id: textContent
+            anchors.fill: parent
+            visible: systemNotice.compactText
+            variant: 5
+            fontSize: 13
+            title: systemNotice.details
+            heading: systemNotice.heading
+            symbol: systemNotice.glyph
+            maximumWidth: systemNotice.screen.width - 32
+        }
+
         HyprNoticeSurface {
+            title: systemNotice.heading
+            visible: !systemNotice.compactText
             anchors.fill: parent
             hud: systemNotice.compactLevel
             accentColor: systemLevelContent.accentColor
@@ -567,8 +578,8 @@ Scope {
                 value: systemNotice.level
                 symbol: systemNotice.glyph
                 label: systemNotice.details
-                accentColor: "#cba6f7"
-                progressEndColor: "#b4befe"
+                accentColor: "#a99aad"
+                progressEndColor: "#a99aad"
             }
 
             Rectangle {
@@ -577,7 +588,7 @@ Scope {
                 visible: !systemNotice.quickSettings.length && !systemNotice.compactText && !systemNotice.compactLevel
                 width: 46
                 height: 46
-                radius: 4
+                radius: 0
                 color: Qt.rgba(systemNotice.accent.r, systemNotice.accent.g, systemNotice.accent.b, 0.16)
                 Text {
                     anchors.centerIn: parent
@@ -593,7 +604,7 @@ Scope {
                 y: 18
                 width: parent.width - x - 18
                 text: systemNotice.heading.toUpperCase()
-                font.family: "JetBrains Mono"
+                font.family: "Noto Sans"
                 font.pixelSize: 9
                 font.letterSpacing: 1.4
                 color: systemNotice.accent
@@ -606,13 +617,13 @@ Scope {
                 width: parent.width - x - 18
                 text: systemNotice.details
                 textFormat: Text.PlainText
-                font.family: "JetBrains Mono"
+                font.family: "Noto Sans"
                 font.pixelSize: systemNotice.level >= 0 ? 26 : 12
                 font.weight: systemNotice.level >= 0 ? Font.DemiBold : Font.Normal
                 maximumLineCount: systemNotice.compactText ? 2147483647 : 3
                 elide: systemNotice.compactText ? Text.ElideNone : Text.ElideRight
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                color: "#cdd6f4"
+                color: "#d4d5d8"
             }
             Column {
                 x: 14
@@ -625,14 +636,14 @@ Scope {
                     delegate: Item {
                         id: settingRow
                         required property var modelData
-                        readonly property color tone: modelData.accent
+                        readonly property color tone: "#a99aad"
                         width: parent.width
                         height: 24
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 24
                             height: 24
-                            radius: 3
+                            radius: 0
                             color: Qt.rgba(settingRow.tone.r, settingRow.tone.g, settingRow.tone.b, 0.12)
                             Text {
                                 anchors.centerIn: parent
@@ -647,7 +658,7 @@ Scope {
                             anchors.verticalCenter: parent.verticalCenter
                             text: parent.modelData.label
                             font.pixelSize: 11
-                            color: "#bac2de"
+                            color: "#b4b4be"
                         }
                         Text {
                             anchors.right: parent.right

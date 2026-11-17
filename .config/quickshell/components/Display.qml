@@ -245,10 +245,11 @@ Item {
             anchors.centerIn: parent
             width: Math.min(420, panel.width - 32)
             height: Math.min(view.implicitHeight + 40, panel.height - 112)
-            radius: 24
+            radius: Theme.panelRadius
             gradient: PanelGradient {}
             border.width: 1
             border.color: Theme.border
+            PanelAura { radius: parent.radius }
             focus: true
             Keys.onEscapePressed: root.close()
             MouseArea {
@@ -267,7 +268,7 @@ Item {
     component CyberFrame: Item {
         id: cyberFrameRoot
         property color fillColor: Theme.background
-        property color strokeColor: "#67477c"
+        property color strokeColor: "#45393f"
         property real cut: 14
         Shape {
             anchors.fill: parent
@@ -332,7 +333,7 @@ Item {
             width: displayViewLightSliderSlider.availableWidth
             height: 4
             radius: 2
-            color: "#493451"
+            color: "#45393f"
             Rectangle {
                 width: displayViewLightSliderSlider.visualPosition * parent.width
                 height: parent.height
@@ -346,7 +347,7 @@ Item {
             width: 11
             height: 11
             radius: 6
-            color: displayViewLightSliderSlider.pressed ? "#ffffff" : Theme.accent
+            color: displayViewLightSliderSlider.pressed ? "#e6d7dc" : Theme.accent
         }
     }
 
@@ -354,7 +355,7 @@ Item {
         id: displayViewRoot
         required property var backend
         readonly property color accent: Theme.accent
-        readonly property color ember: "#ff9c66"
+        readonly property color ember: "#dda07f"
         implicitHeight: displayViewContent.implicitHeight
         ScrollView {
             id: displayViewScroll
@@ -373,7 +374,7 @@ Item {
                         width: 40
                         height: 40
                         radius: 13
-                        color: "#39253e"
+                        color: "#2c252b"
                         DisplayViewGlyph {
                             anchors.centerIn: parent
                             text: "\uf185"
@@ -399,14 +400,14 @@ Item {
                         onClicked: displayViewRoot.backend.close()
                         contentItem: DisplayViewLabelText {
                             text: "×"
-                            color: displayViewCloseButton.hovered ? Theme.foreground : "#a08bae"
+                            color: displayViewCloseButton.hovered ? Theme.foreground : "#d4a5b5"
                             font.pixelSize: 21
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
                         background: Rectangle {
                             radius: 10
-                            color: displayViewCloseButton.hovered ? "#3b2a47" : "#271d30"
+                            color: displayViewCloseButton.hovered ? "#362d34" : "#221c21"
                         }
                     }
                 }
@@ -456,12 +457,12 @@ Item {
                                         DisplayViewGlyph {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: displayViewModeButton.modelData.icon
-                                            color: displayViewModeButton.selected ? displayViewRoot.ember : "#9e83b0"
+                                            color: displayViewModeButton.selected ? displayViewRoot.ember : "#d4a5b5"
                                             font.pixelSize: 12
                                         }
                                         DisplayViewLabelText {
                                             text: displayViewModeButton.modelData.label
-                                            color: displayViewModeButton.selected ? "#f0dfff" : "#b6a0c5"
+                                            color: displayViewModeButton.selected ? "#d69aac" : "#d69aac"
                                             font.pixelSize: 11
                                             font.weight: displayViewModeButton.selected ? Font.DemiBold : Font.Normal
                                         }
@@ -469,9 +470,9 @@ Item {
                                 }
                                 background: Rectangle {
                                     radius: 9
-                                    color: displayViewModeButton.selected ? "#45304f" : displayViewModeButton.hovered ? Theme.hover : "transparent"
+                                    color: displayViewModeButton.selected ? "#362d34" : displayViewModeButton.hovered ? Theme.hover : "transparent"
                                     border.width: displayViewModeButton.selected ? 1 : 0
-                                    border.color: "#80608e"
+                                    border.color: "#d4a5b5"
                                     Behavior on color {
                                         ColorAnimation {
                                             duration: 130
@@ -585,15 +586,15 @@ Item {
                     gradient: Gradient {
                         GradientStop {
                             position: 0
-                            color: "#2b1c36"
+                            color: "#221c21"
                         }
                         GradientStop {
                             position: 1
-                            color: "#1f1729"
+                            color: "#221c21"
                         }
                     }
                     border.width: 1
-                    border.color: displayViewRoot.backend.state.nightEnabled ? "#5b3e70" : Theme.border
+                    border.color: displayViewRoot.backend.state.nightEnabled ? "#45393f" : Theme.border
                     Item {
                         x: 16
                         y: 16
@@ -609,7 +610,7 @@ Item {
                             x: 28
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Night light"
-                            color: "#e7d6f5"
+                            color: "#d69aac"
                             font.pixelSize: 13
                             font.weight: Font.Medium
                         }
@@ -655,13 +656,13 @@ Item {
                                 var span = 280 * Math.PI / 180;
                                 context.lineWidth = 7;
                                 context.lineCap = "round";
-                                context.strokeStyle = "#493053";
+                                context.strokeStyle = "#362d34";
                                 context.beginPath();
                                 context.arc(center, center, radius, start, start + span);
                                 context.stroke();
                                 var gradient = context.createLinearGradient(0, height, width, 0);
-                                gradient.addColorStop(0, "#ff9c66");
-                                gradient.addColorStop(0.5, "#cf8dbc");
+                                gradient.addColorStop(0, "#dda07f");
+                                gradient.addColorStop(0.5, "#d69aac");
                                 gradient.addColorStop(1, Theme.accent);
                                 context.strokeStyle = gradient;
                                 context.beginPath();
@@ -683,7 +684,7 @@ Item {
                             radius: 8
                             color: Theme.foreground
                             border.width: 3
-                            border.color: "#9b72bc"
+                            border.color: "#d4a5b5"
                         }
                         Column {
                             anchors.centerIn: parent
@@ -724,7 +725,7 @@ Item {
                     visible: !!displayViewRoot.backend.error
                     text: displayViewRoot.backend.error
                     textFormat: Text.PlainText
-                    color: "#ffac8c"
+                    color: "#d9737f"
                     font.pixelSize: 11
                     wrapMode: Text.Wrap
                 }

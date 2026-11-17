@@ -40,6 +40,8 @@ def search(query, page=1, kind='videos'):
         if kind == 'playlists':
             if not re.fullmatch(r'[A-Za-z0-9_-]+', identifier) or (item.get('ie_key') or '').lower() not in ('youtubetab', 'youtubeplaylist'):
                 continue
+            if re.fullmatch(r'UC[A-Za-z0-9_-]{22}', identifier):
+                identifier = 'UU' + identifier[2:]
             url = 'https://www.youtube.com/playlist?' + urlencode({'list': identifier})
             duration = str(item.get('playlist_count') or item.get('n_entries') or '')
         else:

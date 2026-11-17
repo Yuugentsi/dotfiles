@@ -47,6 +47,8 @@ def scan():
                         "duration": metadata.get("duration", 0),
                         "processed": bool(metadata.get("processed")),
                     }
+                except FileNotFoundError:
+                    continue
                 except OSError as error:
                     errors.append(str(error))
     return {"videos": sorted(found.values(), key=lambda item: (-item["modified"], item["path"])),

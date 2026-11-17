@@ -15,8 +15,11 @@ Rectangle {
     implicitHeight: 26
     width: implicitWidth
     height: implicitHeight
-    radius: 4
+    radius: height / 2
+    scale: hit.pressed ? 0.9 : 1
+    Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
     color: hit.containsMouse || hasCursor ? Theme.hover : "transparent"
+    Behavior on color { ColorAnimation { duration: 140 } }
     Text { anchors.centerIn: parent; text: root.iconText; color: hit.containsMouse ? root.hoverColor : root.foreground; font.family: root.fontFamily; font.pixelSize: 15 }
     MouseArea { id: hit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.clicked(); onContainsMouseChanged: root.hovered(containsMouse) }
     PanelToolTip { visible: hit.containsMouse; text: root.tooltipText }

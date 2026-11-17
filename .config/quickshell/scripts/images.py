@@ -35,6 +35,8 @@ def images():
                         "modified": stat.st_mtime_ns,
                         "size": stat.st_size,
                     }
+                except FileNotFoundError:
+                    continue
                 except OSError as error:
                     errors.append(str(error))
     return {"images": sorted(found.values(), key=lambda entry: (-entry["modified"], entry["path"])),

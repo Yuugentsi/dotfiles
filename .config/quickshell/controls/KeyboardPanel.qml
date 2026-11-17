@@ -55,9 +55,10 @@ Item {
             width: root.contentWidth + 36
             height: root.contentHeight + 36
             gradient: PanelGradient {}
-            radius: 8
+            radius: Theme.panelRadius
             border.width: 1
             border.color: Theme.border
+            PanelAura { radius: parent.radius }
             MouseArea { anchors.fill: parent; onClicked: {} }
             Item { id: container; anchors.fill: parent; anchors.margins: 18 }
         }

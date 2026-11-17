@@ -903,7 +903,7 @@ PluginPanel {
                             id: heroStatus
                             textFormat: Text.PlainText
                             text: root.heroStatusText.toUpperCase()
-                            color: Qt.darker(root.bar.foreground, 1.4)
+                            color: Theme.dim
                             font.family: root.bar.fontFamily
                             font.pixelSize: 10
                             font.bold: true
@@ -1015,7 +1015,7 @@ PluginPanel {
                     textFormat: Text.PlainText
                     visible: root.connectedDevices.length === 0 && root.scrollRows.length === 0
                     text: !root.adapter ? "No Bluetooth adapter" : !root.adapter.enabled ? "Turn Bluetooth on to scan" : "Scanning for devices…"
-                    color: Qt.darker(root.bar.foreground, 1.5)
+                    color: Theme.dim
                     font.family: root.bar.fontFamily
                     font.pixelSize: 11
                     wrapMode: Text.WordWrap
@@ -1080,7 +1080,7 @@ PluginPanel {
                 return contextRoot.bar.foreground;
             if (action !== "" || devState === 3 || dev.pairing === true)
                 return contextRoot.bar.foreground;
-            return Qt.darker(contextRoot.bar.foreground, 1.5);
+            return Theme.dim;
         }
 
         implicitHeight: deviceRowRowContent.implicitHeight + 16

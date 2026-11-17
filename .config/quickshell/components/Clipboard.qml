@@ -433,12 +433,13 @@ Item {
             id: card
             width: root.cardWidth
             height: root.cardHeight
-            radius: root.cornerRadius
+            radius: Theme.panelRadius
             anchors.centerIn: parent
             anchors.verticalCenterOffset: 0
             gradient: PanelGradient {}
             border.width: 1
             border.color: Theme.border
+            PanelAura { radius: parent.radius }
 
             MouseArea {
                 anchors.fill: parent
@@ -546,7 +547,7 @@ Item {
                     radius: 13
                     color: Theme.background
                     border.width: 1
-                    border.color: searchInput.activeFocus ? "#625471" : Theme.border
+                    border.color: searchInput.activeFocus ? "#45393f" : Theme.border
                     Text {
                         x: 16
                         anchors.verticalCenter: parent.verticalCenter
@@ -566,7 +567,7 @@ Item {
                         color: root.foreground
                         font.family: root.fontFamily
                         font.pixelSize: 12
-                        selectionColor: "#493b5e"
+                        selectionColor: "#45393f"
                         selectByMouse: true
                         clip: true
                         Accessible.name: "Search clipboard"
@@ -659,7 +660,7 @@ Item {
                             radius: 9
                             color: selected ? Theme.hover : filterHit.containsMouse || activeFocus ? Theme.surface : Theme.background
                             border.width: selected ? 1 : 0
-                            border.color: "#625471"
+                            border.color: "#45393f"
                             activeFocusOnTab: true
                             Accessible.role: Accessible.RadioButton
                             Accessible.name: modelData.label
@@ -727,7 +728,7 @@ Item {
                             radius: 10
                             color: hasCursor ? Theme.hover : rowHit.containsMouse ? Theme.hover : Theme.background
                             border.width: hasCursor ? 1 : 0
-                            border.color: "#655271"
+                            border.color: "#45393f"
                             Behavior on color {
                                 ColorAnimation {
                                     duration: 110
@@ -759,7 +760,7 @@ Item {
                                 width: 28
                                 height: 28
                                 radius: 8
-                                color: row.hasCursor ? "#493b5e" : "#2b2833"
+                                color: row.hasCursor ? "#45393f" : "#2c252b"
                                 Text {
                                     visible: !row.previewImage
                                     anchors.centerIn: parent
@@ -817,9 +818,9 @@ Item {
                         anchors.right: parent.right
                         height: parent.height
                         radius: 15
-                        color: "#17141d"
+                        color: "#221c21"
                         border.width: 1
-                        border.color: "#302d37"
+                        border.color: "#2c252b"
                         visible: displayModel.count > 0
                         Item {
                             id: previewHeader
@@ -865,7 +866,7 @@ Item {
                             x: 16
                             width: parent.width - 32
                             height: 1
-                            color: "#29262f"
+                            color: "#2c252b"
                         }
                         ScrollView {
                             id: previewScroll
@@ -890,8 +891,8 @@ Item {
                                 wrapMode: TextEdit.WrapAnywhere
                                 background: null
                                 padding: 0
-                                color: "#e9e5ee"
-                                selectionColor: "#493b5e"
+                                color: "#e6d7dc"
+                                selectionColor: "#45393f"
                                 font.family: root.fontFamily
                                 font.pixelSize: 12
                             }
@@ -920,7 +921,7 @@ Item {
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: "\uf0ea"
-                            color: "#625471"
+                            color: "#45393f"
                             font.family: "Symbols Nerd Font Mono"
                             font.pixelSize: 34
                         }
@@ -942,7 +943,7 @@ Item {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                         text: displayModel.count
-                        color: "#82758f"
+                        color: "#45393f"
                         font.family: root.fontFamily
                         font.pixelSize: 10
                     }
@@ -1006,7 +1007,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: clipActionButton.glyph
-            color: clipActionButton.danger ? "#e28b9b" : Theme.accent
+            color: clipActionButton.danger ? "#d9737f" : Theme.accent
             font.family: "Symbols Nerd Font Mono"
             font.pixelSize: contextRoot.space(12)
         }
@@ -1087,7 +1088,7 @@ Item {
                         Text {
                             anchors.centerIn: parent
                             text: modelData
-                            color: index === 0 ? "#bf616a" : confirmDialogRoot.selectedText
+                            color: index === 0 ? "#d9737f" : confirmDialogRoot.selectedText
                             font.family: confirmDialogRoot.fontFamily
                             font.pixelSize: 12
                         }

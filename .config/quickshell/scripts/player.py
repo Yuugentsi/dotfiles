@@ -237,6 +237,30 @@ def play(path):
     request_cover(str(selected))
 
 
+def play_queue(path, queue):
+    songs = set(tracks())
+    selected = Path(path)
+    if not isinstance(queue, list) or any(not isinstance(item, str) for item in queue):
+        raise ValueError("Invalid queue")
+    ordered = [Path(item) for item in dict.fromkeys(queue) if Path(item) in songs]
+    if selected not in songs:
+        raise ValueError("Track is outside the music library")
+    if selected not in ordered:
+        ordered.insert(0, selected)
+    audio_request("play", str(selected), [str(item) for item in ordered])
+    request_cover(str(selected))
+
+
+def extract_missing_covers(workers=4):
+    from concurrent.futures import ThreadPoolExecutor
+    CACHE.mkdir(parents=True, exist_ok=True)
+    missing = [str(path) for path in tracks()
+               if not cover_path(path).exists() and not cover_path(path).with_suffix(".missing").exists()]
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(extract_cover, missing))
+    return len(missing)
+
+
 def play_artist(artist, artist_order=None):
     groups = {}
     for path in tracks():
@@ -339,6 +363,12 @@ def main(args):
                           "artist": info["artist"], "album": info["album"], "track": info["track"],
                           "cover": cover_uri(cover) if cover.is_file() else ""})
         print(json.dumps(items))
+        return
+    if args == ["covers"]:
+        print(json.dumps({"extracted": extract_missing_covers()}))
+        return
+    if len(args) == 3 and args[0] == "play-queue":
+        play_queue(args[1], json.loads(args[2]))
         return
     if args == ["random-if-idle"]:
         play_random_if_idle()

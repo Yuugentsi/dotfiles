@@ -17,6 +17,7 @@ Item {
             blocked: false,
             device: "",
             connected: "",
+            ipv4: "",
             networks: []
         })
     property string error: ""
@@ -31,8 +32,13 @@ Item {
     readonly property bool busy: action.running
     readonly property bool refreshing: query.running || discoveryAttempts > 0
     readonly property string script: Quickshell.env("HOME") + "/.config/quickshell/scripts/network.py"
+    Component.onCompleted: refresh()
     function open() {
         opened = true;
+        state = Object.assign({}, state, {
+            networks: []
+        });
+        discoveryAttempts = 8;
         refresh();
     }
     function close() {
@@ -102,6 +108,7 @@ Item {
         var payload = {
             action: "connect",
             device: state.device,
+            ssid: network.ssid,
             bssid: network.bssid
         };
         if (password !== undefined)
@@ -111,6 +118,15 @@ Item {
     function submitPassword(password) {
         if (passwordNetwork)
             connectNetwork(passwordNetwork, password);
+    }
+    function forget(ssid) {
+        if (busy || !ssid)
+            return;
+        passwordNetwork = null;
+        request({
+            action: "forget",
+            ssid: ssid
+        });
     }
     function disconnect() {
         request({
@@ -131,6 +147,7 @@ Item {
                         enabled: requestedPower
                     }, requestedPower ? {} : {
                         connected: "",
+                        ipv4: "",
                         networks: []
                     });
                     powerPending = false;
@@ -234,6 +251,12 @@ Item {
         repeat: true
         onTriggered: root.refresh()
     }
+    Timer {
+        interval: 20000
+        running: root.opened && root.state.enabled && !root.state.blocked && !root.busy
+        repeat: true
+        onTriggered: root.scan()
+    }
     IpcHandler {
         target: "wifi"
         function toggle(): void {
@@ -283,14 +306,17 @@ Item {
             y: Math.max(56, (panel.height - 560) / 2)
             width: Math.min(440, panel.width - 32)
             height: Math.min(view.implicitHeight + 40, panel.height - 112)
-            radius: 20
+            radius: Theme.panelRadius
             gradient: PanelGradient {}
             border.width: 1
             border.color: Theme.border
+            PanelAura { radius: parent.radius }
             focus: true
             Keys.onEscapePressed: {
                 if (root.passwordNetwork)
                     root.cancelPassword();
+                else if (view.selectedSsid.length > 0)
+                    view.selectedSsid = "";
                 else
                     root.close();
             }
@@ -306,448 +332,93 @@ Item {
             }
         }
     }
-
-    component DnsPicker: Item {
-        id: dnsPickerRoot
-        property string mode: "automatic"
-        property bool expanded: false
-        property bool busy: false
-        property bool canSelect: true
-        property bool pointerOwned: false
-        property bool hoverArmed: true
-        onExpandedChanged: if (!expanded)
-            pointerOwned = false
-        HoverHandler {
-            id: dnsPickerPickerHover
-            onHoveredChanged: {
-                if (hovered)
-                    dnsPickerRoot.pointerOwned = true;
-                else
-                    dnsPickerRoot.hoverArmed = true;
-            }
-        }
-        Timer {
-            interval: 160
-            running: dnsPickerHeaderHit.containsMouse && dnsPickerRoot.hoverArmed && !dnsPickerRoot.expanded && !dnsPickerRoot.busy
-            onTriggered: {
-                if (!dnsPickerRoot.expanded) {
-                    dnsPickerRoot.hoverArmed = false;
-                    dnsPickerRoot.pointerOwned = true;
-                    dnsPickerRoot.toggleRequested();
-                }
-            }
-        }
-        Timer {
-            interval: 220
-            running: dnsPickerRoot.expanded && dnsPickerRoot.pointerOwned && !dnsPickerPickerHover.hovered
-            onTriggered: if (dnsPickerRoot.expanded)
-                dnsPickerRoot.toggleRequested()
-        }
-        signal toggleRequested
-        signal selected(string provider)
-        readonly property var providers: [
-            {
-                key: "adguard",
-                label: "AdGuard",
-                address: "94.140.14.14",
-                glyph: "\uf132"
-            },
-            {
-                key: "quad9",
-                label: "Quad9",
-                address: "9.9.9.9",
-                glyph: "\uf233"
-            },
-            {
-                key: "cloudflare",
-                label: "Cloudflare",
-                address: "1.1.1.1",
-                glyph: "\uf0c2"
-            },
-            {
-                key: "google",
-                label: "Google",
-                address: "8.8.8.8",
-                glyph: "\uf0ac"
-            }
-        ]
-        readonly property string modeLabel: ({
-                automatic: "Auto",
-                adguard: "AdGuard",
-                quad9: "Quad9",
-                cloudflare: "Cloudflare",
-                google: "Google",
-                custom: "Custom"
-            })[mode] || "Custom"
-        implicitHeight: dnsPickerLayout.implicitHeight + 28
-        height: implicitHeight
-
-        Rectangle {
-            anchors.fill: parent
-            radius: 14
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: "#252030"
-                }
-                GradientStop {
-                    position: 1
-                    color: Theme.background
-                }
-            }
-            border.width: 1
-            border.color: dnsPickerRoot.expanded ? "#5d4a77" : "#393042"
-        }
-        Column {
-            id: dnsPickerLayout
-            x: 14
-            y: 14
-            width: parent.width - 28
-            spacing: 12
-            Item {
-                id: dnsPickerToggle
-                objectName: "dnsToggle"
-                signal clicked
-                width: parent.width
-                height: 38
-                activeFocusOnTab: true
-                Accessible.role: Accessible.Button
-                Accessible.name: "DNS provider, " + dnsPickerRoot.modeLabel
-                Keys.onReturnPressed: {
-                    dnsPickerRoot.pointerOwned = false;
-                    clicked();
-                }
-                Keys.onSpacePressed: {
-                    dnsPickerRoot.pointerOwned = false;
-                    clicked();
-                }
-                onClicked: dnsPickerRoot.toggleRequested()
-                Rectangle {
-                    width: 34
-                    height: 34
-                    radius: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: "#35273f"
-                    border.width: 1
-                    border.color: "#544265"
-                    Text {
-                        anchors.centerIn: parent
-                        text: "\uf233"
-                        color: Theme.accent
-                        font.family: "Symbols Nerd Font Mono"
-                        font.pixelSize: 15
-                    }
-                }
-                Column {
-                    x: 46
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 5
-                    Text {
-                        text: "DNS"
-                        color: "#9b8eaf"
-                        font.family: "sans-serif"
-                        font.pixelSize: 8
-                        font.weight: Font.DemiBold
-                        font.letterSpacing: 1.7
-                    }
-                    Text {
-                        text: dnsPickerRoot.busy ? "Applying…" : dnsPickerRoot.modeLabel
-                        color: Theme.foreground
-                        font.family: "sans-serif"
-                        font.pixelSize: 14
-                        font.weight: Font.Medium
-                    }
-                }
-                Rectangle {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 26
-                    height: 26
-                    radius: 8
-                    color: dnsPickerHeaderHit.containsMouse || dnsPickerToggle.activeFocus ? "#3c2f49" : "#2c2335"
-                    Text {
-                        anchors.centerIn: parent
-                        text: dnsPickerRoot.expanded ? "\uf106" : "\uf107"
-                        color: Theme.accent
-                        font.family: "Symbols Nerd Font Mono"
-                        font.pixelSize: 11
-                    }
-                }
-                MouseArea {
-                    id: dnsPickerHeaderHit
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        dnsPickerRoot.pointerOwned = true;
-                        dnsPickerToggle.clicked();
-                    }
-                }
-            }
-            Column {
-                width: parent.width
-                spacing: 8
-                visible: dnsPickerRoot.expanded
-                Grid {
-                    width: parent.width
-                    columns: 2
-                    spacing: 8
-                    Repeater {
-                        model: dnsPickerRoot.providers
-                        Rectangle {
-                            id: dnsPickerCard
-                            required property var modelData
-                            readonly property bool active: dnsPickerRoot.mode === modelData.key
-                            objectName: "dns-" + modelData.key
-                            width: (parent.width - 8) / 2
-                            height: 76
-                            radius: 11
-                            enabled: !dnsPickerRoot.busy && dnsPickerRoot.canSelect
-                            opacity: enabled || active ? 1 : 0.5
-                            activeFocusOnTab: true
-                            gradient: Gradient {
-                                GradientStop {
-                                    position: 0
-                                    color: dnsPickerCard.active ? "#453253" : dnsPickerCardHit.containsMouse || dnsPickerCard.activeFocus ? "#30273c" : "#211b2a"
-                                }
-                                GradientStop {
-                                    position: 1
-                                    color: dnsPickerCard.active ? "#2d2339" : "#1b1722"
-                                }
-                            }
-                            border.width: 1
-                            border.color: active ? Theme.accent : dnsPickerCardHit.containsMouse || activeFocus ? "#6b527f" : Theme.hover
-                            Accessible.role: Accessible.Button
-                            Accessible.name: modelData.label
-                            Keys.onReturnPressed: dnsPickerRoot.selected(modelData.key)
-                            Keys.onSpacePressed: dnsPickerRoot.selected(modelData.key)
-                            Text {
-                                x: 12
-                                y: 12
-                                text: dnsPickerCard.modelData.glyph
-                                color: dnsPickerCard.active ? "#ddcaff" : "#a28aba"
-                                font.family: "Symbols Nerd Font Mono"
-                                font.pixelSize: 13
-                            }
-                            Rectangle {
-                                anchors.right: parent.right
-                                anchors.rightMargin: 12
-                                y: 13
-                                width: 6
-                                height: 6
-                                radius: 3
-                                color: dnsPickerCard.active ? Theme.accent : "transparent"
-                                border.width: 1
-                                border.color: dnsPickerCard.active ? Theme.accent : "#675274"
-                            }
-                            Text {
-                                x: 12
-                                y: 34
-                                text: dnsPickerCard.modelData.label
-                                color: Theme.foreground
-                                font.family: "sans-serif"
-                                font.pixelSize: 12
-                                font.weight: Font.DemiBold
-                            }
-                            Text {
-                                x: 12
-                                y: 53
-                                text: dnsPickerCard.modelData.address
-                                color: dnsPickerCard.active ? "#bca6d6" : "#82718f"
-                                font.family: "monospace"
-                                font.pixelSize: 9
-                            }
-                            Rectangle {
-                                x: 12
-                                y: parent.height - 1
-                                width: parent.width - 24
-                                height: 1
-                                color: Theme.accent
-                                visible: dnsPickerCard.active
-                            }
-                            MouseArea {
-                                id: dnsPickerCardHit
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: dnsPickerRoot.selected(dnsPickerCard.modelData.key)
-                            }
-                        }
-                    }
-                }
-                Rectangle {
-                    id: dnsPickerAutomatic
-                    objectName: "dns-automatic"
-                    readonly property bool active: dnsPickerRoot.mode === "automatic"
-                    width: parent.width
-                    height: 40
-                    radius: 10
-                    enabled: !dnsPickerRoot.busy && dnsPickerRoot.canSelect
-                    opacity: enabled || active ? 1 : 0.5
-                    activeFocusOnTab: true
-                    color: active ? "#30243e" : dnsPickerAutoHit.containsMouse || activeFocus ? "#2b2234" : "#1c1723"
-                    border.width: 1
-                    border.color: active ? "#8d70ae" : Theme.hover
-                    Accessible.role: Accessible.Button
-                    Accessible.name: "Automatic DNS"
-                    Keys.onReturnPressed: dnsPickerRoot.selected("automatic")
-                    Keys.onSpacePressed: dnsPickerRoot.selected("automatic")
-                    Text {
-                        x: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "\uf074"
-                        color: "#b19acb"
-                        font.family: "Symbols Nerd Font Mono"
-                        font.pixelSize: 12
-                    }
-                    Text {
-                        x: 36
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Auto"
-                        color: "#d5c9e2"
-                        font.family: "sans-serif"
-                        font.pixelSize: 11
-                    }
-                    Text {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: dnsPickerAutomatic.active ? "✓" : ""
-                        color: Theme.accent
-                        font.family: "sans-serif"
-                        font.pixelSize: 12
-                    }
-                    MouseArea {
-                        id: dnsPickerAutoHit
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: dnsPickerRoot.selected("automatic")
-                    }
-                }
-            }
-        }
-    }
-
-    component WifiViewAction: Rectangle {
-        id: wifiViewActionButton
-        property string label: ""
-        property string glyph: ""
-        signal clicked
-        width: 28
-        height: 28
-        radius: 8
-        opacity: enabled ? 1 : 0.3
-        color: wifiViewActionHit.containsMouse || activeFocus ? Theme.hover : "transparent"
-        activeFocusOnTab: true
-        Accessible.role: Accessible.Button
-        Accessible.name: label
-        Keys.onReturnPressed: clicked()
-        Keys.onSpacePressed: clicked()
-        Text {
-            anchors.centerIn: parent
-            text: wifiViewActionButton.glyph
-            color: Theme.muted
-            font.family: "Symbols Nerd Font Mono"
-            font.pixelSize: 12
-        }
-        MouseArea {
-            id: wifiViewActionHit
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: wifiViewActionButton.clicked()
-        }
-        PanelToolTip {
-            visible: wifiViewActionHit.containsMouse
-            text: wifiViewActionButton.label
-        }
-    }
-
-    component WifiViewTextButton: Rectangle {
-        id: wifiViewTextButtonButton
-        property string label: ""
-        property bool primary: false
-        signal clicked
-        width: wifiViewTextButtonCaption.implicitWidth + 24
-        height: 30
-        radius: 8
-        opacity: enabled ? 1 : 0.3
-        color: primary ? Theme.accent : wifiViewTextButtonHit.containsMouse || activeFocus ? Theme.hover : Theme.surface
-        activeFocusOnTab: true
-        Accessible.role: Accessible.Button
-        Accessible.name: label
-        Keys.onReturnPressed: clicked()
-        Keys.onSpacePressed: clicked()
-        Text {
-            id: wifiViewTextButtonCaption
-            anchors.centerIn: parent
-            text: wifiViewTextButtonButton.label
-            color: wifiViewTextButtonButton.primary ? Theme.background : Theme.muted
-            font.family: "sans-serif"
-            font.pixelSize: 11
-        }
-        MouseArea {
-            id: wifiViewTextButtonHit
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: wifiViewTextButtonButton.clicked()
-        }
-    }
-
     component WifiView: Item {
         id: wifiViewRoot
         required property var backend
-        readonly property bool powerEnabled: backend.powerPending ? backend.requestedPower : !!backend.state.enabled
+        readonly property color accentColor: Theme.accent
+        readonly property color successColor: "#a9c4a0"
+        readonly property color dangerColor: "#d9737f"
+        readonly property string iconFont: "JetBrainsMono Nerd Font"
+        readonly property bool powerOn: backend.powerPending ? backend.requestedPower : !!backend.state.enabled
+        readonly property bool listVisible: backend.state.available && backend.state.enabled && !backend.state.blocked
+        readonly property bool settingsVisible: listVisible && !!backend.state.connected
         property string search: ""
-        property bool dnsExpanded: false
-        property bool networksHovered: false
-        readonly property bool networksExpanded: networksHovered || !backend.state.connected || !!backend.passwordNetwork || wifiViewSearchInput.activeFocus
-        Timer {
-            id: wifiViewExpandNetworks
-            interval: 160
-            onTriggered: wifiViewRoot.networksHovered = true
-        }
-        Timer {
-            id: wifiViewCollapseNetworks
-            interval: 240
-            onTriggered: {
-                wifiViewRoot.networksHovered = false;
-                if (!wifiViewSearchInput.activeFocus) {
-                    wifiViewRoot.search = "";
-                    wifiViewSearchInput.clear();
-                }
-            }
-        }
-        readonly property var networks: (backend.state.networks || []).filter(function (wifiViewNetwork) {
-            return !wifiViewRoot.search || wifiViewNetwork.ssid.toLowerCase().indexOf(wifiViewRoot.search.toLowerCase()) >= 0;
+        property string selectedSsid: ""
+        property bool showPassword: false
+        readonly property var networks: (backend.state.networks || []).filter(function (network) {
+            return !wifiViewRoot.search || network.ssid.toLowerCase().indexOf(wifiViewRoot.search.toLowerCase()) >= 0;
         })
-        implicitHeight: Math.min(wifiViewContent.implicitHeight, 520)
-        function connectSelected() {
-            if (!wifiViewPassword.text || backend.busy)
-                return;
-            var secret = wifiViewPassword.text;
-            wifiViewPassword.clear();
-            backend.submitPassword(secret);
+        implicitHeight: Math.min(wifiViewContent.implicitHeight, 600)
+        function signalGlyph(percent) {
+            if (percent >= 75)
+                return "󰤨";
+            if (percent >= 50)
+                return "󰤥";
+            if (percent >= 25)
+                return "󰤢";
+            if (percent > 0)
+                return "󰤟";
+            return "󰤯";
+        }
+        function subtitle() {
+            if (backend.powerPending)
+                return backend.requestedPower ? "TURNING ON…" : "TURNING OFF…";
+            if (backend.refreshing && !backend.state.available)
+                return "SCANNING…";
+            if (!backend.state.available)
+                return "NO ADAPTER DETECTED";
+            if (backend.state.blocked)
+                return "BLOCKED BY HARDWARE SWITCH";
+            if (!backend.state.enabled)
+                return "WI-FI IS OFF";
+            if ((backend.state.networks || []).length === 0 && backend.refreshing)
+                return "SCANNING…";
+            return (backend.state.networks || []).length + " NETWORKS IN RANGE";
+        }
+        function activity() {
+            if (!backend.busy)
+                return "";
+            var labels = {
+                scan: "SCANNING…",
+                connect: "CONNECTING…",
+                disconnect: "DISCONNECTING…",
+                band: "SWITCHING BAND…",
+                dns: "UPDATING DNS…",
+                forget: "FORGETTING…",
+                power: "UPDATING…"
+            };
+            return labels[backend.lastAction] || "UPDATING…";
+        }
+        function cancelPrompt() {
+            wifiViewRoot.selectedSsid = "";
+            wifiViewRoot.showPassword = false;
+            if (backend.passwordNetwork)
+                backend.cancelPassword();
         }
         Connections {
             target: wifiViewRoot.backend
             function onPasswordNetworkChanged() {
-                wifiViewPassword.clear();
                 if (wifiViewRoot.backend.passwordNetwork)
-                    Qt.callLater(function () {
-                        wifiViewPassword.forceActiveFocus();
-                    });
+                    wifiViewRoot.selectedSsid = wifiViewRoot.backend.passwordNetwork.ssid;
+                else
+                    wifiViewRoot.selectedSsid = "";
+            }
+            function onStateChanged() {
+                if (wifiViewRoot.selectedSsid && wifiViewRoot.backend.state.connected === wifiViewRoot.selectedSsid)
+                    wifiViewRoot.selectedSsid = "";
+                if (!wifiViewRoot.backend.opened) {
+                    wifiViewRoot.selectedSsid = "";
+                    wifiViewRoot.search = "";
+                    wifiViewRoot.showPassword = false;
+                    wifiViewSearchInput.clear();
+                }
             }
             function onOpenedChanged() {
                 if (!wifiViewRoot.backend.opened) {
-                    wifiViewPassword.clear();
+                    wifiViewRoot.selectedSsid = "";
                     wifiViewRoot.search = "";
+                    wifiViewRoot.showPassword = false;
                     wifiViewSearchInput.clear();
-                    wifiViewRoot.networksHovered = false;
-                    wifiViewExpandNetworks.stop();
-                    wifiViewCollapseNetworks.stop();
                 }
             }
         }
@@ -760,46 +431,33 @@ Item {
             Column {
                 id: wifiViewContent
                 width: wifiViewScroll.availableWidth
-                spacing: 16
+                spacing: 14
                 Item {
                     width: parent.width
-                    height: 52
-                    Rectangle {
-                        id: wifiViewIcon
-                        width: 42
-                        height: 42
-                        radius: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: wifiViewRoot.powerEnabled ? Theme.accent : Theme.surface
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\uf1eb"
-                            color: wifiViewRoot.powerEnabled ? Theme.background : Theme.dim
-                            font.family: "Symbols Nerd Font Mono"
-                            font.pixelSize: 19
-                        }
-                    }
+                    height: 42
                     Column {
-                        anchors.left: wifiViewIcon.right
-                        anchors.leftMargin: 12
+                        anchors.left: parent.left
                         anchors.right: wifiViewHeaderActions.left
                         anchors.rightMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 4
+                        spacing: 3
                         Text {
-                            text: "Wi-Fi"
-                            color: Theme.foreground
+                            text: "WIFI NETWORKS"
+                            color: Theme.accent
                             font.family: "sans-serif"
-                            font.pixelSize: 20
-                            font.weight: Font.DemiBold
+                            font.pixelSize: 14
+                            font.letterSpacing: 2
+                            font.weight: Font.Black
                         }
                         Text {
                             width: parent.width
-                            text: wifiViewRoot.backend.powerPending ? wifiViewRoot.backend.requestedPower ? "Turning on…" : "Turning off…" : !wifiViewRoot.backend.state.available ? "No adapter" : wifiViewRoot.backend.state.blocked ? "Blocked" : !wifiViewRoot.backend.state.enabled ? "Off" : wifiViewRoot.backend.state.connected || "Disconnected"
+                            text: wifiViewRoot.subtitle()
                             textFormat: Text.PlainText
                             color: Theme.dim
                             font.family: "sans-serif"
-                            font.pixelSize: 11
+                            font.pixelSize: 10
+                            font.weight: Font.Bold
+                            font.letterSpacing: 1
                             elide: Text.ElideRight
                         }
                     }
@@ -807,65 +465,131 @@ Item {
                         id: wifiViewHeaderActions
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 12
-                        ToggleSwitch {
-                            objectName: "wifiPower"
-                            anchors.verticalCenter: parent.verticalCenter
-                            checked: wifiViewRoot.powerEnabled
-                            enabled: wifiViewRoot.backend.state.available && !wifiViewRoot.backend.state.blocked && !wifiViewRoot.backend.busy
-                            opacity: enabled || wifiViewRoot.backend.powerPending ? 1 : 0.3
-                            activeFocusOnTab: true
-                            Accessible.role: Accessible.CheckBox
-                            Accessible.name: "Wi-Fi power"
-                            Accessible.checked: checked
-                            Keys.onReturnPressed: wifiViewRoot.backend.setPower(!checked)
-                            Keys.onSpacePressed: wifiViewRoot.backend.setPower(!checked)
-                            onToggled: wifiViewRoot.backend.setPower(!checked)
+                        spacing: 8
+                        WifiIconButton {
+                            label: "Refresh networks"
+                            glyph: "󰑐"
+                            enabled: wifiViewRoot.powerOn && !wifiViewRoot.backend.busy && !wifiViewRoot.backend.refreshing
+                            onClicked: wifiViewRoot.backend.scan()
+                            RotationAnimation on rotation {
+                                running: wifiViewRoot.backend.refreshing
+                                from: 0
+                                to: 360
+                                duration: 900
+                                loops: Animation.Infinite
+                            }
                         }
-                        WifiViewAction {
+                        WifiIconButton {
+                            objectName: "wifiPower"
+                            label: "Wi-Fi power"
+                            glyph: "󰖩"
+                            active: wifiViewRoot.powerOn
+                            enabled: wifiViewRoot.backend.state.available && !wifiViewRoot.backend.state.blocked && !wifiViewRoot.backend.busy
+                            onClicked: wifiViewRoot.backend.setPower(!wifiViewRoot.powerOn)
+                        }
+                        WifiIconButton {
                             label: "Close"
-                            glyph: "\uf00d"
+                            glyph: "󰅖"
                             onClicked: wifiViewRoot.backend.close()
                         }
                     }
                 }
                 Rectangle {
                     width: parent.width
-                    height: 1
-                    color: "#302c36"
-                }
-                Text {
-                    visible: wifiViewRoot.backend.busy || wifiViewRoot.backend.refreshing
-                    text: wifiViewRoot.backend.busy ? wifiViewRoot.backend.lastAction === "scan" ? "Scanning…" : wifiViewRoot.backend.lastAction === "connect" ? "Connecting…" : wifiViewRoot.backend.lastAction === "band" ? "Switching…" : wifiViewRoot.backend.lastAction === "dns" ? "DNS…" : "Updating…" : "Updating…"
-                    color: Theme.accent
-                    font.family: "sans-serif"
-                    font.pixelSize: 11
+                    height: 62
+                    radius: 18
+                    visible: !!wifiViewRoot.backend.state.connected
+                    color: Qt.rgba(wifiViewRoot.accentColor.r, wifiViewRoot.accentColor.g, wifiViewRoot.accentColor.b, 0.1)
+                    border.width: 1
+                    border.color: Qt.rgba(wifiViewRoot.accentColor.r, wifiViewRoot.accentColor.g, wifiViewRoot.accentColor.b, 0.3)
+                    Row {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 14
+                        Rectangle {
+                            width: 38
+                            height: 38
+                            radius: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Qt.rgba(wifiViewRoot.successColor.r, wifiViewRoot.successColor.g, wifiViewRoot.successColor.b, 0.2)
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰤨"
+                                color: wifiViewRoot.successColor
+                                font.family: wifiViewRoot.iconFont
+                                font.pixelSize: 20
+                            }
+                        }
+                        Column {
+                            width: parent.width - 38 - 14 - wifiViewDisconnect.width - 28
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
+                            Text {
+                                width: parent.width
+                                text: wifiViewRoot.backend.state.connected
+                                textFormat: Text.PlainText
+                                color: Theme.foreground
+                                font.family: "sans-serif"
+                                font.pixelSize: 14
+                                font.weight: Font.Bold
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                width: parent.width
+                                text: wifiViewRoot.backend.state.ipv4 ? "IP: " + wifiViewRoot.backend.state.ipv4 : "Connected"
+                                textFormat: Text.PlainText
+                                color: Theme.dim
+                                font.family: "sans-serif"
+                                font.pixelSize: 10
+                                font.weight: Font.Bold
+                                elide: Text.ElideRight
+                            }
+                        }
+                        Rectangle {
+                            id: wifiViewDisconnect
+                            objectName: "disconnectNetwork"
+                            width: 86
+                            height: 34
+                            radius: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            enabled: !wifiViewRoot.backend.busy
+                            opacity: enabled ? 1 : 0.4
+                            color: Qt.rgba(wifiViewRoot.dangerColor.r, wifiViewRoot.dangerColor.g, wifiViewRoot.dangerColor.b, 0.15)
+                            border.width: 1
+                            border.color: wifiViewRoot.dangerColor
+                            Text {
+                                anchors.centerIn: parent
+                                text: "DISCONNECT"
+                                color: wifiViewRoot.dangerColor
+                                font.family: "sans-serif"
+                                font.pixelSize: 9
+                                font.weight: Font.Black
+                                font.letterSpacing: 0.4
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: wifiViewDisconnect.enabled
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: wifiViewRoot.backend.disconnect()
+                            }
+                        }
+                    }
                 }
                 Column {
                     width: parent.width
-                    spacing: 9
-                    visible: !!wifiViewRoot.backend.state.profileUuid || !!wifiViewRoot.backend.state.connected
-                    Item {
-                        width: parent.width
-                        height: 16
-                        Text {
-                            anchors.left: parent.left
-                            text: "Band"
-                            color: Theme.muted
-                            font.family: "sans-serif"
-                            font.pixelSize: 11
-                        }
-                        Text {
-                            anchors.right: parent.right
-                            text: wifiViewRoot.backend.state.actualBand === "bg" ? "2.4 GHz" : wifiViewRoot.backend.state.actualBand === "a" ? "5 GHz" : wifiViewRoot.backend.state.actualBand === "6" ? "6 GHz" : ""
-                            color: Theme.dim
-                            font.family: "sans-serif"
-                            font.pixelSize: 10
-                        }
+                    spacing: 6
+                    visible: wifiViewRoot.settingsVisible
+                    Text {
+                        text: "BAND"
+                        color: Theme.muted
+                        font.family: "sans-serif"
+                        font.pixelSize: 9
+                        font.weight: Font.Black
+                        font.letterSpacing: 1.2
                     }
                     Row {
                         width: parent.width
-                        spacing: 4
+                        spacing: 6
                         Repeater {
                             model: [
                                 {
@@ -878,170 +602,124 @@ Item {
                                 },
                                 {
                                     mode: "",
-                                    label: "Auto"
+                                    label: "AUTO"
                                 }
                             ]
-                            Rectangle {
-                                id: wifiViewBand
+                            WifiChip {
                                 required property var modelData
-                                readonly property bool selected: (wifiViewRoot.backend.state.bandMode || "") === modelData.mode
+                                width: (parent.width - 12) / 3
+                                label: modelData.label
+                                selected: (wifiViewRoot.backend.state.bandMode || "") === modelData.mode
+                                enabled: !wifiViewRoot.backend.busy && (!modelData.mode || (wifiViewRoot.backend.state.availableBands || []).indexOf(modelData.mode) >= 0)
                                 objectName: "band-" + (modelData.mode || "auto")
-                                width: (parent.width - 8) / 3
-                                height: 32
-                                radius: 8
-                                enabled: !!wifiViewRoot.backend.state.connected && wifiViewRoot.backend.state.enabled && !wifiViewRoot.backend.busy && (!modelData.mode || (wifiViewRoot.backend.state.availableBands || []).indexOf(modelData.mode) >= 0)
-                                opacity: enabled || selected ? 1 : 0.3
-                                color: selected ? Theme.hover : wifiViewBandHit.containsMouse || activeFocus ? Theme.surface : Theme.background
-                                border.width: selected ? 1 : 0
-                                border.color: "#625471"
-                                activeFocusOnTab: true
-                                Accessible.role: Accessible.Button
-                                Accessible.name: modelData.label
-                                Keys.onReturnPressed: wifiViewRoot.backend.setBand(modelData.mode)
-                                Keys.onSpacePressed: wifiViewRoot.backend.setBand(modelData.mode)
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: wifiViewBand.modelData.label
-                                    color: wifiViewBand.selected ? Theme.accent : Theme.muted
-                                    font.family: "sans-serif"
-                                    font.pixelSize: 11
+                                onClicked: wifiViewRoot.backend.setBand(modelData.mode)
+                            }
+                        }
+                    }
+                    Text {
+                        text: "DNS"
+                        color: Theme.muted
+                        font.family: "sans-serif"
+                        font.pixelSize: 9
+                        font.weight: Font.Black
+                        font.letterSpacing: 1.2
+                    }
+                    Flow {
+                        width: parent.width
+                        spacing: 6
+                        Repeater {
+                            model: [
+                                {
+                                    key: "automatic",
+                                    label: "AUTO"
+                                },
+                                {
+                                    key: "adguard",
+                                    label: "ADGUARD"
+                                },
+                                {
+                                    key: "quad9",
+                                    label: "QUAD9"
+                                },
+                                {
+                                    key: "cloudflare",
+                                    label: "CLOUDFLARE"
+                                },
+                                {
+                                    key: "google",
+                                    label: "GOOGLE"
                                 }
-                                MouseArea {
-                                    id: wifiViewBandHit
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: wifiViewRoot.backend.setBand(wifiViewBand.modelData.mode)
-                                }
+                            ]
+                            WifiChip {
+                                required property var modelData
+                                label: modelData.label
+                                selected: (wifiViewRoot.backend.state.dnsMode || "automatic") === modelData.key
+                                enabled: !wifiViewRoot.backend.busy
+                                objectName: "dns-" + modelData.key
+                                onClicked: wifiViewRoot.backend.setDns(modelData.key)
                             }
                         }
                     }
                 }
-                DnsPicker {
+                Rectangle {
                     width: parent.width
-                    visible: !!wifiViewRoot.backend.state.profileUuid || !!wifiViewRoot.backend.state.connected
-                    mode: wifiViewRoot.backend.state.dnsMode || "automatic"
-                    expanded: wifiViewRoot.dnsExpanded
-                    busy: wifiViewRoot.backend.busy && wifiViewRoot.backend.lastAction === "dns"
-                    canSelect: !!wifiViewRoot.backend.state.connected && wifiViewRoot.backend.state.enabled && !wifiViewRoot.backend.busy
-                    enabled: !wifiViewRoot.backend.busy || wifiViewRoot.backend.lastAction === "dns"
-                    onToggleRequested: wifiViewRoot.dnsExpanded = !wifiViewRoot.dnsExpanded
-                    onSelected: function (provider) {
-                        wifiViewRoot.dnsExpanded = false;
-                        wifiViewRoot.backend.setDns(provider);
-                    }
-                }
-                Column {
-                    width: parent.width
-                    spacing: 12
-                    visible: !!wifiViewRoot.backend.passwordNetwork
+                    height: wifiViewError.implicitHeight + 20
+                    radius: 12
+                    visible: !!wifiViewRoot.backend.error
+                    color: Qt.rgba(wifiViewRoot.dangerColor.r, wifiViewRoot.dangerColor.g, wifiViewRoot.dangerColor.b, 0.12)
+                    border.width: 1
+                    border.color: Qt.rgba(wifiViewRoot.dangerColor.r, wifiViewRoot.dangerColor.g, wifiViewRoot.dangerColor.b, 0.4)
                     Text {
-                        width: parent.width
-                        text: wifiViewRoot.backend.passwordNetwork ? "Join “" + wifiViewRoot.backend.passwordNetwork.ssid + "”" : ""
+                        id: wifiViewError
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.margins: 10
+                        text: wifiViewRoot.backend.error
                         textFormat: Text.PlainText
-                        color: Theme.foreground
+                        color: wifiViewRoot.dangerColor
                         font.family: "sans-serif"
-                        font.pixelSize: 14
-                        font.weight: Font.DemiBold
+                        font.pixelSize: 11
                         wrapMode: Text.Wrap
                     }
-                    TextField {
-                        id: wifiViewPassword
-                        objectName: "networkPassword"
-                        width: parent.width
-                        height: 38
-                        echoMode: TextInput.Password
-                        maximumLength: 256
-                        placeholderText: "Network password"
-                        color: Theme.foreground
-                        placeholderTextColor: Theme.dim
-                        font.family: "sans-serif"
-                        font.pixelSize: 12
-                        enabled: !wifiViewRoot.backend.busy
-                        Accessible.name: "Network password"
-                        background: Rectangle {
-                            radius: 9
-                            color: Theme.background
-                            border.width: 1
-                            border.color: wifiViewPassword.activeFocus ? "#625471" : Theme.border
-                        }
-                        onAccepted: wifiViewRoot.connectSelected()
-                    }
-                    Row {
-                        anchors.right: parent.right
-                        spacing: 8
-                        WifiViewTextButton {
-                            label: "Cancel"
-                            enabled: !wifiViewRoot.backend.busy
-                            onClicked: wifiViewRoot.backend.cancelPassword()
-                        }
-                        WifiViewTextButton {
-                            label: "Connect"
-                            primary: true
-                            enabled: !!wifiViewPassword.text && !wifiViewRoot.backend.busy
-                            onClicked: wifiViewRoot.connectSelected()
-                        }
-                    }
-                }
-                Text {
-                    width: parent.width
-                    visible: !!wifiViewRoot.backend.error
-                    text: wifiViewRoot.backend.error
-                    textFormat: Text.PlainText
-                    color: "#e28b9b"
-                    font.family: "sans-serif"
-                    font.pixelSize: 11
-                    wrapMode: Text.Wrap
                 }
                 Column {
                     id: wifiViewNetworkSection
                     objectName: "networkSection"
                     width: parent.width
-                    spacing: 10
-                    HoverHandler {
-                        margin: 8
-                        onHoveredChanged: {
-                            if (hovered) {
-                                wifiViewCollapseNetworks.stop();
-                                wifiViewExpandNetworks.restart();
-                            } else {
-                                wifiViewExpandNetworks.stop();
-                                wifiViewCollapseNetworks.restart();
-                            }
-                        }
-                    }
-                    visible: wifiViewRoot.backend.state.available && wifiViewRoot.backend.state.enabled && !wifiViewRoot.backend.state.blocked
+                    spacing: 8
+                    visible: wifiViewRoot.listVisible
                     Item {
                         width: parent.width
-                        height: 28
-                        activeFocusOnTab: true
-                        Accessible.role: Accessible.Button
-                        Accessible.name: "Show nearby networks"
-                        Keys.onReturnPressed: wifiViewRoot.networksHovered = !wifiViewRoot.networksHovered
-                        Keys.onSpacePressed: wifiViewRoot.networksHovered = !wifiViewRoot.networksHovered
+                        height: 16
                         Text {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            text: wifiViewRoot.networksExpanded ? "Networks" : "Nearby"
+                            text: "NETWORKS"
                             color: Theme.muted
                             font.family: "sans-serif"
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
+                            font.pixelSize: 9
+                            font.weight: Font.Black
+                            font.letterSpacing: 1.2
                         }
-                        WifiViewAction {
+                        Text {
                             anchors.right: parent.right
-                            label: "Refresh networks"
-                            glyph: "\uf021"
-                            enabled: !wifiViewRoot.backend.busy && !wifiViewRoot.backend.refreshing
-                            onClicked: wifiViewRoot.backend.scan()
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: wifiViewRoot.activity().length > 0
+                            text: wifiViewRoot.activity()
+                            color: Theme.accent
+                            font.family: "sans-serif"
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                            font.letterSpacing: 0.8
                         }
                     }
                     TextField {
                         id: wifiViewSearchInput
                         objectName: "networkSearch"
                         width: parent.width
-                        height: 34
-                        visible: wifiViewRoot.networksExpanded && ((wifiViewRoot.backend.state.networks || []).length > 5 || !!wifiViewRoot.search)
+                        height: 32
+                        visible: (wifiViewRoot.backend.state.networks || []).length > 4 || wifiViewRoot.search.length > 0
                         placeholderText: "Search networks"
                         color: Theme.foreground
                         placeholderTextColor: Theme.dim
@@ -1049,120 +727,317 @@ Item {
                         font.pixelSize: 11
                         Accessible.name: "Search networks"
                         background: Rectangle {
-                            radius: 8
+                            radius: 9
                             color: Theme.background
                             border.width: 1
-                            border.color: Theme.border
+                            border.color: wifiViewSearchInput.activeFocus ? Theme.accent : Theme.border
                         }
                         onTextEdited: wifiViewRoot.search = text
                     }
                     Column {
                         width: parent.width
-                        spacing: 3
+                        spacing: 8
                         Repeater {
                             model: wifiViewRoot.networks
                             Rectangle {
                                 id: wifiViewNetwork
                                 required property var modelData
-                                visible: wifiViewRoot.networksExpanded || modelData.active
+                                readonly property bool active: !!modelData.active
+                                readonly property bool known: !!modelData.known
+                                readonly property bool promptOpen: wifiViewRoot.selectedSsid === modelData.ssid
+                                readonly property bool expanded: promptOpen && (!!wifiViewRoot.backend.passwordNetwork || !known)
                                 width: parent.width
-                                height: 58
-                                radius: 11
-                                color: modelData.active ? Theme.hover : wifiViewHit.containsMouse || activeFocus ? Theme.surface : "transparent"
+                                height: expanded ? 108 : 60
+                                radius: 16
+                                color: active ? Qt.rgba(wifiViewRoot.accentColor.r, wifiViewRoot.accentColor.g, wifiViewRoot.accentColor.b, 0.18) : (wifiViewNetworkHit.containsMouse || activeFocus ? Theme.hover : Theme.surface)
+                                border.width: 1
+                                border.color: active ? wifiViewRoot.successColor : (expanded || activeFocus ? Theme.accent : Theme.border)
                                 activeFocusOnTab: true
                                 Accessible.role: Accessible.Button
-                                Accessible.name: modelData.ssid + (modelData.active ? ", connected" : "")
+                                Accessible.name: modelData.ssid + (active ? ", connected" : known ? ", saved" : "")
+                                Behavior on height {
+                                    NumberAnimation {
+                                        duration: 160
+                                        easing.type: Easing.OutCubic
+                                    }
+                                }
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 140
+                                    }
+                                }
                                 function activate() {
                                     if (wifiViewRoot.backend.busy)
                                         return;
-                                    if (modelData.active)
-                                        wifiViewRoot.backend.setPower(false);
-                                    else
+                                    if (active) {
+                                        wifiViewRoot.cancelPrompt();
+                                        return;
+                                    }
+                                    if (known || !modelData.secured) {
+                                        wifiViewRoot.cancelPrompt();
                                         wifiViewRoot.backend.connectNetwork(modelData);
+                                        return;
+                                    }
+                                    wifiViewRoot.showPassword = false;
+                                    wifiViewRoot.selectedSsid = promptOpen ? "" : modelData.ssid;
                                 }
                                 Keys.onReturnPressed: activate()
                                 Keys.onSpacePressed: activate()
                                 MouseArea {
-                                    id: wifiViewHit
+                                    id: wifiViewNetworkHit
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: wifiViewNetwork.activate()
                                 }
-                                Text {
-                                    x: 12
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "\uf1eb"
-                                    opacity: 0.3 + wifiViewNetwork.modelData.signal / 100 * 0.7
-                                    color: wifiViewNetwork.modelData.active ? Theme.accent : Theme.muted
-                                    font.family: "Symbols Nerd Font Mono"
-                                    font.pixelSize: 16
-                                }
-                                Column {
-                                    x: 43
-                                    width: parent.width - 94
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: 5
+                                Item {
+                                    id: wifiViewNetworkRow
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: 12
+                                    height: 36
                                     Text {
-                                        width: parent.width
-                                        text: wifiViewNetwork.modelData.ssid
-                                        textFormat: Text.PlainText
+                                        id: wifiViewSignal
+                                        anchors.left: parent.left
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 30
+                                        horizontalAlignment: Text.AlignHCenter
+                                        text: wifiViewRoot.signalGlyph(modelData.signal)
+                                        color: wifiViewNetwork.active ? wifiViewRoot.successColor : Theme.foreground
+                                        font.family: wifiViewRoot.iconFont
+                                        font.pixelSize: 22
+                                    }
+                                    Row {
+                                        id: wifiViewNetworkActions
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 6
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: modelData.signal + "%"
+                                            color: wifiViewNetwork.active ? wifiViewRoot.successColor : Theme.dim
+                                            font.family: "sans-serif"
+                                            font.pixelSize: 10
+                                            font.weight: Font.Bold
+                                        }
+                                        Rectangle {
+                                            width: 32
+                                            height: 32
+                                            radius: 10
+                                            visible: wifiViewNetwork.known
+                                            color: wifiViewForgetHit.containsMouse ? Qt.rgba(wifiViewRoot.dangerColor.r, wifiViewRoot.dangerColor.g, wifiViewRoot.dangerColor.b, 0.25) : Qt.rgba(wifiViewRoot.dangerColor.r, wifiViewRoot.dangerColor.g, wifiViewRoot.dangerColor.b, 0.15)
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "󰆴"
+                                                color: wifiViewRoot.dangerColor
+                                                font.family: wifiViewRoot.iconFont
+                                                font.pixelSize: 17
+                                            }
+                                            MouseArea {
+                                                id: wifiViewForgetHit
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: wifiViewRoot.backend.forget(modelData.ssid)
+                                            }
+                                        }
+                                        Rectangle {
+                                            width: 74
+                                            height: 32
+                                            radius: 10
+                                            visible: wifiViewNetwork.known && !wifiViewNetwork.active
+                                            enabled: !wifiViewRoot.backend.busy
+                                            opacity: enabled ? 1 : 0.4
+                                            color: wifiViewConnectHit.containsMouse ? Theme.accentAlt : Theme.accent
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "CONNECT"
+                                                color: Theme.background
+                                                font.family: "sans-serif"
+                                                font.pixelSize: 9
+                                                font.weight: Font.Black
+                                                font.letterSpacing: 0.4
+                                            }
+                                            MouseArea {
+                                                id: wifiViewConnectHit
+                                                anchors.fill: parent
+                                                enabled: parent.enabled
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: wifiViewRoot.backend.connectNetwork(modelData)
+                                            }
+                                        }
+                                        Rectangle {
+                                            width: 32
+                                            height: 32
+                                            radius: 10
+                                            visible: !wifiViewNetwork.known && !wifiViewNetwork.active
+                                            color: Qt.rgba(0.902, 0.843, 0.863, 0.08)
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "󰅂"
+                                                color: Theme.foreground
+                                                font.family: wifiViewRoot.iconFont
+                                                font.pixelSize: 15
+                                                rotation: wifiViewNetwork.expanded ? 90 : 0
+                                                Behavior on rotation {
+                                                    NumberAnimation {
+                                                        duration: 160
+                                                    }
+                                                }
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: wifiViewNetwork.activate()
+                                            }
+                                        }
+                                    }
+                                    Column {
+                                        anchors.left: wifiViewSignal.right
+                                        anchors.leftMargin: 10
+                                        anchors.right: wifiViewNetworkActions.left
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 2
+                                        Text {
+                                            width: parent.width
+                                            text: modelData.ssid
+                                            textFormat: Text.PlainText
+                                            color: Theme.foreground
+                                            font.family: "sans-serif"
+                                            font.pixelSize: 13
+                                            font.weight: Font.Bold
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: wifiViewNetwork.active ? "ACTIVE" : wifiViewNetwork.known ? "SAVED" : "SIGNAL " + modelData.signal + "%"
+                                            textFormat: Text.PlainText
+                                            color: wifiViewNetwork.active ? wifiViewRoot.successColor : Theme.dim
+                                            font.family: "sans-serif"
+                                            font.pixelSize: 9
+                                            font.weight: Font.Black
+                                            font.letterSpacing: 0.5
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                }
+                                Row {
+                                    id: wifiViewPasswordRow
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.bottom: parent.bottom
+                                    anchors.margins: 12
+                                    height: 34
+                                    visible: wifiViewNetwork.expanded
+                                    spacing: 8
+                                    TextField {
+                                        id: wifiViewPassword
+                                        objectName: "networkPassword"
+                                        width: parent.width - 34 - 80 - 16
+                                        height: 34
+                                        echoMode: wifiViewRoot.showPassword ? TextInput.Normal : TextInput.Password
+                                        maximumLength: 256
+                                        placeholderText: "Enter Wi-Fi password"
                                         color: Theme.foreground
+                                        placeholderTextColor: Theme.dim
                                         font.family: "sans-serif"
                                         font.pixelSize: 12
-                                        font.weight: wifiViewNetwork.modelData.active ? Font.DemiBold : Font.Normal
-                                        elide: Text.ElideRight
+                                        leftPadding: 10
+                                        rightPadding: 10
+                                        enabled: !wifiViewRoot.backend.busy
+                                        Accessible.name: "Network password"
+                                        background: Rectangle {
+                                            radius: 10
+                                            color: Theme.background
+                                            border.width: 1
+                                            border.color: wifiViewPassword.activeFocus ? Theme.accent : Theme.border
+                                        }
+                                        onVisibleChanged: {
+                                            if (visible)
+                                                Qt.callLater(function () {
+                                                    wifiViewPassword.forceActiveFocus();
+                                                });
+                                            else
+                                                wifiViewPassword.clear();
+                                        }
+                                        onAccepted: {
+                                            if (wifiViewPassword.text && !wifiViewRoot.backend.busy)
+                                                wifiViewRoot.backend.submitPassword(wifiViewPassword.text);
+                                        }
                                     }
-                                    Text {
-                                        width: parent.width
-                                        text: wifiViewNetwork.modelData.security + " · " + wifiViewNetwork.modelData.signal + "%"
-                                        color: Theme.dim
-                                        font.family: "sans-serif"
-                                        font.pixelSize: 10
-                                        elide: Text.ElideRight
+                                    Rectangle {
+                                        width: 34
+                                        height: 34
+                                        radius: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: wifiViewPasswordEye.containsMouse ? Theme.hover : "transparent"
+                                        border.width: 1
+                                        border.color: Theme.border
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: wifiViewRoot.showPassword ? "󰈈" : "󰈉"
+                                            color: Theme.foreground
+                                            font.family: wifiViewRoot.iconFont
+                                            font.pixelSize: 16
+                                        }
+                                        MouseArea {
+                                            id: wifiViewPasswordEye
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: wifiViewRoot.showPassword = !wifiViewRoot.showPassword
+                                        }
                                     }
-                                }
-                                Text {
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 14
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: !wifiViewNetwork.modelData.active
-                                    text: wifiViewNetwork.modelData.secured ? "\uf023" : "\uf105"
-                                    color: Theme.dim
-                                    font.family: "Symbols Nerd Font Mono"
-                                    font.pixelSize: 11
-                                }
-                                WifiViewAction {
-                                    objectName: "disconnectNetwork"
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 8
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: wifiViewNetwork.modelData.active
-                                    enabled: !wifiViewRoot.backend.busy
-                                    glyph: "\uf00d"
-                                    label: "Disconnect"
-                                    onClicked: wifiViewRoot.backend.disconnect()
+                                    Rectangle {
+                                        width: 80
+                                        height: 34
+                                        radius: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        enabled: wifiViewPassword.text.length > 0 && !wifiViewRoot.backend.busy
+                                        opacity: enabled ? 1 : 0.4
+                                        color: enabled && wifiViewJoinHit.containsMouse ? Theme.accentAlt : Theme.accent
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "JOIN"
+                                            color: Theme.background
+                                            font.family: "sans-serif"
+                                            font.pixelSize: 10
+                                            font.weight: Font.Black
+                                            font.letterSpacing: 0.8
+                                        }
+                                        MouseArea {
+                                            id: wifiViewJoinHit
+                                            anchors.fill: parent
+                                            enabled: parent.enabled
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: wifiViewRoot.backend.submitPassword(wifiViewPassword.text)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                     Text {
                         width: parent.width
-                        visible: wifiViewRoot.networksExpanded && wifiViewRoot.networks.length === 0 && !wifiViewRoot.backend.refreshing && !wifiViewRoot.backend.busy
-                        text: wifiViewRoot.search ? "No matching networks" : "No networks found. Try refreshing."
+                        visible: wifiViewRoot.networks.length === 0 && !wifiViewRoot.backend.refreshing && !wifiViewRoot.backend.busy
+                        text: wifiViewRoot.search.length > 0 ? "No networks match this search." : "No networks in range. Try refreshing."
                         color: Theme.dim
                         font.family: "sans-serif"
-                        font.pixelSize: 12
+                        font.pixelSize: 11
                         wrapMode: Text.Wrap
                     }
                 }
                 Text {
                     width: parent.width
-                    visible: !wifiViewRoot.backend.state.enabled || !wifiViewRoot.backend.state.available || wifiViewRoot.backend.state.blocked
-                    text: !wifiViewRoot.backend.state.available ? "No Wi-Fi adapter was detected." : wifiViewRoot.backend.state.blocked ? "Enable wireless using your computer’s hardware switch." : "Turn on Wi-Fi to see nearby networks."
+                    visible: !wifiViewRoot.listVisible
+                    text: wifiViewRoot.backend.refreshing ? "Scanning for networks…" : !wifiViewRoot.backend.state.available ? "No Wi-Fi adapter was detected." : wifiViewRoot.backend.state.blocked ? "Enable wireless using your computer's hardware switch." : "Turn on Wi-Fi to see nearby networks."
                     color: Theme.dim
                     font.family: "sans-serif"
-                    font.pixelSize: 12
+                    font.pixelSize: 11
                     wrapMode: Text.Wrap
                 }
             }

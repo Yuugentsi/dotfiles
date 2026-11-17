@@ -1,20 +1,20 @@
-# zips
-# extract
-# crossfade
-# live
-# nodisplay
-# power
-# past
-# clients
-# h
-# l
-# word
-# search
-# lf
-# playing
-# mem
+# zips - compression menu
+# extract - unzip all archives
+# crossfade - merge music with crossfade
+# live - play youtube live
+# nodisplay - hide/show desktop apps
+# power - power menu
+# past - thunar bookmarks
+# clients - hyprctl clients
+# h - ⌘
+# l - categorized ls
+# word - word search
+# search - find files
+# lf - list files
+# playing - now playing
+# mem - 󰍛
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━ zips / extract ━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──── zips ──────────────────────
 function zips -d "compression menu"
     set -l P (set_color cba6f7)
     set -l G (set_color a6e3a1)
@@ -69,7 +69,7 @@ function zips -d "compression menu"
     end
 end
 
-# ── extract ──
+# ──── extract ───────────────────
 function extract -d "unzip all archives"
     set -l archives (find . -maxdepth 1 -type f -name "*.zip" 2>/dev/null)
 
@@ -116,8 +116,32 @@ function __zips_progress -d "zip with progress"
     end
 end
 
-# -------- crossfade --------
-function crossfade --description 'Merge random music files from the current directory with crossfade'
+function __crossfade_status -a message percent
+    set -l cyan (set_color 89dceb)
+    set -l white (set_color cdd6f4)
+    set -l reset (set_color normal)
+    if isatty stdout
+        set -l width 80
+        if set -q COLUMNS; and string match -qr '^[0-9]+$' -- "$COLUMNS"
+            set width $COLUMNS
+        end
+        if string match -qr '^[0-9]+(\.[0-9]+)?$' -- "$percent"
+            set -l value (math "min(100, max(0, $percent))")
+            set -l filled (math "round($value / 10)")
+            set -l empty (math "10 - $filled")
+            set -l bar (string repeat -n $filled '━')
+            set -l trail (string repeat -n $empty '─')
+            set message "[$bar$trail] "(printf '%3.0f' $value)"% · $message"
+        end
+        set -l message (string shorten -m (math "$width - 3") -- "$message")
+        printf '\r\033[2K%s♫%s %s%s' "$cyan" "$reset" "$white" "$message"
+    else
+        printf '%s\n' "$message"
+    end
+end
+
+# ──── crossfade ─────────────────
+function crossfade --description 'merge music with crossfade'
     argparse h/help -- $argv; or return 2
 
     if set -q _flag_help
@@ -176,7 +200,7 @@ function crossfade --description 'Merge random music files from the current dire
             printf 'Cannot read the audio duration: %s\n' "$file" >&2
             return 1
         end
-        printf 'Analyzing: %s\n' (path basename "$file")
+        __crossfade_status "Analyzing "(math "$index + 1")"/$track_count · "(path basename "$file")
         set -l boundaries (command python3 -c '
 from array import array
 import math
@@ -239,7 +263,6 @@ print(end - start)
         end
         set -a titles "$title"
         set index (math "$index + 1")
-        printf '%s. %s\n' "$index" "$title"
         set -a arguments -i "$file"
     end
 
@@ -261,16 +284,33 @@ print(end - start)
     set -l output_dir "$PWD/crossfade"
     command mkdir -p "$output_dir"; or return 1
     set -l output (command mktemp "$output_dir/mix-XXXXXX.mp3"); or return 1
-    command ffmpeg -nostdin -hide_banner -loglevel error -stats -y $arguments \
+    set -l total_duration 0
+    for duration in $durations
+        set total_duration (math "$total_duration + $duration")
+    end
+    set total_duration (math "$total_duration - $fade_seconds * ($track_count - 1)")
+    __crossfade_status "Encoding · $track_count tracks · "$fade_seconds"s fade" 0
+    command ffmpeg -nostdin -hide_banner -loglevel error -progress pipe:1 -nostats -y $arguments \
         -filter_complex (string join ';' -- $graph) -map '[out]' \
         -c:a libmp3lame -b:a 256k -threads 1 -metadata title=Crossfade \
-        -metadata "comment="(string join ' / ' -- $titles) "$output"
-    set -l result $status
+        -metadata "comment="(string join ' / ' -- $titles) "$output" | while read -l line
+            if string match -qr '^out_time_us=[0-9]+$' -- "$line"
+                set -l progress (string replace 'out_time_us=' '' -- "$line")
+                set -l seconds (math "$progress / 1000000")
+                set -l percent (math "min(100, $seconds * 100 / $total_duration)")
+                __crossfade_status "Encoding · $track_count tracks" "$percent"
+            end
+        end
+    set -l result $pipestatus[1]
     if test "$result" -ne 0
+        if isatty stdout
+            printf '\n'
+        end
         command rm -f "$output"
         return "$result"
     end
-    printf '\n%s\n' "$output"
+    __crossfade_status "Complete · $output" 100
+    printf '\n'
 end
 
 function __live_log
@@ -383,8 +423,8 @@ function __live_monitor -a target
     end
 end
 
-# -------- live --------
-function live --description 'Play a YouTube live with stream and audio status'
+# ──── live ──────────────────────
+function live --description 'play youtube live'
     if test "$argv[1]" = stop
         set -l state_file "$HOME/.cache/live.state"
         set -l stop_file "$HOME/.cache/live.stop"
@@ -477,7 +517,7 @@ function live --description 'Play a YouTube live with stream and audio status'
     echo -s (set_color cyan) "󰐊 Live is running in the background; use live status for progress." (set_color normal)
 end
 
-# -------- nodisplay --------
+# ──── nodisplay ─────────────────
 function nodisplay -d "hide/show desktop apps"
     set -l apps \
         avahi-discover.desktop bssh.desktop bvnc.desktop \
@@ -523,7 +563,7 @@ function nodisplay -d "hide/show desktop apps"
     end
 end
 
-# -------- power --------
+# ──── power ─────────────────────
 function power -d "power menu"
     set -l R (set_color red)
     set -l Y (set_color yellow)
@@ -550,7 +590,7 @@ function power -d "power menu"
     end
 end
 
-# -------- past --------
+# ──── past ──────────────────────
 function past -d "thunar bookmarks"
     set -l bookmarks_file ~/.config/gtk-3.0/bookmarks
 
@@ -619,7 +659,7 @@ function fish_command_not_found --on-event fish_command_not_found
     __fish_default_command_not_found_handler $argv
 end
 
-# -------- clients --------
+# ──── clients ───────────────────
 function clients -d "hyprctl clients"
     clear && hyprctl clients | python3 -c '
 import sys, re
@@ -742,17 +782,17 @@ for ws, title, f in windows:
 '
 end
 
-# -------- h --------
+# ──── h ─────────────────────────
 function h --description '⌘'
-    set -l cyan ''
-    set -l pink ''
+    set -l accent ''
+    set -l title ''
     set -l dim ''
     set -l text ''
     set -l reset ''
     if isatty stdout; and not set -q NO_COLOR
-        set cyan (set_color --bold 00e5ff)
-        set pink (set_color --bold ff4fbd)
-        set dim (set_color 7b849c)
+        set accent (set_color --bold 00e5ff)
+        set title (set_color --bold ff4fbd)
+        set dim (set_color 5c6378)
         set text (set_color e6faff)
         set reset (set_color normal)
     end
@@ -762,6 +802,7 @@ function h --description '⌘'
     set -l files
     set -l sections
     set -l config_sections
+    set -l extras
     set -l longest_name 0
     set -l filter (string join ' ' -- $argv)
     if test -f "$config"
@@ -792,38 +833,50 @@ function h --description '⌘'
         if test "$entry_count" -eq 0
             continue
         end
-        set -l section "$entry_count$separator$label$separator"(string join '§' -- $visible)
         if test "$file" = "$config"
-            set -a config_sections "$section"
+            set -a config_sections "$entry_count$separator$label$separator"(string join '§' -- $visible)
+        else if test "$entry_count" -eq 1
+            set -a extras $visible
         else
-            set -a sections "$section"
+            set -a sections "$entry_count$separator$label$separator"(string join '§' -- $visible)
         end
     end
     set -l ordered $config_sections
     if set -q sections[1]
         set -a ordered (printf '%s\0' $sections | command sort -z -t "$separator" -k1,1nr -k2,2 | string split0)
     end
+    if set -q extras[1]
+        set -l sorted (printf '%s\n' $extras | command sort)
+        set -a ordered (count $sorted)"$separator"extras"$separator"(string join '§' -- $sorted)
+    end
     set -l total_functions 0
     for section in $ordered
         set -l fields (string split "$separator" -- "$section")
         set total_functions (math "$total_functions + $fields[1]")
     end
-    set -l width 80
+    set -l width (command tput cols 2>/dev/null)
     if set -q COLUMNS; and string match -qr '^[0-9]+$' -- "$COLUMNS"
-        set width (math "max(28, min(120, $COLUMNS))")
+        set width $COLUMNS
     end
+    if not string match -qr '^[0-9]+$' -- "$width"
+        set width 80
+    end
+    set width (math "max(40, min(140, $width))")
     set -l columns 1
-    if test "$width" -ge 76
+    if test "$width" -ge 100
         set columns 2
     end
-    set -l column_width (math "floor(($width - 6) / $columns)")
-    set -l name_width (math "min($longest_name, max(8, floor($column_width / 3)))")
+    set -l gap 4
+    set -l column_width (math "floor(($width - 6 - ($columns - 1) * $gap) / $columns)")
+    set -l name_width (math "min($longest_name, 14)")
     set -l description_width (math "max(1, $column_width - $name_width - 4)")
-    set -l rule (string repeat -n (math "$width - 4") '─')
-    printf '\n  %s╱╱ ⌘%s  %s%02d%s  %s▤ %s%s\n' "$cyan" "$reset" "$text" "$total_functions" "$reset" "$dim" (count $ordered) "$reset"
-    printf '  %s%s%s\n' "$dim" "$rule" "$reset"
+    printf '\n  %s⌘ h%s   %s%d functions%s %s·%s %s%d groups%s' "$accent" "$reset" "$text" "$total_functions" "$reset" "$dim" "$reset" "$text" (count $ordered) "$reset"
+    if test -n "$filter"
+        printf '   %s⌕%s %s%s%s' "$dim" "$reset" "$title" "$filter" "$reset"
+    end
+    printf '\n'
     if not set -q ordered[1]
-        printf '\n  %s∅%s\n\n' "$dim" "$reset"
+        printf '\n    %s∅ nothing matches%s %s%s%s\n\n' "$dim" "$reset" "$text" "$filter" "$reset"
         return 1
     end
     for section in $ordered
@@ -843,8 +896,15 @@ function h --description '⌘'
                 set icon 󰎆
             case ins
                 set icon 󰏖
+            case ero
+                set icon 󰋑
+            case extras
+                set icon ✦
         end
-        printf '\n  %s%s %s%s  %s╱ %02d%s\n' "$pink" "$icon" "$fields[2]" "$reset" "$dim" "$fields[1]" "$reset"
+        set -l heading "$icon $fields[2]"
+        set -l counter (printf '%02d' "$fields[1]")
+        set -l rule_length (math "max(2, $width - 8 - "(string length --visible -- "$heading")" - "(string length -- "$counter")")")
+        printf '\n  %s%s%s %s%s%s %s%s%s\n' "$title" "$heading" "$reset" "$dim" (string repeat -n "$rule_length" '─') "$reset" "$dim" "$counter" "$reset"
         set -l position 0
         for entry in $entries
             set -l name (string match -rg '^function\s+([^;\s]+)' -- "$entry")
@@ -855,30 +915,36 @@ function h --description '⌘'
             if test -z "$description"
                 set description (string match -rg -- '^function\s+[^;\s]+[^;]*?\s(?:--description|-description|-d)\s+([^;\s"\x27]+)' "$entry")
             end
-            if string match -qr '^script:' -- "$description"; or test -z "$description"
-                set description '·'
+            if string match -qr '^script:' -- "$description"
+                set description ''
             end
             set name (string shorten --max "$name_width" -- "$name")
-            set description (string shorten --max "$description_width" -- "$description")
+            set -l used (string length --visible -- "$name")
             if test (math "$position % $columns") -eq 0
-                printf '  '
+                printf '    '
             end
-            printf '%s│%s %s%-*s%s %s%-*s%s' "$dim" "$reset" "$cyan" "$name_width" "$name" "$reset" "$dim" "$description_width" "$description" "$reset"
+            printf '%s%s%s' "$accent" "$name" "$reset"
+            if test -n "$description"
+                set description (string shorten --max "$description_width" -- "$description")
+                set -l dots (math "$name_width - $used + 2")
+                printf ' %s%s%s %s%s%s' "$dim" (string repeat -n "$dots" '·') "$reset" "$text" "$description" "$reset"
+                set used (math "$name_width + 4 + "(string length --visible -- "$description"))
+            end
             set position (math "$position + 1")
-            if test (math "$position % $columns") -eq 0
+            if test (math "$position % $columns") -eq 0; or test "$position" -eq (count $entries)
                 printf '\n'
             else
-                printf '   '
+                printf '%*s' (math "$column_width - $used + $gap") ''
             end
         end
-        if test (math "$position % $columns") -ne 0
-            printf '\n'
-        end
     end
-    printf '\n  %s%s%s\n\n' "$dim" "$rule" "$reset"
+    if test -z "$filter"
+        printf '\n  %sh <text> to filter%s\n' "$dim" "$reset"
+    end
+    printf '\n'
 end
 
-# -------- l --------
+# ──── l ─────────────────────────
 function l -d "categorized ls"
     set -e folders zip audio video images text lua other
 
@@ -958,7 +1024,7 @@ function _grid
     end
 end
 
-# -------- word --------
+# ──── word ──────────────────────
 function word -d "word search"
     set -e code markup text other
 
@@ -1046,7 +1112,7 @@ function word -d "word search"
     end
 end
 
-# -------- search --------
+# ──── search ────────────────────
 function search -d "find files"
     set -e zip audio video images text lua other
 
@@ -1119,7 +1185,7 @@ function search -d "find files"
     end
   end
 
-  # -------- lf --------
+  # ──── lf ──────────────────────
   function lf -d "list files"
       set -l N (set_color normal)
       set -l P (set_color cba6f7)
@@ -1198,7 +1264,7 @@ function search -d "find files"
       end
     end
 
-    # -------- playing --------
+    # ──── playing ───────────────
     function playing -d "now playing"
         if not command -q playerctl
             echo "playerctl not installed"
@@ -1297,7 +1363,7 @@ function search -d "find files"
         end
     end
 
-# -------- mem --------
+# ──── mem ───────────────────────
 function mem --description '󰍛'
     set -l interactive 0
     set -l cyan ''
@@ -1458,4 +1524,11 @@ function mem --description '󰍛'
             read -l -P '  Press Enter to continue… ' answer; or return 0
         end
     end
+end
+
+# ──── aria2c ────────────────────
+function aria2c --wraps aria2c --description 'aria2c with session ready'
+    set -l state "$HOME/.local/state/aria2"
+    test -f "$state/session"; or begin; mkdir -p "$state"; and touch "$state/session"; end
+    command aria2c --save-session="$state/session" $argv
 end

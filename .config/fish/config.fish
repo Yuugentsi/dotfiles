@@ -1,4 +1,6 @@
 # -------- init --------
+fish_add_path -g $HOME/.local/bin
+
 if status is-interactive
 end
 
@@ -8,30 +10,6 @@ set -g fish_greeting
 for f in ~/.config/fish/functions/*.fish
     source $f
 end
-
-# -------- aliases --------
-alias pwd="command pwd | wl-copy; and command pwd"
-alias myip="echo -n 'IP:  '; ip -4 -o a show | awk '/inet / && !/127.0.0.1/{print \$4}' | cut -d/ -f1 | head -1; echo -n 'DNS: '; awk '/^nameserver/{print \$2}' /etc/resolv.conf | head -1"
-alias f="rg -l . | fzf"
-alias d="cd ~/Downloads"
-alias c="clear"
-
-function r -d "delete by ext"; if test (count $argv) -ne 1; printf 'Usage: r .extension\n' >&2; return 2; end; if not string match -rq '^\.[A-Za-z0-9][A-Za-z0-9._-]*$' -- "$argv[1]"; printf 'Invalid extension. Example: r .mp4\n' >&2; return 2; end; set -l deleted 0; set -l files (command find "$HOME" -type f -name "*$argv[1]" -print0 | string split0); for file in $files; if command rm -- "$file"; set deleted (math $deleted + 1); end; end; printf ' %s\n' "$deleted"; end
-function security -d adb; command -q adb; or begin; echo 'ADB not found.' >&2; return 1; end; command adb get-state >/dev/null; or return; set -l p com.miui.securitycenter; set -l r (command adb shell pm list packages --user 0 "$p"); or return; if contains -- "package:$p" (string trim -- $r); set r (command adb shell pm uninstall -k --user 0 "$p"); or return; if not contains -- Success (string trim -- $r); printf '%s\n' $r >&2; return 1; end; set_color ff6b8a; printf '✓ Security · removed (data preserved)\n'; set_color normal; else; set r (command adb shell cmd package install-existing --user 0 "$p"); or begin; set -l s $status; printf '%s\n' $r >&2; return $s; end; set r (command adb shell pm enable --user 0 "$p"); or begin; set -l s $status; printf '%s\n' $r >&2; return $s; end; set_color a6e3a1; printf '✓ Security · restored and enabled\n'; set_color normal; end; end
-function sd -d adb; if test (count $argv) -ne 0; printf 'Usage: sd\n' >&2; return 2; end; command python3 "$HOME/.local/bin/adb-push-folder" "$PWD"; end
-function clock; clear; while true; printf '\r◷ %s' (date '+%H:%M:%S'); sleep 1; end; end
-function rd -d "remove dir"; clear; set -l p (pwd); if test "$p" = /; or test "$p" = /home; or test "$p" = $HOME; set_color red; echo "refuse to remove protected dir: $p"; set_color normal; return 1; end; cd ..; read -l -P "rm -rf $p ? [y/N] " confirm; test "$confirm" = y; and rm -rf $p; and clear; and echo "deleted $p"; end
-function chmod -d "make executable"; clear; if test (count $argv) -eq 0; set -l sh (find (pwd) -maxdepth 1 -name "*.sh" -type f); if test (count $sh) -gt 0; command chmod +x $sh; or return $status; for f in $sh; set_color a6e3a1; printf "  ✓ "; set_color normal; printf "%s" (basename $f); set_color --dim; printf "  +x\n"; set_color normal; end; end; else; command chmod -R $argv (pwd); end; end
-function empty -d "remove empty dirs"; set -l n (find (pwd) -type d -empty 2>/dev/null | wc -l); find (pwd) -type d -empty -delete 2>/dev/null; echo "$n folders deleted"; end
-function .venv -d "project venv"; set -l env "$PWD/.venv"; if test "$VIRTUAL_ENV" = "$env"; deactivate; or return $status; clear; echo "venv off: $env"; return 0; end; if not test -f "$env/bin/activate.fish"; python3 -m venv "$env"; or return $status; end; source "$env/bin/activate.fish"; or return $status; if test -f requirements.txt; echo "installing requirements.txt..."; python -m pip install -r requirements.txt; or return $status; end; clear; echo "venv on: $env"; end
-function .venvd -d "delete venv"; set -l env "$PWD/.venv"; if not test -e "$env"; and not test -L "$env"; echo "no .venv in this directory"; return 1; end; if test "$VIRTUAL_ENV" = "$env"; deactivate; or return $status; end; command rm -rf -- "$env"; or return $status; echo "deleted: $env"; end
-function venv -d "global venv"; set -l green (set_color green); set -l red (set_color red); set -l reset (set_color normal); set -l env "$HOME/.venv"; if test -n "$VIRTUAL_ENV"; deactivate; clear; echo -s $red "󰄬 venv off" $reset; else; if not test -d "$env"; python3 -m venv "$env"; end; source "$env/bin/activate.fish"; if test -f requirements.txt; echo -s $green "  installing requirements.txt..." $reset; pip install -q -r requirements.txt; end; clear; echo -s $green "󰄬 venv on" $reset; end; end
-function py; test -z "$VIRTUAL_ENV"; and venv; if test -n "$argv"; python3 $argv; else if test -f main.py; python3 main.py; else if test -f bot.py; python3 bot.py; else; python3 main.py; end; end
-function copy -d "copy file"; if test (count $argv) -ne 1; printf 'Usage: copy <file>\n' >&2; return 1; end; if not test -f "$argv[1]"; or not test -r "$argv[1]"; printf 'File does not exist or is not readable: %s\n' "$argv[1]" >&2; return 1; end; command wl-copy --type text/plain < "$argv[1]"; or return $status; set -l line_count (awk 'END { print NR }' < "$argv[1]"); printf '✓ %s\n' "$line_count"; end
-function s -d "dir size"; if test (count $argv) -gt 1; printf 'Usage: s [directory]\n' >&2; return 1; end; set -l directory .; if test (count $argv) -eq 1; set directory "$argv[1]"; end; if not test -d "$directory"; printf 'Directory does not exist: %s\n' "$directory" >&2; return 1; end; command du -sh -- "$directory"; end
-function mkcd -d "mkdir + cd"; mkdir -p $argv[1]; and cd $argv[1]; end
-
-function pass -d "toggle sudo"; if test (count $argv) -ne 0; printf 'Usage: pass\n' >&2; return 2; end; sudo /usr/bin/bash -c 'set -euo pipefail; export PATH=/usr/bin:/usr/sbin; export LC_ALL=C; user_id="$1"; [[ "$user_id" =~ ^[0-9]+$ ]]; shopt -s nullglob; rule_files=(/etc/sudoers.d/zz-ai-pass-${user_id}-*); if ((${#rule_files[@]})); then rm -f -- "${rule_files[@]}"; visudo -c >/dev/null; printf "Passwordless sudo disabled.\\n"; exit 0; fi; expires_at=$(date -u -d "+30 minutes" +%Y%m%d%H%M%SZ); expires_display=$(date -d "+30 minutes" "+%H:%M:%S %Z"); rule_file=$(mktemp "/etc/sudoers.d/zz-ai-pass-${user_id}-XXXXXXXX"); trap "rm -f -- \\"$rule_file\\"" EXIT; chmod 0440 "$rule_file"; printf "#%s ALL=(ALL:ALL) NOTAFTER=%s NOPASSWD: ALL\\n" "$user_id" "$expires_at" > "$rule_file"; visudo -cf "$rule_file" >/dev/null; visudo -c >/dev/null; unit_name="ai-pass-$(basename "$rule_file")"; systemd-run --quiet --unit="$unit_name" --on-active=30min /usr/bin/rm -f -- "$rule_file"; trap - EXIT; printf "Passwordless sudo enabled for 30 minutes, until %s.\\n" "$expires_display"' -- (id -u); or return $status; command sudo -k; end
 
 # -------- zoxide --------
 if command -q zoxide
@@ -46,6 +24,7 @@ end
 # -------- prompt --------
 set -g fish_transient_prompt 1
 
+# fish_prompt = prompt
 function fish_prompt
     if set -q argv[1]
         echo -n "❯ "
@@ -73,25 +52,114 @@ end
 # -------- notify --------
 function __hypr_notify_cmd --on-event fish_postexec
     set -l last_status $status
-    set -l cmd (string trim "$argv[1]")
-    test -z "$cmd"; and return
-
+    set -l cmd (string shorten -m 60 -- "$argv[1]")
     if test $last_status -eq 0
-        hyprctl notify 5 2500 "rgb(a6e3a1)" "OK: $cmd" > /dev/null 2>&1
+        hyprctl notify 5 3000 "rgb(a6e3a1)" "✓ $cmd" >/dev/null 2>&1
     else
-        hyprctl notify 3 3500 "rgb(f38ba8)" "Failed ($last_status): $cmd" > /dev/null 2>&1
-    end
-    if test -f "$HOME/.local/share/sounds/notify.wav"
-        pw-play "$HOME/.local/share/sounds/notify.wav" > /dev/null 2>&1 &
+        hyprctl notify 3 4000 "rgb(f38ba8)" "✗ $cmd ($last_status)" >/dev/null 2>&1
     end
 end
 
 # -------- init --------
 function init --description 'Install apps and fonts'
-    sudo pacman -S --needed \
-        cliphist fish fd gvfs hyprland hypridle hyprlock hyprpaper hyprshot hyprsunset \
-        imagemagick jq kitty mpv mpv-mpris playerctl nano rofi swayimg thunar qt6ct \
-        wl-clipboard yt-dlp zathura zathura-cb zoxide ffmpegthumbnailer fzf tumbler \
-        zed zip unzip xdg-desktop-portal-hyprland waybar xcursor-vanilla-dmz \
+    set -l groups hypr hypr hypr hypr hypr hypr hypr hypr hypr hypr hypr \
+        shell shell shell shell shell shell shell shell shell shell shell \
+        apps apps apps apps apps apps apps apps apps \
+        media media media media media \
+        fonts fonts fonts fonts fonts fonts
+    set -l pkgs hyprland hypridle hyprlock hyprpaper hyprshot hyprsunset waybar rofi xdg-desktop-portal xdg-desktop-portal-hyprland xcursor-vanilla-dmz \
+        fish fd fzf jq zoxide nano zip unzip wl-clipboard cliphist imagemagick \
+        kitty thunar gvfs tumbler ffmpegthumbnailer zed zathura zathura-cb qt6ct \
+        mpv mpv-mpris playerctl swayimg yt-dlp \
         ttf-jetbrains-mono ttf-jetbrains-mono-nerd noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra
+
+    if contains -- all $argv
+        sudo pacman -S --needed --noconfirm $pkgs
+        return $status
+    end
+
+    set -l cyan (set_color --bold 00e5ff)
+    set -l pink (set_color --bold ff4fbd)
+    set -l green (set_color 78ffb7)
+    set -l dim (set_color 7b849c)
+    set -l reset (set_color normal)
+
+    set -l installed (pacman -Qq $pkgs 2>/dev/null)
+    set -l rows
+    set -l done_rows
+    for i in (seq (count $pkgs))
+        if contains -- $pkgs[$i] $installed
+            set -a done_rows (printf '%s\t%s● %s%-6s %s%s' $pkgs[$i] $green $dim $groups[$i] $pkgs[$i] $reset)
+        else
+            set -a rows (printf '%s\t%s○%s %s%-6s%s %s' $pkgs[$i] $pink $reset $dim $groups[$i] $reset $pkgs[$i])
+        end
+    end
+    set -l missing (count $rows)
+    set -a rows $done_rows
+
+    if not isatty stdin; or not isatty stdout; or not command -q fzf
+        sudo pacman -S --needed --noconfirm $pkgs
+        return $status
+    end
+
+    printf '\e[H\e[2J'
+    set -l total (count $pkgs)
+    set -l selection (printf '%s\n' $rows | command env FZF_DEFAULT_OPTS= FZF_DEFAULT_OPTS_FILE= fzf \
+        --ansi --multi --height=80% --layout=reverse --border=sharp \
+        --border-label="  init · $missing/$total missing " --prompt='⌁ ' --pointer='▶' --marker='✓' \
+        --header='Tab ✓ · Ctrl-A all · Ctrl-D none · Alt-M missing · ↵ install · Esc ×' \
+        --delimiter='\t' --with-nth=2.. --no-sort \
+        --bind='ctrl-a:select-all,ctrl-d:deselect-all' \
+        --expect=alt-m \
+        --color='bg+:#202039,fg+:#e6faff,border:#ff4fbd,label:#00e5ff,pointer:#00e5ff,marker:#78ffb7,prompt:#ff4fbd,hl:#ffd166,hl+:#ffd166,info:#7b849c,header:#7b849c')
+    or return 0
+
+    set -l chosen
+    if test "$selection[1]" = alt-m
+        for p in $pkgs
+            contains -- $p $installed; or set -a chosen $p
+        end
+    else
+        for line in $selection[2..]
+            set -a chosen (string split -m1 \t -- $line)[1]
+        end
+    end
+    test -n "$chosen[1]"; or return 0
+
+    printf '\n  %s╱╱ %s %s%d selected%s\n' $cyan $reset $dim (count $chosen) $reset
+    printf '  %s%s%s\n\n' $dim (string join ' ' -- $chosen) $reset
+    sudo pacman -S --needed --noconfirm $chosen
 end
+# -------- aliases --------
+
+# 0 = home folder
+abbr 0 "cd ~/0"
+# documents = documents
+alias documents="cd ~/0/documents"
+# music = music
+alias music="cd ~/0/music"
+# pictures = pictures
+alias pictures="cd ~/0/pictures"
+# videos = videos
+alias videos="cd ~/0/videos"
+
+# myip = ip and dns
+alias myip="echo -n 'IP:  '; ip -4 -o a show | awk '/inet / && !/127.0.0.1/{print \$4}' | cut -d/ -f1 | head -1; echo -n 'DNS: '; awk '/^nameserver/{print \$2}' /etc/resolv.conf | head -1"
+
+# .venv = project venv
+function .venv -d "project venv"; set -l env "$PWD/.venv"; if test "$VIRTUAL_ENV" = "$env"; deactivate; or return $status; clear; echo "venv off: $env"; return 0; end; if not test -f "$env/bin/activate.fish"; python3 -m venv "$env"; or return $status; end; source "$env/bin/activate.fish"; or return $status; if test -f requirements.txt; echo "installing requirements.txt..."; python -m pip install -r requirements.txt; or return $status; end; clear; echo "venv on: $env"; end
+# .venvd = remove project venv
+function .venvd -d "delete venv"; set -l env "$PWD/.venv"; if not test -e "$env"; and not test -L "$env"; echo "no .venv in this directory"; return 1; end; if test "$VIRTUAL_ENV" = "$env"; deactivate; or return $status; end; command rm -rf -- "$env"; or return $status; echo "deleted: $env"; end
+# venv = global venv
+function venv -d "global venv"; set -l green (set_color green); set -l red (set_color red); set -l reset (set_color normal); set -l env "$HOME/.venv"; if test -n "$VIRTUAL_ENV"; deactivate; clear; echo -s $red "󰄬 venv off" $reset; else; if not test -d "$env"; python3 -m venv "$env"; end; source "$env/bin/activate.fish"; if test -f requirements.txt; echo -s $green "  installing requirements.txt..." $reset; pip install -q -r requirements.txt; end; clear; echo -s $green "󰄬 venv on" $reset; end; end
+# py = run python
+function py; test -z "$VIRTUAL_ENV"; and venv; if test -n "$argv"; python3 $argv; else if test -f main.py; python3 main.py; else if test -f bot.py; python3 bot.py; else; python3 main.py; end; end
+
+# pi = pip install
+function pi -d "pip install in project venv"; if test "$VIRTUAL_ENV" != "$PWD/.venv"; .venv; or return $status; end; pip install $argv; end
+
+# update = system update
+function update -d "upgrade system packages"; sudo pacman -Syyu; end
+
+# internet = toggle network
+function internet -d "toggle network access"; if not command -q nmcli; printf 'internet: nmcli not found\n' >&2; return 1; end; set -l state (nmcli networking); if test "$state" = enabled; nmcli networking off; or return $status; echo "network disconnected"; else; nmcli networking on; or return $status; echo "network reconnected"; end; end

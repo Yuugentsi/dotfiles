@@ -1,7 +1,6 @@
 # ─────────── yt ───────────
 # yt
 # mp3
-# mp3l
 # ytp
 
 function yt --description 'download media'
@@ -276,18 +275,46 @@ function __yt_mp3_playlist_entries -a url
     return $pipestatus[1]
 end
 
+function __yt_mp3_unavailable_reason -a text
+    if test -z "$text"; or string match -qir 'try again later|not a bot|confirm your age' -- "$text"
+        return 1
+    end
+    if string match -qir 'private video' -- "$text"
+        echo "Private video"
+    else if string match -qir 'copyright' -- "$text"
+        echo "Blocked by copyright"
+    else if string match -qir 'in your country|blocked' -- "$text"
+        echo "Blocked in your country"
+    else if string match -qir 'terminated' -- "$text"
+        echo "Channel terminated"
+    else if string match -qir 'members.only|join this channel' -- "$text"
+        echo "Members only"
+    else if string match -qir 'has been removed|removed by|no longer available' -- "$text"
+        echo "Video removed"
+    else if string match -qir 'video (is )?unavailable|video is not available' -- "$text"
+        echo "Video unavailable"
+    else
+        return 1
+    end
+end
+
 function __yt_mp3_fetch_metadata -a url target
     set -l temporary "$target.tmp.$fish_pid"
     command yt-dlp (__yt_mp3_cookie_flags) --simulate --dump-single-json --no-playlist \
         --no-warnings --socket-timeout 15 --retries 1 -f "ba/b" \
-        --extractor-args "youtube:player_client=mweb,web,ios" \
+        --extractor-args "youtube:player_client=visionos;skip=hls,dash,translated_subs" \
         "$url" > "$temporary" 2> "$target.log"
     set -l code $status
     if test $code -eq 0; and test -s "$temporary"
         command mv "$temporary" "$target"
         command rm -f "$target.log"
     else
-        command touch "$target.failed"
+        set -l reason (__yt_mp3_unavailable_reason (string match -r '^ERROR:.*' < "$target.log" | tail -n 1))
+        if test -n "$reason"
+            echo "$reason" > "$target.failed"
+        else
+            command touch "$target.failed"
+        end
     end
     command rm -f "$temporary" "$target.pending"
 end
@@ -403,7 +430,7 @@ function __yt_mp3_conversion_status --no-scope-shadowing -a line duration title
     __mp3_status "♫ $detail · $title" magenta
 end
 
-# ─── mp3 / mp3l ───
+# ─── mp3 ───
 function __mp3_run --no-scope-shadowing
     set -l verbose "$argv[1]"
     set -l metadata_pids
@@ -514,6 +541,8 @@ function __mp3_run --no-scope-shadowing
             set -l code 0
             set -l download_input "$url"
             set -l using_metadata false
+            set -l fast_client true
+            set -l extractor_args "youtube:player_client=visionos;skip=hls,dash,translated_subs"
             if test -n "$metadata_file"; and test -s "$metadata_file"
                 set -l modified (command stat -c %Y "$metadata_file" 2>/dev/null)
                 set -l current_time (command date +%s)
@@ -522,7 +551,7 @@ function __mp3_run --no-scope-shadowing
                     set using_metadata true
                 end
             end
-            for input_attempt in 1 2
+            for input_attempt in 1 2 3
                 set duration 0
                 set phase preparing
                 command bash -c (__yt_mp3_ffmpeg_script | string collect) -- "$log_dir" -x \
@@ -536,7 +565,11 @@ function __mp3_run --no-scope-shadowing
                     --socket-timeout 15 \
                     --retries 3 \
                     --fragment-retries 3 \
-                    --extractor-args "youtube:player_client=mweb,web,ios" \
+                    --extractor-args "$extractor_args" \
+                    --no-embed-subs \
+                    --no-write-subs \
+                    --no-write-auto-subs \
+                    --no-sponsorblock \
                     (__yt_mp3_thumbnail_flags) \
                     --replace-in-metadata "uploader" " - Topic\$" "" \
                     --parse-metadata "uploader:%(artist)s" \
@@ -647,12 +680,20 @@ function __mp3_run --no-scope-shadowing
                         end
                     end
                 set code $pipestatus[1]
-                if test $code -eq 0; or test $count -gt 0; or test "$using_metadata" != true
+                if test $code -eq 0; or test $count -gt 0
                     break
                 end
-                set download_input "$url"
-                set using_metadata false
-                command rm -f "$metadata_file"
+                if test "$using_metadata" = true
+                    set download_input "$url"
+                    set using_metadata false
+                    command rm -f "$metadata_file"
+                else if test "$fast_client" = true; and not __yt_mp3_unavailable_reason "$failure" >/dev/null
+                    set fast_client false
+                    set extractor_args "youtube:skip=translated_subs"
+                else
+                    break
+                end
+                set failure ""
                 __mp3_status "↻ Refreshing track information · $url" yellow
             end
 
@@ -664,12 +705,9 @@ function __mp3_run --no-scope-shadowing
                     set failure "exit code $code"
                 end
                 set failure (string replace -r "^\[[^]]+\] [A-Za-z0-9_-]{11}: " "" -- "$failure")
-                if string match -qi "*private video*" -- "$failure"
-                    set failure "Private video"
-                else if string match -qi "*video has been removed*" -- "$failure"
-                    set failure "Video removed"
-                else if string match -qi "*video unavailable*" -- "$failure"
-                    set failure "Video unavailable"
+                set -l reason (__yt_mp3_unavailable_reason "$failure")
+                if test -n "$reason"
+                    set failure "$reason"
                 end
                 __mp3_status "✗ $failure · $url" red
                 if command -v hyprctl >/dev/null 2>&1
@@ -688,18 +726,18 @@ function __mp3_run --no-scope-shadowing
             if test -f "$queue.live"; and test -f "$queue.status.$fish_pid"
                 command mv "$queue.status.$fish_pid" "$queue.status.$fish_pid.done"
             end
-        ' "$url" "$folder" "$out" "$queue" "$verbose" (functions __yt_mp3_cookie_flags __yt_mp3_thumbnail_flags __yt_mp3_ffmpeg_script __yt_mp3_conversion_status __yt_mp3_prepare_status | string collect) "$metadata_file"
+        ' "$url" "$folder" "$out" "$queue" "$verbose" (functions __yt_mp3_cookie_flags __yt_mp3_thumbnail_flags __yt_mp3_ffmpeg_script __yt_mp3_conversion_status __yt_mp3_prepare_status __yt_mp3_unavailable_reason | string collect) "$metadata_file"
     end
 
     function __mp3_prepare_workers --no-scope-shadowing
         command mkdir -p "$queue_file.metadata"
         begin
             printf "%s\n" "set -g out_dir \$argv[1]" "set -g queue_file \$argv[2]" "set -g verbose \$argv[3]" "set -g yellow (set_color yellow)" "set -g reset (set_color normal)"
-            functions __mp3_download __yt_mp3_cookie_flags __yt_mp3_thumbnail_flags __yt_mp3_ffmpeg_script __yt_mp3_conversion_status __yt_mp3_prepare_status
+            functions __mp3_download __yt_mp3_cookie_flags __yt_mp3_thumbnail_flags __yt_mp3_ffmpeg_script __yt_mp3_conversion_status __yt_mp3_prepare_status __yt_mp3_unavailable_reason
             printf "%s\n" "__mp3_download \"\$argv[4]\" \"\$argv[5]\""
         end > "$state_dir/worker.fish"
         begin
-            functions __yt_mp3_fetch_metadata __yt_mp3_cookie_flags
+            functions __yt_mp3_fetch_metadata __yt_mp3_cookie_flags __yt_mp3_unavailable_reason
             printf '%s\n' '__yt_mp3_fetch_metadata "$argv[1]" "$argv[2]"'
         end > "$state_dir/metadata.fish"
         begin
@@ -721,7 +759,7 @@ function __mp3_run --no-scope-shadowing
         end
         set metadata_pids $remaining_pids
         for next_line in $argv
-            if test (count $metadata_pids) -ge 3
+            if test (count $metadata_pids) -ge 4
                 break
             end
             set -l next_url (string split -m 1 \t -- "$next_line")[1]
@@ -738,6 +776,22 @@ function __mp3_run --no-scope-shadowing
             command fish --no-config "$state_dir/metadata.fish" "$next_url" "$target" &
             set -a metadata_pids $last_pid
         end
+    end
+
+    function __mp3_skip_unavailable --no-scope-shadowing
+        set -l key (printf "%s" "$argv[1]" | command sha256sum | string split " ")[1]
+        set -l failed "$queue_file.metadata/$key.json.failed"
+        if not test -s "$failed"
+            return 1
+        end
+        set -l text "✗ "(command head -n 1 "$failed")" · $argv[1]"
+        if test -f "$queue_file.live"
+            set -l skipped_file (command mktemp "$queue_file.status.XXXXXX.done")
+            printf "%s%s%s" $red "$text" $reset > "$skipped_file"
+        else
+            echo -s $red "$text" $reset
+        end
+        return 0
     end
 
     function __mp3_queue_count --no-scope-shadowing
@@ -816,6 +870,9 @@ function __mp3_run --no-scope-shadowing
                         if test (count $parts) -ge 2
                             set next_folder $parts[2]
                         end
+                        if __mp3_skip_unavailable "$next_url"
+                            continue
+                        end
                         command fish --no-config "$state_dir/worker.fish" "$out_dir" "$queue_file" "$verbose" "$next_url" "$next_folder" &
                         set -a download_pids $last_pid
                         set active_count (math $active_count + 1)
@@ -823,7 +880,7 @@ function __mp3_run --no-scope-shadowing
                 end
 
                 if test $active_count -eq $max_workers
-                    __mp3_prefetch (command head -n 3 "$queue_file")
+                    __mp3_prefetch (command head -n 8 "$queue_file")
                 end
 
                 if test -f "$queue_file.live"
@@ -872,7 +929,7 @@ function __mp3_run --no-scope-shadowing
                 wait $pid
             end
             rm -rf "$state_dir"
-            functions -e __mp3_prepare_workers __mp3_prefetch
+            functions -e __mp3_prepare_workers __mp3_prefetch __mp3_skip_unavailable
             functions -e __mp3_notify
             functions -e __mp3_download
             return 0
@@ -1039,6 +1096,9 @@ function __mp3_run --no-scope-shadowing
                 if test (count $parts) -ge 2
                     set next_folder $parts[2]
                 end
+                if __mp3_skip_unavailable "$next_url"
+                    continue
+                end
                 command fish --no-config "$state_dir/worker.fish" "$out_dir" "$queue_file" "$verbose" "$next_url" "$next_folder" &
                 set -ga __mp3_session_pids $last_pid
                 set active_count (math $active_count + 1)
@@ -1046,7 +1106,7 @@ function __mp3_run --no-scope-shadowing
         end
 
         if test $active_count -eq $max_workers
-            set -l metadata_end (math "$queue_position + 2")
+            set -l metadata_end (math "$queue_position + 7")
             __mp3_prefetch (command sed -n "$queue_position,$metadata_end"p "$queue_file")
             set -g __mp3_session_pids $watch_pid $download_pids $metadata_pids
         end
@@ -1103,7 +1163,7 @@ function __mp3_run --no-scope-shadowing
         end
     end
     command rm -rf "$state_dir"
-    functions -e __mp3_cancel __mp3_stop_tree __mp3_download __mp3_notify __mp3_queue_count __mp3_show_queue __mp3_prepare_workers __mp3_prefetch
+    functions -e __mp3_cancel __mp3_stop_tree __mp3_download __mp3_notify __mp3_queue_count __mp3_show_queue __mp3_prepare_workers __mp3_prefetch __mp3_skip_unavailable
     set -e __mp3_session_pids __mp3_cancelled
     printf "\n"
 end
@@ -1277,95 +1337,206 @@ function __mp3_legacy_screen -a queue
 end
 
 function __mp3_pretty_screen -a screen tick queue
-    set -l cyan (set_color 89dceb)
-    set -l white (set_color cdd6f4)
+    set -l sky (set_color 89dceb)
+    set -l mauve (set_color cba6f7)
+    set -l text (set_color cdd6f4)
+    set -l sub (set_color a6adc8)
     set -l dim (set_color 585b70)
+    set -l green (set_color a6e3a1)
+    set -l red (set_color f38ba8)
+    set -l yellow (set_color f9e2af)
     set -l reset (set_color normal)
     set -l frames ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏
     set -l width 80
     if set -q COLUMNS; and string match -qr '^[0-9]+$' -- "$COLUMNS"
         set width $COLUMNS
     end
-    set -l bar_width (math "min(15, max(3, floor($width / 4)))")
-    set -l title_width (math "max(1, $width - $bar_width - 12)")
+    set -l inner (math "max(8, $width - 2)")
+    set -l bar_width (math "min(18, max(3, floor($width / 4)))")
     set -l lines (string split \n -- "$screen" | string replace -ar '\e\[[0-9;]*[A-Za-z]' '')
     set lines (string match -v 'Clipboard monitor stopped; restarting.' -- $lines)
-    set -l longest 1
-    for line in $lines
-        set -l parts (string match -rg '^[↓♫]\s*([0-9.]+)% · (.*?) · [━─·]+' -- "$line")
-        if test (count $parts) -eq 2
-            set longest (math "max($longest, "(string length -- "$parts[2]")")")
-        end
-    end
-    set title_width (math "min($title_width, $longest)")
-    for line in $lines
-        if not string match -qr '^[✓✗↻⚠]' -- "$line"
-            continue
-        end
-        set -l color a6e3a1
-        string match -q '✗*' -- "$line"; and set color f38ba8
-        string match -qr '^[↻⚠]' -- "$line"; and set color f9e2af
-        printf '%s%s%s\n' (set_color $color) (string shorten -m (math "max(1, $width - 1)") -- "$line") "$reset"
-    end
-    set -l row 0
-    for line in $lines
-        set -l parts (string match -rg '^[↓♫]\s*([0-9.]+)% · (.*?) · [━─·]+' -- "$line")
-        if test (count $parts) -eq 2
-            set -l percent (math "min(100, max(0, $parts[1]))")
-            set -l filled (math "floor($percent * $bar_width / 100)")
-            set -l empty (math "$bar_width - $filled")
-            set -l bar (string repeat -n $filled '━')
-            if test $empty -gt 0
-                set bar "$bar╸"
-                set empty (math "$empty - 1")
-            end
-            set -l metrics (string match -rg ' · [━─·]+ · ([^·]+) · ETA ([^·]+)' -- "$line")
-            set -l details ''
-            if test (count $metrics) -eq 2
-                set details " · "(string trim -- "$metrics[1]")" · ETA "(string trim -- "$metrics[2]")
-                if test $width -lt 65
-                    set details " · ETA "(string trim -- "$metrics[2]")
-                end
-            end
-            set -l row_title_width (math "max(1, min($title_width, $width - $bar_width - 12 - "(string length -- "$details")"))")
-            set -l title (string shorten -m $row_title_width -- "$parts[2]")
-            set -l padding (string repeat -n (math "$row_title_width - "(string length -- "$title")) ' ')
-            set -l trail (string repeat -n $empty '─')
-            set -l frame (math "($tick + $row) % 10 + 1")
-            printf '%s%s %s%s%s  %s%s%s%s  %s%3.0f%%%s%s\n' "$cyan" "$frames[$frame]" "$white" "$title" "$padding" "$cyan" "$bar" "$dim" "$trail" "$cyan" "$percent" "$details" "$reset"
-            set row (math "$row + 1")
-        else if string match -qr '^[✓✗↻⚠]' -- "$line"
-            continue
-        else if string match -q '◌ *' -- "$line"
-            set -l frame (math "($tick + $row) % 10 + 1")
-            set -l text (string sub -s 3 -- "$line")
-            printf '%s%s %s%s%s\n' "$cyan" "$frames[$frame]" "$white" (string shorten -m (math "max(1, $width - 3)") -- "$text") "$reset"
-            set row (math "$row + 1")
-        else if test -n "$line"
-            set -l stage (string match -rg '^(◈ Adding cover|◇ Adding metadata) · (.*)$' -- "$line")
-            if test (count $stage) -eq 2
-                set -l symbol (string sub -l 1 -- "$stage[1]")
-                set -l frame (math "($tick + $row) % 10 + 1")
-                set -l title (string shorten -m (math "max(1, $width - 7)") -- "$stage[2]")
-                printf '%s%s %s%s  %s%s%s\n' "$cyan" "$frames[$frame]" "$white" "$title" "$cyan" "$symbol" "$reset"
-                set row (math "$row + 1")
-            else
-                printf '%s%s%s\n' "$dim" (string shorten -m (math "max(1, $width - 1)") -- "$line") "$reset"
-            end
-        end
+
+    set -l saved 0
+    set -l failed 0
+    set -l waiting 0
+    set -l history_file (path dirname -- "$queue")/history
+    if test -f "$history_file"
+        set saved (command grep -c -e '✓' "$history_file")
+        set failed (command grep -c -e '✗' "$history_file")
     end
     if test -f "$queue"
-        set -l waiting (count (string match -rv '^\s*$' < "$queue"))
+        set waiting (count (string match -rv '^\s*$' < "$queue"))
         if test -f "$queue.consumed"
             set -l consumed (string trim < "$queue.consumed")
             if string match -qr '^[0-9]+$' -- "$consumed"
                 set waiting (math "max(0, $waiting - $consumed)")
             end
         end
-        if test $waiting -gt 0
-            printf '%s≡ %s%s\n' (set_color f9e2af) "$waiting" "$reset"
+    end
+    set -l history_total 0
+    for line in $lines
+        if contains -- (string sub -l 1 -- "$line") ✓ ✗ ↻ ⚠
+            set history_total (math "$history_total + 1")
         end
     end
+    set -l header " "(set_color --bold cba6f7)"♫ MP3$reset"
+    if test "$saved" -gt 0
+        set header "$header   $green✓ $saved$reset"
+    end
+    if test "$failed" -gt 0
+        set header "$header   $red✗ $failed$reset"
+    end
+    if test "$waiting" -gt 0
+        set header "$header   $yellow≡ $waiting$reset"
+    end
+    printf '%s\n %s%s%s\n' "$header" "$dim" (string repeat -n (math "min($inner, 40)") '─') "$reset"
+
+    set -l shown 0
+    for line in $lines
+        set -l glyph (string sub -l 1 -- "$line")
+        if not contains -- "$glyph" ✓ ✗ ↻ ⚠
+            continue
+        end
+        set -l body (string sub -s 3 -- "$line")
+        set shown (math "$shown + 1")
+        switch "$glyph"
+            case ✓
+                set -l fade (math "$shown / max(1, $history_total)")
+                set -l shade (printf '\e[38;2;%s;%s;%sm' (math -s0 "88 + 78 * $fade") (math -s0 "91 + 82 * $fade") (math -s0 "112 + 88 * $fade"))
+                printf ' %s✓ %s%s%s\n' "$green" "$shade" (string shorten -m (math "max(1, $inner - 2)") -- "$body") "$reset"
+            case ↻
+                printf ' %s↻ %s%s%s\n' "$yellow" "$dim" (string shorten -m (math "max(1, $inner - 2)") -- "$body") "$reset"
+            case ⚠
+                printf ' %s⚠ %s%s\n' "$yellow" (string shorten -m (math "max(1, $inner - 2)") -- "$body") "$reset"
+            case ✗
+                set -l parts (string split -m 1 ' · ' -- "$body")
+                set -l reason (string shorten -m (math "max(1, $inner - 2)") -- "$parts[1]")
+                set -l rest ''
+                set -l room (math "$inner - 4 - "(string length -V -- "$reason"))
+                if test (count $parts) -eq 2; and test $room -gt 8
+                    set -l video_id (string match -rg 'v=([A-Za-z0-9_-]{11})' -- "$parts[2]")
+                    set -l shown_link "$parts[2]"
+                    if test -n "$video_id"
+                        set shown_link "$video_id"
+                    end
+                    set rest "  "(string shorten -m $room -- "$shown_link")
+                end
+                printf ' %s✗ %s%s%s%s\n' "$red" "$reason" "$dim" "$rest" "$reset"
+        end
+    end
+
+    set -l longest 1
+    for line in $lines
+        set -l parts (string match -rg '^[↓♫]\s*[0-9.]+% · (.*?) · [━─·]+' -- "$line")
+        if test (count $parts) -ne 1
+            set parts (string match -rg '^[◈◇] .+? · (.+)$' -- "$line")
+        end
+        if test (count $parts) -eq 1
+            set longest (math "max($longest, "(string length -V -- "$parts[1]")")")
+        end
+    end
+    set -l reserve 22
+    if test $width -lt 65
+        set reserve 8
+    end
+    set -l title_width (math "max(1, min($inner - $bar_width - 10 - $reserve, $longest))")
+
+    set -l out
+    set -l row 0
+    for line in $lines
+        set -l glyph (string sub -l 1 -- "$line")
+        if test -z "$line"; or contains -- "$glyph" ✓ ✗ ↻ ⚠
+            continue
+        end
+        set -l frame $frames[(math "($tick + $row) % 10 + 1")]
+        set -l accent $sky
+        if contains -- "$glyph" ♫ ◈ ◇
+            set accent $mauve
+        else if test "$glyph" = ◌
+            set accent $yellow
+        end
+        set -l parts (string match -rg '^[↓♫]\s*([0-9.]+)% · (.*?) · [━─·]+' -- "$line")
+        if test (count $parts) -eq 2
+            set -l percent (math "min(100, max(0, $parts[1]))")
+            set -l filled (math "floor($percent * $bar_width / 100)")
+            set -l empty (math "$bar_width - $filled")
+            set -l from 137 220 235
+            set -l to 203 166 247
+            if test "$glyph" = ♫
+                set from 203 166 247
+                set to 245 194 231
+            end
+            set -l cells $filled
+            set -l tip ━
+            if test $empty -gt 0
+                set cells (math "$filled + 1")
+                set empty (math "$empty - 1")
+                set tip ╸
+            end
+            set -l shine (math "($tick * 2 + $row * 3) % ($bar_width + 2) + 1")
+            set -l bar ''
+            set -l edge "$accent"
+            for cell in (command seq $cells)
+                set -l fade (math "($cell - 1) / max(1, $bar_width - 1)")
+                set -l channels (math -s0 "$from[1] + ($to[1] - $from[1]) * $fade") (math -s0 "$from[2] + ($to[2] - $from[2]) * $fade") (math -s0 "$from[3] + ($to[3] - $from[3]) * $fade")
+                set edge (printf '\e[38;2;%s;%s;%sm' $channels)
+                set -l paint "$edge"
+                if test $cell -eq $shine
+                    set paint (printf '\e[38;2;%s;%s;%sm' (math -s0 "($channels[1] + 510) / 3") (math -s0 "($channels[2] + 510) / 3") (math -s0 "($channels[3] + 510) / 3"))
+                end
+                set -l mark ━
+                if test $cell -eq $cells
+                    set mark $tip
+                end
+                set bar "$bar$paint$mark"
+            end
+            set -l trail (string repeat -n $empty '─')
+            set -l metrics (string match -rg ' · [━─·]+ · ([^·]+) · ETA ([^·]+)' -- "$line")
+            set -l details ''
+            if test (count $metrics) -eq 2
+                set -l speed (string trim -- "$metrics[1]")
+                set -l eta (string trim -- "$metrics[2]")
+                if test $width -lt 65
+                    set details "  $eta"
+                else
+                    set details "  $speed · $eta"
+                end
+            end
+            set -l title (string shorten -m $title_width -- "$parts[2]")
+            set -l padding (string repeat -n (math "max(0, $title_width - "(string length -V -- "$title")")") ' ')
+            set -a out (printf ' %s%s %s%s%s  %s%s%s%s  %s%3.0f%%%s%s%s' "$accent" "$frame" "$text" "$title" "$padding" "$accent" "$bar" "$dim" "$trail" "$edge" "$percent" "$dim" "$details" "$reset")
+            set row (math "$row + 1")
+            continue
+        end
+        set -l stage (string match -rg '^[◌◈◇↓♫] (.+?) · (.+)$' -- "$line")
+        if test (count $stage) -ne 2
+            set -l only (string match -rg '^♫ (.+)$' -- "$line")
+            if test (count $only) -eq 1
+                set stage Converting "$only"
+            end
+        end
+        if test (count $stage) -eq 2
+            set -l step (string lower -- "$stage[1]")
+            set -l target (string replace -r '^https?://(www\.)?' '' -- "$stage[2]")
+            set -l room (math "max(1, $inner - 4 - "(string length -V -- "$step")")")
+            set -l title (string shorten -m $room -- "$target")
+            set -l padding ''
+            if test "$glyph" != ◌
+                set padding (string repeat -n (math "max(0, min($title_width, $room) - "(string length -V -- "$title")")") ' ')
+            end
+            set -a out (printf ' %s%s %s%s%s  %s%s%s' "$accent" "$frame" "$text" "$title" "$padding" "$dim" "$step" "$reset")
+            set row (math "$row + 1")
+        else
+            set -a out (printf ' %s%s%s' "$dim" (string shorten -m $inner -- "$line") "$reset")
+        end
+    end
+    if test (count $out) -eq 0
+        set -a out (printf ' %sCopy a YouTube link to add tracks%s' "$dim" "$reset")
+    end
+    if test $shown -gt 0
+        printf '\n'
+    end
+    printf '%s\n' $out
 end
 
 function __mp3_attach -a verbose
@@ -1435,14 +1606,6 @@ function mp3 --description 'script: {"label":"MP3","entry":"__mp3_run","args":["
         __mp3_run 0 $argv
     else
         __mp3_attach 0
-    end
-end
-
-function mp3l
-    if test (count $argv) -gt 0
-        __mp3_run 1 $argv
-    else
-        __mp3_attach 1
     end
 end
 

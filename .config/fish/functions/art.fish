@@ -222,13 +222,18 @@ function art3 -d "set artist to folder name and clean audio metadata (flac/mp3)"
         set -a env_args ART_CLEAN_FEAT=1
     end
 
+    if not python3 -c 'import mutagen' >/dev/null 2>&1
+        sudo pacman -S --needed --noconfirm python-mutagen; or return $status
+        python3 -c 'import mutagen'; or return $status
+    end
+
     env $env_args python3 -c '
 import os, re, sys, shutil, subprocess
 
 try:
     from mutagen import File
 except ImportError:
-    print("mutagen not installed. run: sudo pacman -S python-mutagen")
+    print("Mutagen is unavailable after installation.")
     sys.exit(1)
 
 def notify(msg, color="cba6f7", timeout=2000):
@@ -282,7 +287,7 @@ if total == 0:
     notify("art3: no audio files", color="f38ba8")
     sys.exit(0)
 
-ROOT_NAMES = {"music", "0", "home", "y", "downloads", "desktop", "documents", "pictures", "videos", ""}
+ROOT_NAMES = {"music", "0", "home", "downloads", "desktop", "documents", "pictures", "videos", ""}
 
 if base_name.lower() in ROOT_NAMES:
     print(colored(RED, f"󰅙 cannot determine artist: inside root folder \x27{base_name}\x27"))

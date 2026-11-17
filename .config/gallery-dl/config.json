@@ -1,7 +1,7 @@
 {
   "extractor": {
     "base-directory": "$HOME/0/videos/gallery-dl",
-    "cookies-from-browser": "firefox",
+    "cookies-from-browser": "",
 
     "retries": 6,
 
